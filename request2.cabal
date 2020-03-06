@@ -33,7 +33,7 @@ license:             BSD3
 license-file:        LICENSE
 
 -- The package author(s).
-author:              Mirek Kratochvil
+author:              Mirek Kratochvil, Evzen Wyitul
 
 -- An email address to which users can send suggestions, bug reports, and
 -- patches.
@@ -62,7 +62,22 @@ executable request2
   -- other-extensions:
 
   -- Other library packages from which modules are imported.
-  build-depends:       base ^>=4.12.0.0
+  build-depends:
+    base >=4.11.0.0,
+    aeson,
+    bytestring,
+    containers >=0.5.9,
+    crypt-sha512,
+    directory,
+    entropy,
+    http-types,
+    lens,
+    scotty,
+    SHA,
+    sqlite-simple,
+    text,
+    unix-time,
+    utf8-string
 
   -- Directories containing source files.
   hs-source-dirs:      src
