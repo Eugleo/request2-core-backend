@@ -24,7 +24,7 @@ apiServer config =
     {-
      - example authentized API (TODO remove)
      -}
-    get (capture "/news") $ auth $ text "hello!"
+    get (capture "/news") $ auth $ \config userinfo-> text "hello!"
     {-
      - standard 404 -- keep this last
      -}

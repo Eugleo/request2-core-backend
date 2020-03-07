@@ -13,6 +13,7 @@ defaultConfig =
   ServerConfig
     { dataDir = "/var/lib/request2"
     , listenPort = 9080
+    --TODO: database file
     }
 
 defaultConfigFile = "/etc/request2.cfg"
@@ -45,6 +46,7 @@ readConfig fn = do
   return
     (upd "data_dir" (\a b -> a {dataDir = b}) .
      upd "listen_port" (\a b -> a {listenPort = read b}) $
+     --TODO parse out database file info
      defaultConfig)
 
 -- use this

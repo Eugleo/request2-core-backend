@@ -71,6 +71,7 @@ executable request2
     directory,
     entropy,
     http-types,
+    ini,
     lens,
     scotty,
     SHA,
