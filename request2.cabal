@@ -92,7 +92,7 @@ executable request2
   -- Directories containing source files.
   hs-source-dirs:      src
 
-  ghc-options: -Wunused-imports
+  ghc-options: -Wunused-imports -Wall -Wcompat -Wincomplete-record-updates -Wincomplete-uni-patterns -Wredundant-constraints
 
   -- Base language which the package is written in.
   default-language:    Haskell2010
