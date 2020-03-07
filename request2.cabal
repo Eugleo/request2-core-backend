@@ -63,10 +63,10 @@ executable request2
 
   -- Other library packages from which modules are imported.
   build-depends:
-    base >=4.11.0.0,
+    base,
     aeson,
     bytestring,
-    containers >=0.5.9,
+    containers,
     crypt-sha512,
     directory,
     entropy,
