@@ -1,2 +1,3 @@
-dist-newstyle
-sqlite-simple
+dist-newstyle/
+sqlite-simple/
+data/

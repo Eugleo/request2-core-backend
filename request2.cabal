@@ -63,7 +63,10 @@ executable request2
     Capability,
     Config,
     Crypto,
-    UserDB,
+    Database.User,
+    Database.General,
+    Model.User,
+    Model.Team,
     UserInfo,
     Utils
 
@@ -87,7 +90,8 @@ executable request2
     sqlite-simple,
     text,
     unix-time,
-    utf8-string
+    utf8-string,
+    raw-strings-qq
 
   -- Directories containing source files.
   hs-source-dirs:      src

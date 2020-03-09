@@ -3,10 +3,10 @@ module Main where
 import ApiServer
 import Config
 import Control.Monad
-import UserDB
+import Database.General (createDatabase)
 
 main :: IO ()
 main = do
   config <- getConfig
-  createDB config
+  createDatabase config
   void $ apiServer config

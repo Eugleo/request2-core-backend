@@ -11,6 +11,7 @@ cat > config.cfg << ENDCONF
 [server]
 data_dir=data
 listen_port=9080
+db_path=data/database.sqlite
 ENDCONF
 cabal run request2 -- config.cfg
 ```

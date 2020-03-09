@@ -1,6 +1,11 @@
 module UserInfo where
 
-data UserInfo = UserInfo
-  { user :: String
-  , apiKey :: String
-  }
+type APIKey = String
+
+type ID = String
+
+data UserInfo
+  = UserInfo
+      { id :: ID,
+        apiKey :: APIKey
+      }

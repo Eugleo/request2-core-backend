@@ -4,52 +4,53 @@ import Data.Ini
 import Data.Text
 import System.Environment
 
-data ServerConfig = ServerConfig
-  { dataDir :: String
-  , listenPort :: Int
-  } deriving (Show)
+data ServerConfig
+  = ServerConfig
+      { dataDir :: String,
+        dbPath :: String,
+        listenPort :: Int
+      }
+  deriving (Show)
 
+defaultConfig :: ServerConfig
 defaultConfig =
   ServerConfig
-    { dataDir = "/var/lib/request2"
-    , listenPort = 9080
-    --TODO: database file
+    { dataDir = "data",
+      dbPath = "data/database.sqlite",
+      listenPort = 9080
     }
 
-defaultConfigFile = "/etc/request2.cfg"
+defaultConfigPath :: String
+defaultConfigPath = "etc/default.cfg"
 
+getConfig :: IO ServerConfig
 getConfig = do
   args <- getArgs
   case args of
-    [] -> readConfig defaultConfigFile
+    [] -> readConfig defaultConfigPath
     [cf] -> readConfig cf
-    _ -> error "specify at most one parameter with config filename"
+    _ -> error "Specify at most one parameter with config filename"
 
 updateFromIni ::
-     Ini
-  -> String
-  -> String
-  -> (ServerConfig -> String -> ServerConfig)
-  -> ServerConfig
-  -> ServerConfig
+  Ini ->
+  String ->
+  String ->
+  (ServerConfig -> String -> ServerConfig) ->
+  ServerConfig ->
+  ServerConfig
 updateFromIni ini sec name f c =
   either (const c) (f c) $ unpack <$> lookupValue (pack sec) (pack name) ini
 
 readConfig :: String -> IO ServerConfig
-readConfig fn = do
-  cfg <- readIniFile fn
+readConfig path = do
+  cfg <- readIniFile path
   ini <-
     case cfg of
-      Left err -> error $ "could not read config: " ++ err
+      Left err -> error $ "Could not read config: " ++ err
       Right a -> pure a
   let upd = updateFromIni ini "server"
   return
-    (upd "data_dir" (\a b -> a {dataDir = b}) .
-     upd "listen_port" (\a b -> a {listenPort = read b}) $
-     --TODO parse out database file info
-     defaultConfig)
-
--- use this
-dbPath sc = dataDir sc ++ "/db.sqlite"
-
-userMailbox sc user = dataDir sc ++ "/mbox/" ++ user
+    $ upd "data_dir" (\c new -> c {dataDir = new})
+      . upd "listen_port" (\c new -> c {listenPort = read new})
+      . upd "db_path" (\c new -> c {dbPath = new})
+    $ defaultConfig
