@@ -69,7 +69,9 @@ createUser c User {..} =
     execute
       db
       "INSERT INTO Users (email, name, pw_hash, team_id, roles) VALUES (?, ?, ?, ?, ?)"
-      (email, name, pwhash, team, unwords . map show $ roles)
+      (email, name, pwhash, team, rolesStr)
+  where
+    rolesStr = foldr (\a acc -> show a ++ acc) "" roles
 
 deleteUser :: ServerConfig -> ID -> IO ()
 deleteUser c user =
