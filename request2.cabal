@@ -72,10 +72,10 @@ executable request2
 
   -- Other library packages from which modules are imported.
   build-depends:
-    base,
+    base >=4.11,
     aeson,
     bytestring,
-    containers,
+    containers >= 0.5.9,
     crypt-sha512,
     directory,
     entropy,
@@ -84,7 +84,7 @@ executable request2
     lens,
     scotty,
     SHA,
-    sqlite-simple,
+    sqlite-simple >= 0.4.18,
     text,
     unix-time,
     utf8-string
