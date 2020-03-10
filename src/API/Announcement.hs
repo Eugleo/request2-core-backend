@@ -41,4 +41,4 @@ get c = do
     Nothing -> status notFound404 >> finish
 
 getAll :: ServerConfig -> ActionM ()
-getAll c = (json . liftAndCatchIO . DB.getAll $ c) >> status ok200
+getAll c = liftAndCatchIO (json <$> DB.getAll c) >> status ok200

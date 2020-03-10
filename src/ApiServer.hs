@@ -28,7 +28,7 @@ apiServer config =
        - Announcements
        -}
       post "/announcements" $ auth $ privileges [Operator] Ann.create
-      get "/annoncements" $ auth privileges [Basic] Ann.getAll
+      get "/annoncements" $ auth $ privileges [Basic] Ann.getAll
       get "/announcement/:ann_id" $ auth $ privileges [Basic] Ann.get
       delete "/announcement/:ann_id" $ auth $ privileges [Admin] Ann.deactivate
       put "/announcement/:ann_id" $ auth $ privileges [Admin] Ann.edit
