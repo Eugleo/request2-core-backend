@@ -82,16 +82,17 @@ executable request2
     crypt-sha512,
     directory,
     entropy,
+    hslogger,
     http-types,
     ini,
     lens,
+    raw-strings-qq,
     scotty,
     SHA,
     sqlite-simple >= 0.4.18,
     text,
     unix-time,
-    utf8-string,
-    raw-strings-qq
+    utf8-string
 
   -- Directories containing source files.
   hs-source-dirs:      src
