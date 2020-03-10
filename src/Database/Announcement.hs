@@ -45,7 +45,12 @@ deactivate c annID = withConfig c $ \db ->
 get :: ServerConfig -> ID -> IO (Maybe (WithID Announcement))
 get c annID = withConfig c $ \db ->
   withTransaction db $ do
-    res <- query db "SELECT * WHERE ann_id = ?" (Only annID)
+    res <- query db "SELECT * FROM Announcements WHERE ann_id = ?" (Only annID)
     case res of
       [ann] -> return . Just $ ann
       _ -> return Nothing
+
+getAll :: ServerConfig -> IO [WithID Announcement]
+getAll c = withConfig c $ \db ->
+  withTransaction db $
+    query_ db "SELECT * FROM Announcements"

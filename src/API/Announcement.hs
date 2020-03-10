@@ -39,3 +39,6 @@ get c = do
   case ann of
     Just a -> json a >> status ok200
     Nothing -> status notFound404 >> finish
+
+getAll :: ServerConfig -> ActionM ()
+getAll c = (json . liftAndCatchIO . DB.getAll $ c) >> status ok200
