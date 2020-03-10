@@ -15,7 +15,7 @@ import Config
 import Database.SQLite.Simple
 import Text.RawString.QQ (r)
 
-type ID = String
+type ID = Integer
 
 createTeamsTable :: Query
 createTeamsTable =
@@ -23,7 +23,7 @@ createTeamsTable =
     CREATE TABLE IF NOT EXISTS Teams (
       team_id INTEGER PRIMARY KEY,
       name TEXT UNIQUE,
-      active BOOLEAN
+      active INTEGER
     );
   |]
 
@@ -57,10 +57,12 @@ createAnnouncementsTable =
   [r|
     CREATE TABLE IF NOT EXISTS Announcements (
       announcement_id INTEGER PRIMARY KEY,
-      author_id INTEGER REFERENCES Users (user_id),
-      date_added INTEGER,
       title TEXT,
-      text TEXT
+      body TEXT,
+      author_id INTEGER REFERENCES Users (user_id),
+      date_created INTEGER,
+      date_modified INTEGER,
+      active INTEGER
     );
   |]
 
@@ -74,7 +76,7 @@ createPropertiesTable =
       name TEXT,
       data TEXT,
       date_added INTEGER,
-      deleted BOOLEAN
+      deleted INTEGER
     );
   |]
 

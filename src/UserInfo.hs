@@ -2,10 +2,10 @@ module UserInfo where
 
 type APIKey = String
 
-type ID = String
+type ID = Integer
 
 data UserInfo
   = UserInfo
-      { id :: ID,
+      { userID :: ID,
         apiKey :: APIKey
       }

@@ -5,11 +5,13 @@ module Database.User where
 
 import Config
 import Crypto
+import Data.Maybe (mapMaybe)
+import Data.Set (Set, fromList)
 import Data.UnixTime (getUnixTime, utSeconds)
 import Database.General (ID, withConfig)
 import Database.SQLite.Simple
 import Foreign.C.Types (CTime (..))
-import Model.User (User (..))
+import Model.User (Role, User (..), strToRole)
 import UserInfo (APIKey)
 
 verifyPassword :: ServerConfig -> ID -> String -> a -> (Connection -> IO a) -> IO a
@@ -88,3 +90,11 @@ setPassword c user password =
       db
       "UPDATE Users SET pw_hash = ? WHERE user_id = ?"
       (pwhash, user)
+
+getRoles :: ServerConfig -> ID -> IO (Maybe (Set Role))
+getRoles c user = withConfig c $ \db ->
+  withTransaction db $ do
+    res <- query db "SELECT roles FROM Users WHERE user_id = ?" (Only user)
+    case res of
+      [[rolesStr]] -> return . Just . fromList . mapMaybe strToRole . words $ rolesStr
+      _ -> return Nothing

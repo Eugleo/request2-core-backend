@@ -68,14 +68,19 @@ executable request2
     Model.User,
     Model.Team,
     UserInfo,
-    Utils
+    Utils,
+    API.Announcement,
+    Database.Announcement,
+    Model.Announcement,
+    Time,
+    WithID
 
   -- LANGUAGE extensions used by modules in this package.
   -- other-extensions:
 
   -- Other library packages from which modules are imported.
   build-depends:
-    base >=4.11,
+    base >= 4.11,
     aeson,
     bytestring,
     containers >= 0.5.9,
@@ -87,6 +92,7 @@ executable request2
     ini,
     lens,
     raw-strings-qq,
+    scientific,
     scotty,
     SHA,
     sqlite-simple >= 0.4.18,

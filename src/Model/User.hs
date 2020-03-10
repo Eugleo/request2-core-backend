@@ -2,9 +2,15 @@ module Model.User where
 
 import Data.Set (Set)
 
-data Role = Admin | Basic | Operator deriving (Show)
+data Role = Admin | Basic | Operator deriving (Show, Eq, Ord)
 
-type ID = String
+strToRole :: String -> Maybe Role
+strToRole "Admin" = Just Admin
+strToRole "Basic" = Just Basic
+strToRole "Operator" = Just Operator
+strToRole _ = Nothing
+
+type ID = Integer
 
 data User
   = User
