@@ -72,7 +72,7 @@ executable request2
     API.Announcement,
     Database.Announcement,
     Model.Announcement,
-    Time,
+    DateTime,
     WithID
 
   -- LANGUAGE extensions used by modules in this package.

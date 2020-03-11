@@ -45,7 +45,7 @@ createRequestsTable =
   [r|
     CREATE TABLE IF NOT EXISTS Requests (
       request_id INTEGER PRIMARY KEY,
-      user_id INTEGER REFERENCES Users (user_id),
+      author_id INTEGER REFERENCES Users (user_id),
       team_id INTEGER REFERENCES Teams (team_id),
       type TEXT,
       date_added INTEGER

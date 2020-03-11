@@ -1,4 +1,4 @@
-module Time where
+module DateTime where
 
 import Data.Aeson
 import Data.Aeson.Types (prependFailure)
@@ -9,25 +9,25 @@ import Database.SQLite.Simple.FromField
 import Database.SQLite.Simple.ToField
 import Foreign.C.Types (CTime (..))
 
-newtype Time = Time UnixTime deriving (Show, Eq, Ord)
+newtype DateTime = DateTime UnixTime deriving (Show, Eq, Ord)
 
-instance FromJSON Time where
+instance FromJSON DateTime where
   parseJSON =
     withScientific "UnixTime" $ \v ->
       maybe
         (prependFailure "Can't parse time, " (fail $ "incorrect argument: " ++ show v))
-        (return . Time . flip UnixTime 0 . CTime)
+        (return . DateTime . flip UnixTime 0 . CTime)
         $ toBoundedInteger v
 
-instance ToJSON Time where
-  toJSON (Time (UnixTime (CTime sec) _)) = Number . fromIntegral $ sec
+instance ToJSON DateTime where
+  toJSON (DateTime (UnixTime (CTime sec) _)) = Number . fromIntegral $ sec
 
-instance FromField Time where
+instance FromField DateTime where
   fromField f = case contents of
-    SQLInteger n -> return . Time . flip UnixTime 0 . CTime $ n
+    SQLInteger n -> return . DateTime . flip UnixTime 0 . CTime $ n
     _ -> returnError Incompatible f "Expected integer"
     where
       contents = fieldData f
 
-instance ToField Time where
-  toField (Time (UnixTime (CTime sec) _)) = toField sec
+instance ToField DateTime where
+  toField (DateTime (UnixTime (CTime sec) _)) = toField sec

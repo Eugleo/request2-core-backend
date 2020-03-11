@@ -6,8 +6,8 @@ module Model.Announcement where
 
 import Data.Aeson
 import Database.SQLite.Simple
+import DateTime
 import GHC.Generics
-import Time
 import WithID
 
 data Announcement
@@ -15,8 +15,8 @@ data Announcement
       { title :: String,
         body :: String,
         authorID :: ID,
-        dateCreated :: Time,
-        dateModified :: Maybe Time,
+        dateCreated :: DateTime,
+        dateModified :: Maybe DateTime,
         active :: Bool
       }
   deriving (Show, Eq, Generic)
