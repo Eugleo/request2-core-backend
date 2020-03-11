@@ -47,6 +47,7 @@ createRequestsTable =
       request_id INTEGER PRIMARY KEY,
       author_id INTEGER REFERENCES Users (user_id),
       team_id INTEGER REFERENCES Teams (team_id),
+      status TEXT,
       type TEXT,
       date_added INTEGER
     );
