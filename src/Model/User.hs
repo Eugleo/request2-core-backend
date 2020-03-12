@@ -1,16 +1,16 @@
 module Model.User where
 
 import Data.Set (Set)
+import DateTime
+import WithID (ID)
 
-data Role = Admin | Basic | Operator deriving (Show, Eq, Ord)
+data Role = Admin | Client | Operator deriving (Show, Eq, Ord)
 
 strToRole :: String -> Maybe Role
-strToRole "Admin" = Just Admin
-strToRole "Basic" = Just Basic
-strToRole "Operator" = Just Operator
+strToRole "admin" = Just Admin
+strToRole "client" = Just Client
+strToRole "operator" = Just Operator
 strToRole _ = Nothing
-
-type ID = Integer
 
 data User
   = User
@@ -18,6 +18,7 @@ data User
         name :: String,
         password :: String,
         roles :: Set Role,
-        team :: ID
+        team :: ID,
+        created :: DateTime
       }
   deriving (Show)

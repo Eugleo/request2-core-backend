@@ -15,8 +15,7 @@ data Announcement
       { title :: String,
         body :: String,
         authorID :: ID,
-        dateCreated :: DateTime,
-        dateModified :: Maybe DateTime,
+        created :: DateTime,
         active :: Bool
       }
   deriving (Show, Eq, Generic)
@@ -27,7 +26,7 @@ instance ToJSON Announcement where
   toEncoding = genericToEncoding defaultOptions
 
 instance FromRow (WithID Announcement) where
-  fromRow = WithID <$> field <*> (Ann <$> field <*> field <*> field <*> field <*> field <*> field)
+  fromRow = WithID <$> field <*> (Ann <$> field <*> field <*> field <*> field <*> field)
 
 instance ToRow Announcement where
-  toRow Ann {..} = toRow (title, body, authorID, dateCreated, dateModified, active)
+  toRow Ann {..} = toRow (title, body, authorID, created, active)

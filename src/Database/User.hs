@@ -5,14 +5,15 @@ module Database.User where
 
 import Config
 import Crypto
+import Database.General (withConfig)
+import Database.SQLite.Simple
 import Data.Maybe (mapMaybe)
 import Data.Set (Set, fromList)
 import Data.UnixTime (getUnixTime, utSeconds)
-import Database.General (ID, withConfig)
-import Database.SQLite.Simple
 import Foreign.C.Types (CTime (..))
 import Model.User (Role, User (..), strToRole)
 import UserInfo (APIKey)
+import WithID (ID)
 
 verifyPassword :: ServerConfig -> ID -> String -> a -> (Connection -> IO a) -> IO a
 verifyPassword c user password err f =

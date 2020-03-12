@@ -14,7 +14,7 @@ data Property
   = Property
       { requestID :: ID,
         authorID :: ID,
-        name :: String,
+        propertyType :: String, -- named `type` in db
         propertyData :: String, -- named `data` in db
         dateAdded :: DateTime,
         deleted :: Bool

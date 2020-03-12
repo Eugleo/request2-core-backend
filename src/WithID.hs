@@ -5,7 +5,7 @@ module WithID where
 import Data.Aeson
 import GHC.Generics
 
-type ID = Integer
+type ID = Int
 
 data WithID a = WithID ID a deriving (Show, Eq, Generic)
 

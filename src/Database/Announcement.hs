@@ -17,8 +17,8 @@ add c ann = withConfig c $ \db -> do
   execute
     db
     [r|
-    INSERT INTO Announcements (title, body, author_id, date_created, date_modified, active)
-    VALUES (?, ?, ?, ?, ?, ?)
+    INSERT INTO Announcements (title, body, author_id, created, active)
+    VALUES (?, ?, ?, ?, ?)
     |]
     ann
   rowID <- lastInsertRowId db
@@ -32,10 +32,10 @@ edit c (WithID annID Ann {..}) = withConfig c $ \db ->
       db
       [r|
       UPDATE Announcements
-      SET title = ?, body = ?, author_id = ?, date_created = ?, date_modified = ?, active = ?
+      SET title = ?, body = ?, author_id = ?, created = ?, active = ?
       WHERE ann_id = ?
       |]
-      (title, body, authorID, dateCreated, dateModified, active, annID)
+      (title, body, authorID, created, active, annID)
 
 deactivate :: ServerConfig -> ID -> IO ()
 deactivate c annID = withConfig c $ \db ->

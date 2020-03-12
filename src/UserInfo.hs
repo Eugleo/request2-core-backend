@@ -1,8 +1,8 @@
 module UserInfo where
 
-type APIKey = String
+import WithID (ID)
 
-type ID = Integer
+type APIKey = String
 
 data UserInfo
   = UserInfo

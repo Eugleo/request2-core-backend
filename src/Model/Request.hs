@@ -45,7 +45,7 @@ data Request
         teamID :: ID,
         status :: Status,
         requestType :: String, -- named `type` in db
-        dateAdded :: DateTime
+        created :: DateTime
       }
   deriving (Show, Eq, Generic)
 

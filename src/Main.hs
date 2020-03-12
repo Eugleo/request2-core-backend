@@ -3,7 +3,7 @@ module Main where
 import ApiServer
 import Config
 import Control.Monad
-import Database.General (createDatabase)
+import Database.Schema (createDatabase)
 
 main :: IO ()
 main = do
