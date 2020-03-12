@@ -55,7 +55,7 @@ createDatabase cfg =
       \ announcement_id BIGINT PRIMARY KEY, \
       \ title TEXT, \
       \ body TEXT, \
-      \ author_id BIGINT REFERENCES Users (user_id), \
+      \ user_id BIGINT REFERENCES Users (user_id), \
       \ created BIGINT, \
       \ active INTEGER)"
     -- primary display announcement listing

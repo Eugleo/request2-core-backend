@@ -99,7 +99,8 @@ executable request2
     sqlite-simple >= 0.4.18,
     text,
     unix-time,
-    utf8-string
+    utf8-string,
+    wai-cors
 
   -- Directories containing source files.
   hs-source-dirs:      src

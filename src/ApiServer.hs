@@ -9,11 +9,14 @@ import Config
 import Data.Text.Lazy
 import Model.User (Role (..))
 import Web.Scotty
+import Network.Wai.Middleware.Cors
 
 apiServer :: ServerConfig -> IO ()
 apiServer config =
   scotty (listenPort config) $
     do
+      middleware simpleCors --allow cross-origin queries for debugging
+
       {-
        - Capabilities
        -}
@@ -28,7 +31,8 @@ apiServer config =
        - Announcements
        -}
       post "/announcements" $ auth $ privileges [Operator] Ann.create
-      get "/annoncements" $ auth $ privileges [Client] Ann.getAll
+      --get "/announcements" $ auth $ privileges [Client] Ann.getAll
+      get "/announcements" $ Ann.getAll config
       get "/announcement/:ann_id" $ auth $ privileges [Client] Ann.get
       delete "/announcement/:ann_id" $ auth $ privileges [Admin] Ann.deactivate
       put "/announcement/:ann_id" $ auth $ privileges [Admin] Ann.edit

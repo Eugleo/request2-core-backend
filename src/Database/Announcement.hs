@@ -53,4 +53,4 @@ get c annID = withConfig c $ \db ->
 getAll :: ServerConfig -> IO [WithID Announcement]
 getAll c = withConfig c $ \db ->
   withTransaction db $
-    query_ db "SELECT * FROM Announcements"
+    query_ db "SELECT announcement_id, title, body, user_id, created, active FROM announcements"
