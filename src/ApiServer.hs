@@ -24,6 +24,8 @@ apiServer config =
       {-
        - Users
        -}
+    post "/register" undefined
+    post "/register-verify/:token" undefined
     post "/login" $ Auth.login config --get auth token
     post "/logout" $ Auth.logout config
     post "/password" $ auth Auth.changePassword
@@ -31,6 +33,7 @@ apiServer config =
        - User information
        -}
     get "/userinfo" $ auth undefined --TODO get user info
+    put "/userinfo" $ auth undefined --TODO get user info
       {-
        - Announcements
        -}
@@ -44,7 +47,7 @@ apiServer config =
        -}
     notFound $ text "Not found"
   where
-    nui x conf _ = x conf --No User Info
+    nui x conf _ = x conf --No User Info (this really calls for Reader...)
     auth x = Auth.authentized config (x config)
     satisfyRole cond x =
       auth $ \conf ui ->
