@@ -4,9 +4,7 @@
 module Auth where
 
 import Config
-import Data.Set (fromList, isSubsetOf)
 import qualified Database.User as DB
-import Model.User (Role)
 import Network.HTTP.Types.Status
 import UserInfo (UserInfo (..))
 import qualified UserInfo as U
@@ -40,16 +38,5 @@ authentized c f = do
   apikey <- unpack <$> stringParam "api_key"
   auth <- liftAndCatchIO $ DB.verify c apikey
   case auth of
-    Just u -> f $ UserInfo u apikey
-    Nothing -> status forbidden403 >> finish
-
--- TODO Rewrite to a more elegant version
-withPrivileges :: ServerConfig -> [Role] -> ActionM () -> UserInfo -> ActionM ()
-withPrivileges c roles action UserInfo {..} = do
-  maybeUserRoles <- liftAndCatchIO $ DB.getRoles c userID
-  case maybeUserRoles of
-    Just userRoles ->
-      if fromList roles `isSubsetOf` userRoles
-        then action
-        else status forbidden403 >> finish
+    Just u -> f $ UserInfo u apikey undefined --TODO addd roles
     Nothing -> status forbidden403 >> finish

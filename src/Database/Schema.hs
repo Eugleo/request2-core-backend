@@ -78,7 +78,7 @@ createDatabase cfg =
       \ api_key TEXT PRIMARY KEY, \
       \ user_id BIGINT REFERENCES Users (user_id), \
       \ created BIGINT)"
-    -- search for api_key on user verification
+    -- search keys for full logout
     e "CREATE INDEX IF NOT EXISTS \
       \ apikeys_userkey ON apikeys(user_id, api_key)"
     -- apikey deprecation

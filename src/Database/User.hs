@@ -8,10 +8,8 @@ import Crypto
 import Database.General (withConfig)
 import Database.SQLite.Simple
 import Data.Maybe (mapMaybe)
-import Data.Set (Set, fromList)
-import Data.UnixTime (getUnixTime, utSeconds)
-import Foreign.C.Types (CTime (..))
-import Model.User (Role, User (..), strToRole)
+import DateTime
+import Model.User (Role, User (..))
 import UserInfo (APIKey)
 import WithID (ID)
 
@@ -31,7 +29,7 @@ login :: ServerConfig -> ID -> String -> IO (Maybe APIKey)
 login c user password =
   verifyPassword c user password Nothing $ \db -> do
     apiKey <- newApiKey
-    CTime time <- utSeconds <$> getUnixTime
+    time <- now
     execute
       db
       "INSERT INTO ApiKeys (api_key, user_id, date_created) VALUES (?, ?, ?)"
@@ -92,10 +90,10 @@ setPassword c user password =
       "UPDATE Users SET pw_hash = ? WHERE user_id = ?"
       (pwhash, user)
 
-getRoles :: ServerConfig -> ID -> IO (Maybe (Set Role))
+getRoles :: ServerConfig -> ID -> IO (Maybe [Role])
 getRoles c user = withConfig c $ \db ->
   withTransaction db $ do
     res <- query db "SELECT roles FROM Users WHERE user_id = ?" (Only user)
     case res of
-      [[rolesStr]] -> return . Just . fromList . mapMaybe strToRole . words $ rolesStr
+      [[rolesStr]] -> return . Just . mapMaybe read . words $ rolesStr
       _ -> return Nothing

@@ -1,5 +1,6 @@
 module UserInfo where
 
+import Model.User (Role)
 import WithID (ID)
 
 type APIKey = String
@@ -7,5 +8,6 @@ type APIKey = String
 data UserInfo
   = UserInfo
       { userID :: ID,
-        apiKey :: APIKey
+        apiKey :: APIKey,
+        roles :: [Role]
       }
