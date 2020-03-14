@@ -17,7 +17,6 @@ data User
   = User
       { email :: String,
         name :: String,
-        password :: String,
         roles :: [Role],
         team :: ID,
         created :: DateTime

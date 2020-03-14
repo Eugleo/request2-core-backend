@@ -1,96 +1,80 @@
-{-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards #-}
 
 module Database.User where
 
 import Config
 import Crypto
-import Database.General (withConfig)
+import Database.General
 import Database.SQLite.Simple
 import DateTime
+import Environment
 import Model.User
 import UserInfo
 import WithID (ID)
+import Data.Text
 
-verifyPassword :: ServerConfig -> ID -> String -> a -> (Connection -> IO a) -> IO a
-verifyPassword c user password err f =
-  withConfig c $ \db ->
-    withTransaction db $ do
-      res <- query db "SELECT pw_hash FROM Users WHERE user_id = ?" (Only user)
-      case res of
-        [[hash]] ->
-          if checkHash password hash
-            then f db
-            else return err
-        _ -> return err
-
-login :: ServerConfig -> ID -> String -> IO (Maybe APIKey)
-login c user password =
-  verifyPassword c user password Nothing $ \db -> do
-    apiKey <- newApiKey
-    time <- now
-    execute
-      db
-      "INSERT INTO ApiKeys (api_key, user_id, date_created) VALUES (?, ?, ?)"
-      (apiKey, user, time)
-    return $ Just apiKey
-
-checkPassword :: ServerConfig -> ID -> String -> IO Bool
-checkPassword c user password =
-  verifyPassword c user password False (const $ pure True)
-
-verify :: ServerConfig -> APIKey -> IO (Maybe UserInfo)
-verify c apiKey =
-  withConfig c $ \db -> do
-    res <-
-      query
-        db
-        "SELECT Users.user_id, Users.roles FROM ApiKeys JOIN Users ON ApiKeys.user_id=Users.user_id WHERE api_key = ?"
-        (Only apiKey)
+checkPassword :: ID -> String -> EnvAction Bool
+checkPassword user password = do
+  db <- askDB
+  res <-
+    envIO $ query db "SELECT pw_hash FROM Users WHERE user_id = ?" (Only user)
+  return $
     case res of
-      [(user, roles)] -> return . Just $ UserInfo user apiKey (stringToRoles roles)
-      _ -> return Nothing
+      [(Only hash)] -> checkHash password hash
+      _ -> False
 
--- TODO Prevent leaks by setting a time limit on each API key
-logout :: ServerConfig -> APIKey -> IO ()
-logout c apiKey =
-  withConfig c $ \db ->
-    execute db "DELETE FROM ApiKeys WHERE api_key = ?" (Only apiKey)
+login :: String -> String -> EnvAction (Maybe (ID, APIKey))
+login email password = do
+  db <- askDB
+  res <-
+    envIO $
+    query db "SELECT pw_hash, user_id FROM Users WHERE email = ?" (Only email)
+  case res of
+    [(hash, userId)] ->
+      if checkHash password hash
+        then envIO $ do
+               apiKey <- newApiKey
+               time <- now
+               execute
+                 db
+                 "INSERT INTO ApiKeys (api_key, user_id, date_created) VALUES (?, ?, ?)"
+                 (apiKey, userId, time)
+               return $ Just (userId, pack apiKey)
+        else return Nothing
+    _ -> return Nothing
 
-logoutEverywhere :: ServerConfig -> ID -> IO ()
-logoutEverywhere c user =
-  withConfig c $ \db ->
-    execute db "DELETE FROM ApiKeys WHERE user_id = ?" (Only user)
+logout :: APIKey -> EnvAction ()
+logout apiKey = do
+  db <- askDB
+  envIO $ execute db "DELETE FROM ApiKeys WHERE api_key = ?" (Only apiKey)
 
-createUser :: ServerConfig -> User -> IO ()
-createUser c User {..} =
-  withConfig c $ \db -> do
-    pwhash <- newHash password
+logoutEverywhere :: ID -> EnvAction ()
+logoutEverywhere userId = do
+  db <- askDB
+  envIO $ execute db "DELETE FROM ApiKeys WHERE user_id = ?" (Only userId)
+
+{- this does not create login credentials, use `setPassword`! -}
+createUser :: User -> EnvAction ()
+createUser User {..} = do
+  db <- askDB
+  envIO $
     execute
       db
-      "INSERT INTO Users (email, name, pw_hash, team_id, roles) VALUES (?, ?, ?, ?, ?)"
-      (email, name, pwhash, team, rolesToString roles)
+      "INSERT INTO Users (email, name, pw_hash, team_id, roles) VALUES (?, ?, '-', ?, ?)"
+      (email, name, team, rolesToString roles)
 
-deleteUser :: ServerConfig -> ID -> IO ()
-deleteUser c user =
-  withConfig c $ \db ->
-    withTransaction db $ do
-      execute db "DELETE FROM Users WHERE user_id = ?" (Only user)
-      execute db "DELETE FROM ApiKeys WHERE user_id = ?" (Only user)
-
-setPassword :: ServerConfig -> ID -> String -> IO ()
-setPassword c user password =
-  withConfig c $ \db -> do
+setPassword :: ID -> String -> EnvAction ()
+setPassword userId password = do
+  db <- askDB
+  envIO $ do
     pwhash <- newHash password
-    execute
-      db
-      "UPDATE Users SET pw_hash = ? WHERE user_id = ?"
-      (pwhash, user)
+    execute db "UPDATE Users SET pw_hash = ? WHERE user_id = ?" (pwhash, userId)
 
-getRoles :: ServerConfig -> ID -> IO (Maybe [Role])
-getRoles c user = withConfig c $ \db ->
-  withTransaction db $ do
-    res <- query db "SELECT roles FROM Users WHERE user_id = ?" (Only user)
-    case res of
-      [[rolesStr]] -> return . Just $ stringToRoles rolesStr
-      _ -> return Nothing
+getRoles :: ID -> EnvAction (Maybe [Role])
+getRoles user = do
+  db <- askDB
+  res <-
+    envIO $ query db "SELECT roles FROM Users WHERE user_id = ?" (Only user)
+  case res of
+    [[rolesStr]] -> return . Just $ stringToRoles rolesStr
+    _ -> return Nothing
