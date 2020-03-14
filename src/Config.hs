@@ -8,7 +8,8 @@ data ServerConfig
   = ServerConfig
       { dataDir :: String,
         dbPath :: String,
-        listenPort :: Int
+        listenPort :: Int,
+        allowCORS :: Bool
       }
   deriving (Show)
 
@@ -17,7 +18,8 @@ defaultConfig =
   ServerConfig
     { dataDir = "data",
       dbPath = "data/database.sqlite",
-      listenPort = 9080
+      listenPort = 9080,
+      allowCORS = True --TODO switch to False later
     }
 
 defaultConfigPath :: String
@@ -53,4 +55,5 @@ readConfig path = do
     $ upd "data_dir" (\c new -> c {dataDir = new})
       . upd "listen_port" (\c new -> c {listenPort = read new})
       . upd "db_path" (\c new -> c {dbPath = new})
+      . upd "allow_cors" (\c new -> c {allowCORS = read new})
     $ defaultConfig

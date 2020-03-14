@@ -3,43 +3,56 @@
 module ApiServer where
 
 import qualified API.Announcement as Ann
-import qualified Auth
+import qualified Auth --TODO move to API because now it's really API
+import qualified Data.Text as T
 import Capability
 import Config
-import Data.Text.Lazy
-import Model.User (Role (..))
-import Web.Scotty
+import Control.Monad
+import Model.User (Role(..))
+import UserInfo
 import Network.Wai.Middleware.Cors
+import Web.Scotty
+import Environment
 
 apiServer :: ServerConfig -> IO ()
 apiServer config =
-  scotty (listenPort config) $
-    do
-      middleware simpleCors --allow cross-origin queries for debugging
-
+  scotty (listenPort config) $ do
+    when (allowCORS config) $ middleware simpleCors
       {-
        - Capabilities
        -}
-      get "/capability" $ json (capabilityList :: [Text])
+    get "/capability" $ json (capabilityList :: [T.Text])
       {-
        - Users
        -}
-      post "/login" $ Auth.login config --get auth token
-      post "/logout" $ Auth.logout config
-      post "/password" $ auth Auth.changePassword
+    --post "/register" undefined
+    --post "/register-verify/:token" undefined
+    post "/login" $ withDBEnv config Auth.login
+    --post "/logout" $ Auth.logout config
+    --post "/password" $ auth Auth.changePassword
+      {-
+       - User information
+       -}
+    --get "/userinfo" $ auth undefined --TODO get user info
+    --put "/userinfo" $ auth undefined --TODO get user info
+
+      {-
+       - Announcements -- testing without login requierd
+       -}
+    get "/announcements" $ withDBEnv config Ann.getAll
+    get "/announcement/:ann_id" $ withDBEnv config Ann.get
       {-
        - Announcements
        -}
-      post "/announcements" $ auth $ privileges [Operator] Ann.create
-      --get "/announcements" $ auth $ privileges [Client] Ann.getAll
-      get "/announcements" $ Ann.getAll config
-      get "/announcement/:ann_id" $ auth $ privileges [Client] Ann.get
-      delete "/announcement/:ann_id" $ auth $ privileges [Admin] Ann.deactivate
-      put "/announcement/:ann_id" $ auth $ privileges [Admin] Ann.edit
+    --get "/announcements" $ withAuthEnv Ann.getAll
+    --get "/announcement/:ann_id" $ withAuthEnv Ann.get
+    --post "/announcements" $ withRoleEnv Admin Ann.create
+    --put "/announcement/:ann_id" $ withRoleEnv Admin Ann.edit
+    --delete "/announcement/:ann_id" $ withRoleEnv Admin Ann.deactivate
       {-
        - Standard 404 -- keep this last
        -}
-      notFound $ text "Not found"
+    notFound $ text "Not found"
   where
-    auth x = Auth.authentized config (x config)
-    privileges roles f c = Auth.withPrivileges c roles $ f c
+    withRoleEnv  :: Role -> EnvAction a -> ActionM a
+    withRoleEnv r m = withAuthEnv config $ checkRoles (r `elem`) >> m

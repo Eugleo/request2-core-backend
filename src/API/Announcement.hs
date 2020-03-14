@@ -4,10 +4,12 @@ module API.Announcement where
 
 import Config
 import qualified Database.Announcement as DB
-import Network.HTTP.Types.Status
+import Environment
+import Network.HTTP.Types.Status --TODO remove
 import Web.Scotty
 import WithID
 
+{-
 create :: ServerConfig -> ActionM ()
 create c = do
   ann <- jsonData
@@ -31,14 +33,16 @@ deactivate c = do
   annID <- param "ann_id"
   liftAndCatchIO $ DB.deactivate c annID
   status ok200
+-}
 
-get :: ServerConfig -> ActionM ()
-get c = do
-  annID <- param "ann_id"
-  ann <- liftAndCatchIO $ DB.get c annID
+get :: EnvAction ()
+get = do
+  annID <- lift $ param "ann_id"
+  c <- askConfig --TODO migrate
+  ann <- envIO $ DB.get c annID
   case ann of
-    Just a -> json a >> status ok200
-    Nothing -> status notFound404 >> finish
+    Just a -> lift $ json a >> status ok200
+    Nothing -> lift $ status notFound404 >> finish
 
-getAll :: ServerConfig -> ActionM ()
-getAll c = liftAndCatchIO (DB.getAll c) >>= json >> status ok200
+getAll :: EnvAction ()
+getAll = askConfig >>= envIO . DB.getAll >>= \x -> lift $json x

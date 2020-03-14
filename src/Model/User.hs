@@ -1,23 +1,23 @@
 module Model.User where
 
-import Data.Set (Set)
 import DateTime
 import WithID (ID)
+import Data.Maybe (mapMaybe)
+import Text.Read (readMaybe)
 
-data Role = Admin | Client | Operator deriving (Show, Eq, Ord)
+data Role = Client | Operator | Admin deriving (Show, Read, Eq, Ord)
 
-strToRole :: String -> Maybe Role
-strToRole "admin" = Just Admin
-strToRole "client" = Just Client
-strToRole "operator" = Just Operator
-strToRole _ = Nothing
+rolesToString :: [Role] -> String
+rolesToString = unwords . map show
+
+stringToRoles :: String -> [Role]
+stringToRoles = mapMaybe readMaybe . words
 
 data User
   = User
       { email :: String,
         name :: String,
-        password :: String,
-        roles :: Set Role,
+        roles :: [Role],
         team :: ID,
         created :: DateTime
       }
