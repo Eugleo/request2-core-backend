@@ -9,7 +9,12 @@ import Web.Scotty
 
 stringParam :: Text -> ActionM Text
 stringParam s = do
-  jsonD <- jsonData
+  jsonD <-
+    jsonData `rescue`
+    (\msg -> do
+       status badRequest400
+       text ("Query JSON parsing error: " `append` msg)
+       finish)
   case jsonD !? s of
     Nothing -> do
       status badRequest400

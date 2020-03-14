@@ -7,10 +7,9 @@ import Config
 import Crypto
 import Database.General (withConfig)
 import Database.SQLite.Simple
-import Data.Maybe (mapMaybe)
 import DateTime
-import Model.User (Role, User (..))
-import UserInfo (APIKey)
+import Model.User
+import UserInfo
 import WithID (ID)
 
 verifyPassword :: ServerConfig -> ID -> String -> a -> (Connection -> IO a) -> IO a
@@ -40,16 +39,16 @@ checkPassword :: ServerConfig -> ID -> String -> IO Bool
 checkPassword c user password =
   verifyPassword c user password False (const $ pure True)
 
-verify :: ServerConfig -> APIKey -> IO (Maybe ID)
+verify :: ServerConfig -> APIKey -> IO (Maybe UserInfo)
 verify c apiKey =
   withConfig c $ \db -> do
     res <-
       query
         db
-        "SELECT Users.user_id FROM ApiKeys JOIN Users ON ApiKeys.user_id=Users.user_id WHERE api_key = ?"
+        "SELECT Users.user_id, Users.roles FROM ApiKeys JOIN Users ON ApiKeys.user_id=Users.user_id WHERE api_key = ?"
         (Only apiKey)
     case res of
-      [[user]] -> return $ Just user
+      [(user, roles)] -> return . Just $ UserInfo user apiKey (stringToRoles roles)
       _ -> return Nothing
 
 -- TODO Prevent leaks by setting a time limit on each API key
@@ -70,9 +69,7 @@ createUser c User {..} =
     execute
       db
       "INSERT INTO Users (email, name, pw_hash, team_id, roles) VALUES (?, ?, ?, ?, ?)"
-      (email, name, pwhash, team, rolesStr)
-  where
-    rolesStr = foldr (\a acc -> show a ++ acc) "" roles
+      (email, name, pwhash, team, rolesToString roles)
 
 deleteUser :: ServerConfig -> ID -> IO ()
 deleteUser c user =
@@ -95,5 +92,5 @@ getRoles c user = withConfig c $ \db ->
   withTransaction db $ do
     res <- query db "SELECT roles FROM Users WHERE user_id = ?" (Only user)
     case res of
-      [[rolesStr]] -> return . Just . mapMaybe read . words $ rolesStr
+      [[rolesStr]] -> return . Just $ stringToRoles rolesStr
       _ -> return Nothing
