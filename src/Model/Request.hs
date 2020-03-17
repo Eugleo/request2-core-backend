@@ -58,4 +58,4 @@ instance FromRow (WithID Request) where
   fromRow = WithID <$> field <*> (Request <$> field <*> field <*> field <*> field <*> field)
 
 instance ToRow Request where
-  toRow Request {..} = toRow (authorID, teamID, dateAdded)
+  toRow Request {..} = toRow (authorID, teamID, created)

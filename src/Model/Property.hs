@@ -30,4 +30,4 @@ instance FromRow (WithID Property) where
   fromRow = WithID <$> field <*> (Property <$> field <*> field <*> field <*> field <*> field <*> field)
 
 instance ToRow Property where
-  toRow Property {..} = toRow (requestID, authorID, name, propertyData, dateAdded, deleted)
+  toRow Property {..} = toRow (requestID, authorID, propertyType, propertyData, dateAdded, deleted)
