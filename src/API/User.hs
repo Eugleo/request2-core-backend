@@ -26,3 +26,8 @@ changePassword = do
   if match
     then DB.setPassword (U.userID user) newpass
     else status forbidden403
+
+getUserInfo :: EnvAction ()
+getUserInfo = do
+  user <- askUser
+  json user

@@ -33,13 +33,8 @@ apiServer config =
     {-
      - User information
      -}
-    --get "/userinfo" $ auth undefined --TODO get user info
-    --put "/userinfo" $ auth undefined --TODO get user info
-    {-
-     - Announcements -- testing without login requierd
-     -}
-    get "/announcements" $ withDB Ann.getAll
-    get "/announcement/:ann_id" $ withDB Ann.get
+    get "/userinfo" $ withAuth User.getUserInfo
+    -- TODO put "/userinfo" $ withAuth undefined
     {-
      - Announcements
      -}

@@ -1,6 +1,11 @@
+{-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE FlexibleInstances #-}
+
 module UserInfo where
 
-import Data.Text (Text)
+import Data.Aeson
+import Data.Text
+import GHC.Generics
 import Model.User (Role)
 import WithID (ID)
 
@@ -12,3 +17,9 @@ data UserInfo
         apiKey :: APIKey,
         roles :: [Role]
       }
+  deriving (Show, Eq, Generic)
+
+instance FromJSON UserInfo
+
+instance ToJSON UserInfo where
+  toEncoding = genericToEncoding defaultOptions
