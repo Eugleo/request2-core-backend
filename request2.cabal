@@ -59,24 +59,23 @@ executable request2
   -- Modules included in this executable, other than Main.
   other-modules:
     ApiServer,
-    Auth,
+    API.Announcement,
+    API.User,
     Capability,
     Config,
     Crypto,
+    Database.Announcement,
     Database.BasicAuth,
-    Database.General,
     Database.Schema,
+    Database.Request,
     Database.User,
+    DateTime,
     Environment,
     HTTPHelpers,
+    Model.Announcement,
     Model.User,
     Model.Team,
     UserInfo,
-    Utils,
-    API.Announcement,
-    Database.Announcement,
-    Model.Announcement,
-    DateTime,
     WithID
 
   extensions:
