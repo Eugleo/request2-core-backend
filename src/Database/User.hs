@@ -11,7 +11,7 @@ import Model.User
 import UserInfo
 import WithID (ID)
 
-checkPassword :: ID -> String -> EnvAction Bool
+checkPassword :: ID -> Text -> EnvAction Bool
 checkPassword user password = do
   db <- askDB
   res <-
@@ -21,7 +21,7 @@ checkPassword user password = do
       [(Only hash)] -> checkHash password hash
       _ -> False
 
-login :: String -> String -> EnvAction (Maybe (ID, APIKey))
+login :: Text -> Text -> EnvAction (Maybe (ID, APIKey))
 login email password = do
   db <- askDB
   res <-
@@ -37,7 +37,7 @@ login email password = do
             db
             "INSERT INTO ApiKeys (api_key, user_id, date_created) VALUES (?, ?, ?)"
             (apiKey, userId, time)
-          return $ Just (userId, pack apiKey)
+          return $ Just (userId, apiKey)
         else return Nothing
     _ -> return Nothing
 
@@ -61,11 +61,11 @@ createUser User {..} = do
       "INSERT INTO Users (email, name, pw_hash, team_id, roles) VALUES (?, ?, '-', ?, ?)"
       (email, name, team, rolesToString roles)
 
-setPassword :: ID -> String -> EnvAction ()
+setPassword :: ID -> Text -> EnvAction ()
 setPassword userId password = do
   db <- askDB
   envIO $ do
-    pwhash <- newHash password
+    pwhash <- newHash $ password
     execute db "UPDATE Users SET pw_hash = ? WHERE user_id = ?" (pwhash, userId)
 
 getRoles :: ID -> EnvAction (Maybe [Role])

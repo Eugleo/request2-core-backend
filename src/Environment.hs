@@ -4,6 +4,7 @@ import Config
 import qualified Control.Monad.Trans.Class as TR
 import Control.Monad.Trans.Reader
 import Data.Aeson (FromJSON, ToJSON)
+import Data.Map ((!?))
 import Data.Text
 import Data.Text.Lazy (fromStrict, toStrict)
 import Database.BasicAuth
@@ -12,9 +13,8 @@ import HTTPHelpers
 import Model.User (Role)
 import Network.HTTP.Types (Status)
 import UserInfo
-import Utils (stringParam)
-import Web.Scotty hiding (json, jsonData, param, status)
-import qualified Web.Scotty as S (json, jsonData, param, status)
+import Web.Scotty hiding (json, jsonData, param, rescue, status, text)
+import qualified Web.Scotty as S (json, jsonData, param, rescue, status, text)
 
 data Env
   = Env
@@ -44,6 +44,27 @@ param = lift . S.param . fromStrict
 envIO :: IO a -> EnvAction a
 envIO = lift . liftAndCatchIO
 
+rescue :: EnvAction a -> (Text -> EnvAction a) -> EnvAction a
+rescue act err = do
+  env <- ask
+  let action = runReaderT act env
+  let catchtion msg = runReaderT (err $ toStrict msg) env
+  lift $ action `S.rescue` catchtion
+
+text :: Text -> EnvAction ()
+text = lift . S.text . fromStrict
+
+jsonParam :: Text -> EnvAction Text
+jsonParam s = do
+  js <- jsonData `rescue` (catch . (<>) "Query JSON parsing error: ")
+  case js !? s of
+    Nothing -> catch ("Missing string parameter: " <> s)
+    Just d -> return d
+  where
+    catch msg = do
+      text msg
+      envBadRequest
+
 {- sadly, ActionM doesn't have MonadMask and cannot be easily bracketed. We
  - therefore use the following strategy:
  - 1. `finish` actions are wrapped with envFinish (and convenience wrappers)
@@ -58,14 +79,9 @@ envCloseDB = do
     Just db -> envIO $ DB.close db
     _ -> return ()
 
-envRescue :: EnvAction a -> (Text -> EnvAction a) -> EnvAction a
-envRescue act err = do
-  env <- ask
-  lift $ runReaderT act env `rescue` \msg -> runReaderT (err $ toStrict msg) env
-
 actionThenCloseDB :: EnvAction a -> EnvAction a
 actionThenCloseDB ea =
-  (ea <* envCloseDB) `envRescue` \msg ->
+  (ea <* envCloseDB) `rescue` \msg ->
     envCloseDB >> lift (raise $ fromStrict msg)
 
 withEnv :: ServerConfig -> EnvAction a -> ActionM a
@@ -75,8 +91,8 @@ withEnv config ea =
 withDBEnv :: ServerConfig -> EnvAction a -> ActionM a
 withDBEnv config ea = do
   conn <-
-    liftAndCatchIO (DB.open $ dbPath config) `rescue` \msg -> do
-      text $ "Database connection failure: " <> msg
+    liftAndCatchIO (DB.open $ dbPath config) `S.rescue` \msg -> do
+      S.text $ "Database connection failure: " <> msg
       finishServerError
   runReaderT (actionThenCloseDB ea) $ Env config (Just conn) Nothing
 
@@ -85,7 +101,7 @@ withAuthEnv config = withDBEnv config . authentized
 
 authentized :: EnvAction a -> EnvAction a
 authentized action = do
-  apikey <- lift $ stringParam "api_key"
+  apikey <- jsonParam "api_key"
   conn <- askDB
   auth <- lift $ liftAndCatchIO $ findApiKeyUser conn apikey
   case auth of
@@ -104,7 +120,7 @@ askDB = do
   mdb <- envDBConn <$> ask
   case mdb of
     Just db -> return db
-    _ -> lift $ text "db initialization failure" >> finishBadRequest
+    _ -> text "db initialization failure" >> envBadRequest
 
 askConfig :: EnvAction ServerConfig
 askConfig = envConfig <$> ask
