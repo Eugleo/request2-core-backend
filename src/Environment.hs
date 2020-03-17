@@ -1,11 +1,12 @@
 module Environment where
 
 import Config
+import Control.Monad (unless)
 import qualified Control.Monad.Trans.Class as TR
 import Control.Monad.Trans.Reader
 import Data.Aeson (FromJSON, ToJSON)
 import Data.Map ((!?))
-import Data.Text
+import Data.Text (Text)
 import Data.Text.Lazy (fromStrict, toStrict)
 import Database.BasicAuth
 import qualified Database.SQLite.Simple as DB
@@ -14,7 +15,14 @@ import Model.User (Role)
 import Network.HTTP.Types (Status)
 import UserInfo
 import Web.Scotty hiding (json, jsonData, param, rescue, status, text)
-import qualified Web.Scotty as S (json, jsonData, param, rescue, status, text)
+import qualified Web.Scotty as S
+  ( json,
+    jsonData,
+    param,
+    rescue,
+    status,
+    text,
+  )
 
 data Env
   = Env
@@ -103,17 +111,24 @@ authentized :: EnvAction a -> EnvAction a
 authentized action = do
   apikey <- jsonParam "api_key"
   conn <- askDB
-  auth <- lift $ liftAndCatchIO $ findApiKeyUser conn apikey
+  auth <- envIO $ findApiKeyUser conn apikey
   case auth of
     Just u -> local (\env -> env {envUser = Just u}) action
     _ -> envForbidden
+
+withRolesEnv :: ServerConfig -> [Role] -> EnvAction a -> ActionM a
+withRolesEnv config rs action =
+  withAuthEnv config $ do
+    userRoles <- roles <$> askUser
+    unless (all (`elem` rs) userRoles) envForbidden
+    action
 
 askUser :: EnvAction UserInfo
 askUser = do
   mu <- envUser <$> ask
   case mu of
     Just u -> return u
-    _ -> lift finishForbidden
+    _ -> envForbidden
 
 askDB :: EnvAction DB.Connection
 askDB = do
@@ -124,13 +139,6 @@ askDB = do
 
 askConfig :: EnvAction ServerConfig
 askConfig = envConfig <$> ask
-
-checkRoles :: ([Role] -> Bool) -> EnvAction ()
-checkRoles cond = do
-  ok <- cond . roles <$> askUser
-  if ok
-    then return ()
-    else lift finishForbidden
 
 envFinish :: EnvAction a
 envFinish = envCloseDB >> lift finish
