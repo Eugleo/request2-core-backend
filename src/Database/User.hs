@@ -2,16 +2,14 @@
 
 module Database.User where
 
-import Config
 import Crypto
-import Database.General
+import Data.Text
 import Database.SQLite.Simple
 import DateTime
 import Environment
 import Model.User
 import UserInfo
 import WithID (ID)
-import Data.Text
 
 checkPassword :: ID -> String -> EnvAction Bool
 checkPassword user password = do
@@ -28,18 +26,18 @@ login email password = do
   db <- askDB
   res <-
     envIO $
-    query db "SELECT pw_hash, user_id FROM Users WHERE email = ?" (Only email)
+      query db "SELECT pw_hash, user_id FROM Users WHERE email = ?" (Only email)
   case res of
     [(hash, userId)] ->
       if checkHash password hash
         then envIO $ do
-               apiKey <- newApiKey
-               time <- now
-               execute
-                 db
-                 "INSERT INTO ApiKeys (api_key, user_id, date_created) VALUES (?, ?, ?)"
-                 (apiKey, userId, time)
-               return $ Just (userId, pack apiKey)
+          apiKey <- newApiKey
+          time <- now
+          execute
+            db
+            "INSERT INTO ApiKeys (api_key, user_id, date_created) VALUES (?, ?, ?)"
+            (apiKey, userId, time)
+          return $ Just (userId, pack apiKey)
         else return Nothing
     _ -> return Nothing
 
