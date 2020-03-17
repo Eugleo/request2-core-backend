@@ -35,7 +35,7 @@ login email password = do
           time <- now
           execute
             db
-            "INSERT INTO api_keys (api_key, user_id, date_created) VALUES (?, ?, ?)"
+            "INSERT INTO api_keys (api_key, user_id, created) VALUES (?, ?, ?)"
             (apiKey, userId, time)
           return $ Just (userId, apiKey)
         else return Nothing
@@ -53,13 +53,13 @@ logoutEverywhere userId = do
 
 {- this does not create login credentials, use `setPassword`! -}
 createUser :: User -> EnvAction ()
-createUser User {..} = do
+createUser user = do
   db <- askDB
   envIO $
     execute
       db
-      "INSERT INTO users (email, name, pw_hash, team_id, roles) VALUES (?, ?, '-', ?, ?)"
-      (email, name, team, rolesToString roles)
+      "INSERT INTO users (email, name, pw_hash, team_id, roles, created) VALUES (?, ?, ?, ?, ?, ?)"
+      user
 
 setPassword :: ID -> Text -> EnvAction ()
 setPassword userId password = do
@@ -74,5 +74,5 @@ getRoles user = do
   res <-
     envIO $ query db "SELECT roles FROM users WHERE user_id = ?" (Only user)
   case res of
-    [[rolesStr]] -> return . Just $ stringToRoles rolesStr
+    [[rs]] -> return $ Just rs
     _ -> return Nothing

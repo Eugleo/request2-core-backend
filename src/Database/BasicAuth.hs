@@ -3,7 +3,6 @@
 module Database.BasicAuth where
 
 import Database.SQLite.Simple
-import Model.User (stringToRoles)
 import UserInfo
 
 findApiKeyUser :: Connection -> APIKey -> IO (Maybe UserInfo)
@@ -16,6 +15,6 @@ findApiKeyUser db key = do
       \ WHERE api_key = ?"
       (Only key)
   case res of
-    [(user, rolesStr)] ->
-      return . Just $ UserInfo user key (stringToRoles rolesStr)
+    [(user, rs)] ->
+      return . Just $ UserInfo user key rs
     _ -> return Nothing
