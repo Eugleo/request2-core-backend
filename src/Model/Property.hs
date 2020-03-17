@@ -17,7 +17,7 @@ data Property
         propertyType :: String, -- named `type` in db
         propertyData :: String, -- named `data` in db
         dateAdded :: DateTime,
-        deleted :: Bool
+        enabled :: Bool
       }
   deriving (Show, Eq, Generic)
 
@@ -30,4 +30,4 @@ instance FromRow (WithID Property) where
   fromRow = WithID <$> field <*> (Property <$> field <*> field <*> field <*> field <*> field <*> field)
 
 instance ToRow Property where
-  toRow Property {..} = toRow (requestID, authorID, propertyType, propertyData, dateAdded, deleted)
+  toRow Property {..} = toRow (requestID, authorID, propertyType, propertyData, dateAdded, enabled)

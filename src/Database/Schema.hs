@@ -16,7 +16,7 @@ createDatabase cfg =
     let e = execute_ conn
     e
       "CREATE TABLE IF NOT EXISTS teams ( \
-      \ team_id BIGINT PRIMARY KEY, \
+      \ team_id INTEGER PRIMARY KEY, \
       \ name TEXT UNIQUE, \
       \ active INTEGER)"
     -- search for active teams by name
@@ -25,13 +25,13 @@ createDatabase cfg =
       \ team_active_name ON teams(active, name)"
     e
       "CREATE TABLE IF NOT EXISTS users ( \
-      \ user_id BIGINT PRIMARY KEY, \
+      \ user_id INTEGER PRIMARY KEY, \
       \ email TEXT UNIQUE, \
       \ name TEXT, \
       \ pw_hash TEXT, \
-      \ team_id BIGINT REFERENCES teams (team_id), \
+      \ team_id INTEGER REFERENCES teams (team_id), \
       \ roles TEXT, \
-      \ created BIGINT)"
+      \ created INTEGER)"
     -- lsearch for user login
     e
       "CREATE INDEX IF NOT EXISTS \
@@ -42,12 +42,12 @@ createDatabase cfg =
       \ users_team_name ON users(team_id, name)"
     e
       "CREATE TABLE IF NOT EXISTS requests ( \
-      \ request_id BIGINT PRIMARY KEY, \
-      \ user_id BIGINT REFERENCES users (user_id), \
-      \ team_id BIGINT REFERENCES teams (team_id), \
+      \ request_id INTEGER PRIMARY KEY, \
+      \ user_id INTEGER REFERENCES users (user_id), \
+      \ team_id INTEGER REFERENCES teams (team_id), \
       \ status TEXT, \
       \ type TEXT, \
-      \ created BIGINT)"
+      \ created INTEGER)"
     -- listing requests by properties
     e
       "CREATE INDEX IF NOT EXISTS \
@@ -60,11 +60,11 @@ createDatabase cfg =
       \ requests_status_type_created ON requests(status, type, created)"
     e
       "CREATE TABLE IF NOT EXISTS announcements ( \
-      \ announcement_id BIGINT PRIMARY KEY, \
+      \ announcement_id INTEGER PRIMARY KEY, \
       \ title TEXT, \
       \ body TEXT, \
-      \ user_id BIGINT REFERENCES users (user_id), \
-      \ created BIGINT, \
+      \ user_id INTEGER REFERENCES users (user_id), \
+      \ created INTEGER, \
       \ active INTEGER)"
     -- primary display announcement listing
     e
@@ -72,12 +72,12 @@ createDatabase cfg =
       \ announcements_active ON announcements(active, created)"
     e
       "CREATE TABLE IF NOT EXISTS properties ( \
-      \ property_id BIGINT PRIMARY KEY, \
-      \ request_id BIGINT REFERENCES requests (request_id), \
-      \ author_id BIGINT REFERENCES users (user_id), \
+      \ property_id INTEGER PRIMARY KEY, \
+      \ request_id INTEGER REFERENCES requests (request_id), \
+      \ user_id INTEGER REFERENCES users (user_id), \
       \ type TEXT, \
       \ data TEXT, \
-      \ created BIGINT, \
+      \ created INTEGER, \
       \ enabled INTEGER)"
     -- for displaying the request single-page
     e
@@ -86,8 +86,8 @@ createDatabase cfg =
     e
       "CREATE TABLE IF NOT EXISTS api_keys ( \
       \ api_key TEXT PRIMARY KEY, \
-      \ user_id BIGINT REFERENCES users (user_id), \
-      \ created BIGINT)"
+      \ user_id INTEGER REFERENCES users (user_id), \
+      \ created INTEGER)"
     -- search keys for full logout
     e
       "CREATE INDEX IF NOT EXISTS \

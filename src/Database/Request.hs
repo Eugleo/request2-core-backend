@@ -17,7 +17,7 @@ add req = do
   envIO $
     execute
       db
-      "INSERT INTO requests (author_id, team_id, status, type, date_added) \
+      "INSERT INTO requests (user_id, team_id, status, type, created) \
       \ VALUES (?, ?, ?, ?, ?)"
       req
   rowID <- envIO $ lastInsertRowId db
@@ -50,9 +50,9 @@ addProperty reqID prop@P.Property {..} = do
   envIO $
     execute
       db
-      "INSERT INTO properties (request_id, author_id, name, data, date_added, deleted) \
+      "INSERT INTO properties (request_id, user_id, type, data, created, enabled) \
       \ VALUES (?, ?, ?, ?, ?, ?)"
-      (reqID, authorID, propertyType, propertyData, dateAdded, deleted)
+      (reqID, authorID, propertyType, propertyData, dateAdded, enabled)
   rowID <- envIO $ lastInsertRowId db
   return $ WithID (fromIntegral rowID) prop
 
@@ -64,7 +64,7 @@ updateRequest (WithID reqID R.Request {..}, props) = do
     execute
       db
       "UPDATE properties \
-      \ SET deleted = ? \
+      \ SET enabled = ? \
       \ WHERE request_id = ?"
       (Only reqID)
   -- Add new properties
@@ -74,7 +74,7 @@ updateRequest (WithID reqID R.Request {..}, props) = do
     execute
       db
       "UPDATE requests \
-      \ SET author_id = ?, team_id = ?, status = ?, type = ?, date_added = ? \
+      \ SET user_id = ?, team_id = ?, status = ?, type = ?, created = ? \
       \ WHERE request_id = ?"
       (authorID, teamID, status, requestType, created)
 
@@ -85,6 +85,6 @@ removeProperty propID = do
     execute
       db
       "UPDATE properties \
-      \ SET deleted = ? \
+      \ SET enabled = ? \
       \ WHERE property_id = ?"
       (True, propID)

@@ -15,7 +15,7 @@ add ann = do
   envIO $
     execute
       db
-      "INSERT INTO announcements (title, body, author_id, created, active) \
+      "INSERT INTO announcements (title, body, user_id, created, active) \
       \ VALUES (?, ?, ?, ?, ?)"
       ann
   rowID <- envIO $ lastInsertRowId db
@@ -29,15 +29,15 @@ edit (WithID annID Ann {..}) = do
     execute
       db
       "UPDATE announcements \
-      \ SET title = ?, body = ?, author_id = ?, created = ?, active = ? \
-      \ WHERE ann_id = ?"
+      \ SET title = ?, body = ?, user_id = ?, created = ?, active = ? \
+      \ WHERE announcement_id = ?"
       (title, body, authorID, created, active, annID)
 
 deactivate :: ID -> EnvAction ()
 deactivate annID = do
   db <- askDB
   envIO $
-    execute db "UPDATE announcements SET active = ? WHERE ann_id = ?" (False, annID)
+    execute db "UPDATE announcements SET active = ? WHERE announcement_id = ?" (False, annID)
 
 get :: ID -> EnvAction (Maybe (WithID Announcement))
 get annID = do
