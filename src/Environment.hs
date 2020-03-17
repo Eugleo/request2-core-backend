@@ -3,28 +3,43 @@ module Environment where
 import Config
 import qualified Control.Monad.Trans.Class as TR
 import Control.Monad.Trans.Reader
+import Data.Aeson (FromJSON, ToJSON)
 import Data.Text
 import Data.Text.Lazy (fromStrict, toStrict)
 import Database.BasicAuth
 import qualified Database.SQLite.Simple as DB
 import HTTPHelpers
 import Model.User (Role)
+import Network.HTTP.Types (Status)
 import UserInfo
 import Utils (stringParam)
-import Web.Scotty
+import Web.Scotty hiding (json, jsonData, param, status)
+import qualified Web.Scotty as S (json, jsonData, param, status)
 
-data Env = Env
-  { envConfig :: ServerConfig
-  , envDBConn :: Maybe DB.Connection
-  , envUser :: Maybe UserInfo
-  }
+data Env
+  = Env
+      { envConfig :: ServerConfig,
+        envDBConn :: Maybe DB.Connection,
+        envUser :: Maybe UserInfo
+      }
 
 type EnvAction a = ReaderT Env ActionM a
 
 -- reexport
 lift :: (TR.MonadTrans t, Monad m) => m a -> t m a
-lift = TR.lift {- TODO: many Scotty operations (status, json, text) could have
-                  lifted versions just for EnvAction to make life+imports easier -}
+lift = TR.lift
+
+jsonData :: FromJSON a => EnvAction a
+jsonData = lift S.jsonData
+
+json :: ToJSON a => a -> EnvAction ()
+json = lift . S.json
+
+status :: Status -> EnvAction ()
+status = lift . S.status
+
+param :: Parsable a => Text -> EnvAction a
+param = lift . S.param . fromStrict
 
 envIO :: IO a -> EnvAction a
 envIO = lift . liftAndCatchIO
