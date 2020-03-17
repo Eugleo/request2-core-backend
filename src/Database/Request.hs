@@ -17,7 +17,7 @@ add req = do
   envIO $
     execute
       db
-      "INSERT INTO Requests (author_id, team_id, status, type, date_added) \
+      "INSERT INTO requests (author_id, team_id, status, type, date_added) \
       \ VALUES (?, ?, ?, ?, ?)"
       req
   rowID <- envIO $ lastInsertRowId db
@@ -26,21 +26,21 @@ add req = do
 get :: ID -> EnvAction (Maybe (WithID Request))
 get reqID = do
   db <- askDB
-  res <- envIO $ query db "SELECT * FROM Requests WHERE request_id = ?" (Only reqID)
+  res <- envIO $ query db "SELECT * FROM requests WHERE request_id = ?" (Only reqID)
   case res of
     [req] -> return . Just $ req
     _ -> return Nothing
 
 getAll :: EnvAction [WithID Request]
-getAll = askDB >>= \db -> envIO $ query_ db "SELECT * FROM Requests"
+getAll = askDB >>= \db -> envIO $ query_ db "SELECT * FROM requests"
 
-getWithProperties :: ID -> EnvAction (Maybe (WithID Request, [WithID Property]))
-getWithProperties reqID = do
+getWithproperties :: ID -> EnvAction (Maybe (WithID Request, [WithID Property]))
+getWithproperties reqID = do
   db <- askDB
-  res <- envIO $ query db "SELECT * FROM Requests WHERE request_id = ?" (Only reqID)
+  res <- envIO $ query db "SELECT * FROM requests WHERE request_id = ?" (Only reqID)
   case res of
     [req] -> do
-      props <- envIO $ query db "SELECT * FROM Properties WHERE request_id = ?" (Only reqID)
+      props <- envIO $ query db "SELECT * FROM properties WHERE request_id = ?" (Only reqID)
       return $ Just (req, props)
     _ -> return Nothing
 
@@ -50,7 +50,7 @@ addProperty reqID prop@P.Property {..} = do
   envIO $
     execute
       db
-      "INSERT INTO Properties (request_id, author_id, name, data, date_added, deleted) \
+      "INSERT INTO properties (request_id, author_id, name, data, date_added, deleted) \
       \ VALUES (?, ?, ?, ?, ?, ?)"
       (reqID, authorID, propertyType, propertyData, dateAdded, deleted)
   rowID <- envIO $ lastInsertRowId db
@@ -63,7 +63,7 @@ updateRequest (WithID reqID R.Request {..}, props) = do
   envIO $
     execute
       db
-      "UPDATE Properties \
+      "UPDATE properties \
       \ SET deleted = ? \
       \ WHERE request_id = ?"
       (Only reqID)
@@ -73,7 +73,7 @@ updateRequest (WithID reqID R.Request {..}, props) = do
   envIO $
     execute
       db
-      "UPDATE Requests \
+      "UPDATE requests \
       \ SET author_id = ?, team_id = ?, status = ?, type = ?, date_added = ? \
       \ WHERE request_id = ?"
       (authorID, teamID, status, requestType, created)
@@ -84,7 +84,7 @@ removeProperty propID = do
   envIO $
     execute
       db
-      "UPDATE Properties \
+      "UPDATE properties \
       \ SET deleted = ? \
       \ WHERE property_id = ?"
       (True, propID)

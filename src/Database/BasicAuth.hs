@@ -11,8 +11,8 @@ findApiKeyUser db key = do
   res <-
     query
       db
-      "SELECT Users.user_id, Users.roles \
-      \ FROM ApiKeys JOIN Users ON ApiKeys.user_id=Users.user_id \
+      "SELECT users.user_id, users.roles \
+      \ FROM api_keys JOIN users ON api_keys.user_id=users.user_id \
       \ WHERE api_key = ?"
       (Only key)
   case res of

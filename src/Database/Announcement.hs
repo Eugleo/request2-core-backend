@@ -15,7 +15,7 @@ add ann = do
   envIO $
     execute
       db
-      "INSERT INTO Announcements (title, body, author_id, created, active) \
+      "INSERT INTO announcements (title, body, author_id, created, active) \
       \ VALUES (?, ?, ?, ?, ?)"
       ann
   rowID <- envIO $ lastInsertRowId db
@@ -28,7 +28,7 @@ edit (WithID annID Ann {..}) = do
   envIO $
     execute
       db
-      "UPDATE Announcements \
+      "UPDATE announcements \
       \ SET title = ?, body = ?, author_id = ?, created = ?, active = ? \
       \ WHERE ann_id = ?"
       (title, body, authorID, created, active, annID)
@@ -37,12 +37,12 @@ deactivate :: ID -> EnvAction ()
 deactivate annID = do
   db <- askDB
   envIO $
-    execute db "UPDATE Announcements SET active = ? WHERE ann_id = ?" (False, annID)
+    execute db "UPDATE announcements SET active = ? WHERE ann_id = ?" (False, annID)
 
 get :: ID -> EnvAction (Maybe (WithID Announcement))
 get annID = do
   db <- askDB
-  res <- envIO $ query db "SELECT * FROM Announcements WHERE announcement_id = ?" (Only annID)
+  res <- envIO $ query db "SELECT * FROM announcements WHERE announcement_id = ?" (Only annID)
   case res of
     [ann] -> return . Just $ ann
     _ -> return Nothing

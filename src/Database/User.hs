@@ -15,7 +15,7 @@ checkPassword :: ID -> Text -> EnvAction Bool
 checkPassword user password = do
   db <- askDB
   res <-
-    envIO $ query db "SELECT pw_hash FROM Users WHERE user_id = ?" (Only user)
+    envIO $ query db "SELECT pw_hash FROM users WHERE user_id = ?" (Only user)
   return $
     case res of
       [(Only hash)] -> checkHash password hash
@@ -26,7 +26,7 @@ login email password = do
   db <- askDB
   res <-
     envIO $
-      query db "SELECT pw_hash, user_id FROM Users WHERE email = ?" (Only email)
+      query db "SELECT pw_hash, user_id FROM users WHERE email = ?" (Only email)
   case res of
     [(hash, userId)] ->
       if checkHash password hash
@@ -35,7 +35,7 @@ login email password = do
           time <- now
           execute
             db
-            "INSERT INTO ApiKeys (api_key, user_id, date_created) VALUES (?, ?, ?)"
+            "INSERT INTO api_keys (api_key, user_id, date_created) VALUES (?, ?, ?)"
             (apiKey, userId, time)
           return $ Just (userId, apiKey)
         else return Nothing
@@ -44,12 +44,12 @@ login email password = do
 logout :: APIKey -> EnvAction ()
 logout apiKey = do
   db <- askDB
-  envIO $ execute db "DELETE FROM ApiKeys WHERE api_key = ?" (Only apiKey)
+  envIO $ execute db "DELETE FROM api_keys WHERE api_key = ?" (Only apiKey)
 
 logoutEverywhere :: ID -> EnvAction ()
 logoutEverywhere userId = do
   db <- askDB
-  envIO $ execute db "DELETE FROM ApiKeys WHERE user_id = ?" (Only userId)
+  envIO $ execute db "DELETE FROM api_keys WHERE user_id = ?" (Only userId)
 
 {- this does not create login credentials, use `setPassword`! -}
 createUser :: User -> EnvAction ()
@@ -58,7 +58,7 @@ createUser User {..} = do
   envIO $
     execute
       db
-      "INSERT INTO Users (email, name, pw_hash, team_id, roles) VALUES (?, ?, '-', ?, ?)"
+      "INSERT INTO users (email, name, pw_hash, team_id, roles) VALUES (?, ?, '-', ?, ?)"
       (email, name, team, rolesToString roles)
 
 setPassword :: ID -> Text -> EnvAction ()
@@ -66,13 +66,13 @@ setPassword userId password = do
   db <- askDB
   envIO $ do
     pwhash <- newHash $ password
-    execute db "UPDATE Users SET pw_hash = ? WHERE user_id = ?" (pwhash, userId)
+    execute db "UPDATE users SET pw_hash = ? WHERE user_id = ?" (pwhash, userId)
 
 getRoles :: ID -> EnvAction (Maybe [Role])
 getRoles user = do
   db <- askDB
   res <-
-    envIO $ query db "SELECT roles FROM Users WHERE user_id = ?" (Only user)
+    envIO $ query db "SELECT roles FROM users WHERE user_id = ?" (Only user)
   case res of
     [[rolesStr]] -> return . Just $ stringToRoles rolesStr
     _ -> return Nothing
