@@ -38,6 +38,7 @@ apiServer config =
     {-
      - Announcements
      -}
+    -- TODO Fix error with jsonData when there is no announcement
     get "/announcements" $ withAuth Ann.getAll
     get "/announcement/:ann_id" $ withAuth Ann.get
     post "/announcements" $ withRoles [Operator] Ann.create
