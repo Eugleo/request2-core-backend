@@ -9,15 +9,25 @@ import Config
 import Control.Monad
 import qualified Data.Text as T
 import Environment
-import Model.User (Role (..))
-import Network.Wai.Middleware.Cors
+import Model.User (Role(..))
+import Network.Wai
 import Web.Scotty (delete, get, middleware, notFound, post, put, scotty)
-import qualified Web.Scotty as S (json, text)
+import qualified Web.Scotty as S (function, json, options, text)
+
+addCORSHeader :: Middleware
+addCORSHeader =
+  modifyResponse $
+  mapResponseHeaders
+    ([ ("Access-Control-Allow-Origin", "*")
+     , ("Access-Control-Allow-Headers", "*")
+     ] ++)
 
 apiServer :: ServerConfig -> IO ()
 apiServer config =
   scotty (listenPort config) $ do
-    when (allowCORS config) $ middleware simpleCors
+    when (allowCORS config) $ do
+      middleware addCORSHeader
+      S.options (S.function $ const $ Just []) $ S.text "CORS OK"
     {-
      - Capabilities
      -}

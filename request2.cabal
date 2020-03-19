@@ -104,7 +104,7 @@ executable request2
     transformers,
     unix-time,
     utf8-string,
-    wai-cors
+    wai
 
   -- Directories containing source files.
   hs-source-dirs:      src
