@@ -1,6 +1,7 @@
 module API.User where
 
 import qualified Database.User as DB
+import Debug.Trace
 import Environment
 import Network.HTTP.Types.Status
 import qualified UserInfo as U
