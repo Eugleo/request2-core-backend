@@ -12,7 +12,7 @@ import Database.BasicAuth
 import qualified Database.SQLite.Simple as DB
 import HTTPHelpers
 import Model.User (Role)
-import Network.HTTP.Types (Status)
+import Network.HTTP.Types
 import UserInfo
 import Web.Scotty hiding (json, jsonData, param, rescue, status, text)
 import qualified Web.Scotty as S
@@ -109,12 +109,15 @@ withAuthEnv config = withDBEnv config . authentized
 
 authentized :: EnvAction a -> EnvAction a
 authentized action = do
-  apikey <- jsonParam "api_key"
-  conn <- askDB
-  auth <- envIO $ findApiKeyUser conn apikey
-  case auth of
-    Just u -> local (\env -> env {envUser = Just u}) action
-    _ -> envForbidden
+  maybeApikey <- lift $ header "Authorization"
+  case maybeApikey of
+    Just userApiKey -> do
+      conn <- askDB
+      auth <- envIO $ findApiKeyUser conn (toStrict userApiKey)
+      case auth of
+        Just u -> local (\env -> env {envUser = Just u}) action
+        _ -> status unauthorized401 >> envFinish
+    Nothing -> status unauthorized401 >> envFinish
 
 withRolesEnv :: ServerConfig -> [Role] -> EnvAction a -> ActionM a
 withRolesEnv config rs action =

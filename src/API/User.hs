@@ -1,7 +1,6 @@
 module API.User where
 
 import qualified Database.User as DB
-import Debug.Trace
 import Environment
 import Network.HTTP.Types.Status
 import qualified UserInfo as U
@@ -12,7 +11,7 @@ login = do
   password <- jsonParam "password"
   res <- DB.login email password
   case res of
-    Just (_, apikey) -> json apikey
+    Just userInfo -> json userInfo
     Nothing -> status forbidden403
 
 logout :: EnvAction ()

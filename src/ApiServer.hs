@@ -9,7 +9,7 @@ import Config
 import Control.Monad
 import qualified Data.Text as T
 import Environment
-import Model.User (Role(..))
+import Model.User (Role (..))
 import Network.Wai
 import Web.Scotty (delete, get, middleware, notFound, post, put, scotty)
 import qualified Web.Scotty as S (function, json, options, text)
@@ -17,10 +17,12 @@ import qualified Web.Scotty as S (function, json, options, text)
 addCORSHeader :: Middleware
 addCORSHeader =
   modifyResponse $
-  mapResponseHeaders
-    ([ ("Access-Control-Allow-Origin", "*")
-     , ("Access-Control-Allow-Headers", "*")
-     ] ++)
+    mapResponseHeaders
+      ( [ ("Access-Control-Allow-Origin", "*"),
+          ("Access-Control-Allow-Headers", "*")
+        ]
+          ++
+      )
 
 apiServer :: ServerConfig -> IO ()
 apiServer config =
@@ -51,9 +53,9 @@ apiServer config =
     -- TODO Fix error with jsonData when there is no announcement
     get "/announcements" $ withAuth Ann.getAll
     get "/announcement/:ann_id" $ withAuth Ann.get
-    post "/announcements" $ withRoles [Operator] Ann.create
-    put "/announcement/:ann_id" $ withRoles [Operator] Ann.edit
-    delete "/announcement/:ann_id" $ withRoles [Operator] Ann.deactivate
+    post "/announcements" $ withRoles [Admin] Ann.create
+    put "/announcement/:ann_id" $ withRoles [Admin] Ann.edit
+    delete "/announcement/:ann_id" $ withRoles [Admin] Ann.deactivate
     {-
      - Standard 404 -- keep this last
      -}

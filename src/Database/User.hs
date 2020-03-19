@@ -3,6 +3,7 @@
 module Database.User where
 
 import Crypto
+import Data.Maybe (fromMaybe)
 import Data.Text
 import Database.SQLite.Simple
 import DateTime
@@ -21,7 +22,7 @@ checkPassword user password = do
       [(Only hash)] -> checkHash password hash
       _ -> False
 
-login :: Text -> Text -> EnvAction (Maybe (ID, APIKey))
+login :: Text -> Text -> EnvAction (Maybe UserInfo)
 login email password = do
   db <- askDB
   res <-
@@ -30,16 +31,25 @@ login email password = do
   case res of
     [(hash, userId)] ->
       if checkHash password hash
-        then envIO $ do
-          apiKey <- newApiKey
-          time <- now
-          execute
-            db
-            "INSERT INTO api_keys (api_key, user_id, created) VALUES (?, ?, ?)"
-            (apiKey, userId, time)
-          return $ Just (userId, apiKey)
+        then do
+          apiKey <- addApiKey userId
+          roles <- getRoles userId
+          -- TODO Log error on roles == Nothing
+          return . Just $ UserInfo userId apiKey (fromMaybe [] roles)
         else return Nothing
     _ -> return Nothing
+
+addApiKey :: ID -> EnvAction APIKey
+addApiKey userId = do
+  db <- askDB
+  envIO $ do
+    apiKey <- newApiKey
+    time <- now
+    execute
+      db
+      "INSERT INTO api_keys (api_key, user_id, created) VALUES (?, ?, ?)"
+      (apiKey, userId, time)
+    return apiKey
 
 logout :: APIKey -> EnvAction ()
 logout apiKey = do
