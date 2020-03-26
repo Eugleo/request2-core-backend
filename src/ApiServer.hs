@@ -45,7 +45,7 @@ apiServer config =
     {-
      - User information
      -}
-    get "/userinfo" $ withAuth User.getUserInfo
+    get "/me" $ withAuth User.getDetails
     -- TODO put "/userinfo" $ withAuth undefined
     {-
      - Announcements

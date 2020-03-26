@@ -7,7 +7,7 @@ module Model.User where
 import Data.Aeson
 import Data.Aeson.Types (prependFailure)
 import Data.Maybe (mapMaybe)
-import Data.Text (pack, unpack)
+import Data.Text (Text, pack, unpack)
 import Database.SQLite.Simple
 import Database.SQLite.Simple.FromField
 import Database.SQLite.Simple.ToField
@@ -35,10 +35,11 @@ instance FromField [Role] where
 instance ToField [Role] where
   toField = toField . unwords . map show
 
+-- TODO Add password hash
 data User
   = User
-      { email :: String,
-        name :: String,
+      { email :: Text,
+        name :: Text,
         roles :: [Role],
         team :: ID,
         created :: DateTime

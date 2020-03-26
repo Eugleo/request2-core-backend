@@ -6,11 +6,13 @@ import Crypto
 import Data.Maybe (fromMaybe)
 import Data.Text
 import Database.SQLite.Simple
+import qualified Database.Team as TeamDB
 import DateTime
 import Environment
 import Model.User
+import Model.UserDetails (UserDetails (..))
 import UserInfo
-import WithID (ID)
+import WithID (ID, WithID (..))
 
 checkPassword :: ID -> Text -> EnvAction Bool
 checkPassword user password = do
@@ -62,14 +64,26 @@ logoutEverywhere userId = do
   envIO $ execute db "DELETE FROM api_keys WHERE user_id = ?" (Only userId)
 
 {- this does not create login credentials, use `setPassword`! -}
-createUser :: User -> EnvAction ()
-createUser user = do
+create :: User -> EnvAction ()
+create user = do
   db <- askDB
   envIO $
     execute
       db
       "INSERT INTO users (email, name, pw_hash, team_id, roles, created) VALUES (?, ?, ?, ?, ?, ?)"
       user
+
+getDetails :: ID -> EnvAction (Maybe UserDetails)
+getDetails userId = do
+  db <- askDB
+  res <- envIO $ query db "SELECT name, team_id, roles, created FROM users WHERE user_id = ?" (Only userId)
+  case res of
+    [(name, teamId, roles, created)] -> do
+      maybeTeam <- TeamDB.get teamId
+      case maybeTeam of
+        Just (WithID _ team) -> return . Just $ UserDetails name roles team created
+        _ -> return Nothing
+    _ -> return Nothing
 
 setPassword :: ID -> Text -> EnvAction ()
 setPassword userId password = do

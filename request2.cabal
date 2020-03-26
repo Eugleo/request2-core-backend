@@ -78,7 +78,7 @@ executable request2
     UserInfo,
     WithID
 
-  extensions:
+  default-extensions:
     OverloadedStrings
 
   -- Other library packages from which modules are imported.
