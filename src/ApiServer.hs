@@ -3,6 +3,7 @@
 module ApiServer where
 
 import qualified API.Announcement as Ann
+import qualified API.Team as Team
 import qualified API.User as User
 import Capability
 import Config
@@ -50,12 +51,19 @@ apiServer config =
     {-
      - Announcements
      -}
-    -- TODO Fix error with jsonData when there is no announcement
     get "/announcements" $ withAuth Ann.getAll
     get "/announcement/:ann_id" $ withAuth Ann.get
     post "/announcements" $ withRoles [Admin] Ann.create
     put "/announcement/:ann_id" $ withRoles [Admin] Ann.edit
     delete "/announcement/:ann_id" $ withRoles [Admin] Ann.deactivate
+    {-
+     - Teams
+     -}
+    get "/teams" $ withAuth Team.getMany
+    get "/teams/:team_id" $ withAuth Team.get
+    post "/teams" $ withRoles [Admin] Team.add
+    put "/teams/:ann_id" $ withRoles [Admin] Team.edit
+    delete "/teams/:ann_id" $ withRoles [Admin] Team.deactivate
     {-
      - Standard 404 -- keep this last
      -}

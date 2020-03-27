@@ -1,7 +1,6 @@
 {-# LANGUAGE OverloadedStrings #-}
 
 -- TODO Add missing fields to every table
--- TODO Check if dates are integers or real
 module Database.Schema
   ( createDatabase,
   )
