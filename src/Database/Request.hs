@@ -14,19 +14,21 @@ import WithID
 add :: Request -> EnvAction (WithID Request)
 add req = do
   db <- askDB
-  envIO $
-    execute
-      db
-      "INSERT INTO requests (user_id, team_id, status, type, created) \
-      \ VALUES (?, ?, ?, ?, ?)"
-      req
-  rowID <- envIO $ lastInsertRowId db
-  return $ WithID (fromIntegral rowID) req
+  rowID <-
+    envIO $ do
+      execute
+        db
+        "INSERT INTO requests (user_id, team_id, status, type, created) \
+        \ VALUES (?, ?, ?, ?, ?)"
+        req
+      fromIntegral <$> lastInsertRowId db
+  return $ WithID rowID req
 
 get :: ID -> EnvAction (Maybe (WithID Request))
 get reqID = do
   db <- askDB
-  res <- envIO $ query db "SELECT * FROM requests WHERE request_id = ?" (Only reqID)
+  res <-
+    envIO $ query db "SELECT * FROM requests WHERE request_id = ?" (Only reqID)
   case res of
     [req] -> return . Just $ req
     _ -> return Nothing
@@ -37,24 +39,27 @@ getAll = askDB >>= \db -> envIO $ query_ db "SELECT * FROM requests"
 getWithproperties :: ID -> EnvAction (Maybe (WithID Request, [WithID Property]))
 getWithproperties reqID = do
   db <- askDB
-  res <- envIO $ query db "SELECT * FROM requests WHERE request_id = ?" (Only reqID)
+  res <-
+    envIO $ query db "SELECT * FROM requests WHERE request_id = ?" (Only reqID)
   case res of
     [req] -> do
-      props <- envIO $ query db "SELECT * FROM properties WHERE request_id = ?" (Only reqID)
+      props <-
+        envIO $
+        query db "SELECT * FROM properties WHERE request_id = ?" (Only reqID)
       return $ Just (req, props)
     _ -> return Nothing
 
 addProperty :: ID -> Property -> EnvAction (WithID Property)
 addProperty reqID prop@P.Property {..} = do
   db <- askDB
-  envIO $
+  rowID <- envIO $ do
     execute
       db
       "INSERT INTO properties (request_id, user_id, type, data, created, enabled) \
       \ VALUES (?, ?, ?, ?, ?, ?)"
       (reqID, authorID, propertyType, propertyData, dateAdded, enabled)
-  rowID <- envIO $ lastInsertRowId db
-  return $ WithID (fromIntegral rowID) prop
+    fromIntegral <$> lastInsertRowId db
+  return $ WithID rowID prop
 
 updateRequest :: (WithID Request, [Property]) -> EnvAction ()
 updateRequest (WithID reqID R.Request {..}, props) = do

@@ -37,7 +37,7 @@ apiServer config =
      - Users
      -}
     post "/register-init" $ withDB User.mailRegToken
-    --post "/register-verify/:token" withDB undefined
+    post "/register" $ withDB User.register
     post "/login" $ withDB User.login
     post "/logout" $ withAuth User.logout
     post "/password" $ withAuth User.changePassword

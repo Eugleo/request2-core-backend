@@ -101,6 +101,7 @@ executable request2
     http-types,
     ini,
     lens,
+    lens-aeson,
     raw-strings-qq,
     scientific,
     scotty,

@@ -43,4 +43,4 @@ regToken mail config
     bmail = bs mail
     padding = bs $ _regTokenSecret config
     token =
-      pack . showDigest . sha512 $ padding <> "\0" <> bs mail <> "\0" <> padding
+      pack . showDigest . sha512 $ padding <> "\0" <> bmail <> "\0" <> padding

@@ -4,7 +4,6 @@ module API.Announcement where
 
 import qualified Database.Announcement as DB
 import Environment
-import Network.HTTP.Types.Status
 import WithID
 
 create :: EnvAction ()
@@ -12,7 +11,7 @@ create = do
   ann <- jsonData
   new <- DB.add ann
   json new
-  status created201
+  envCreated
 
 -- TODO Vyměnit param
 -- TODO Only authors + admins should be able to edit
@@ -38,7 +37,7 @@ get = do
   ann <- DB.get annID
   case ann of
     Just a -> json a
-    Nothing -> status notFound404
+    Nothing -> envNotFound
 
 getAll :: EnvAction ()
 getAll = DB.getAll >>= json
