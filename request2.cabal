@@ -15,7 +15,7 @@ name:                request2
 version:             0.1.0.0
 
 -- A short (one-line) description of the package.
-synopsis:            reQuest2 the mass cytometry request tracker
+synopsis:            reQuest2 the mass spectrometry request tracker
 
 -- A longer description of the package.
 -- description:
@@ -58,17 +58,17 @@ executable request2
 
   -- Modules included in this executable, other than Main.
   other-modules:
-    ApiServer,
     API.Announcement,
     API.Team,
     API.User,
+    ApiServer,
     Capability,
     Config,
     Crypto,
     Database.Announcement,
     Database.BasicAuth,
-    Database.Schema,
     Database.Request,
+    Database.Schema,
     Database.Team
     Database.User,
     DateTime,
@@ -94,12 +94,14 @@ executable request2
     containers >= 0.5.9,
     crypt-sha512,
     directory,
+    email-validate,
     entropy,
     exceptions,
     hslogger,
     http-types,
     ini,
     lens,
+    lens-aeson,
     raw-strings-qq,
     scientific,
     scotty,

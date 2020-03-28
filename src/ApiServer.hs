@@ -33,8 +33,8 @@ addCORSHeader =
 
 apiServer :: ServerConfig -> IO ()
 apiServer config =
-  scotty (listenPort config) $ do
-    when (allowCORS config) $ do
+  scotty (_listenPort config) $ do
+    when (_allowCORS config) $ do
       S.middleware addCORSHeader
       S.options (S.function $ const $ Just []) $ S.text "CORS OK"
     {-
@@ -44,8 +44,8 @@ apiServer config =
     {-
      - Users
      -}
-    --post "/register" withDB undefined
-    --post "/register-verify/:token" withDB undefined
+    post "/register-init" $ withDB User.mailRegToken
+    post "/register" $ withDB User.register
     post "/login" $ withDB User.login
     post "/logout" $ withAuth User.logout
     post "/password" $ withAuth User.changePassword

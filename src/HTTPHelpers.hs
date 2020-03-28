@@ -5,6 +5,9 @@ module HTTPHelpers where
 import Network.HTTP.Types.Status
 import Web.Scotty
 
+finishCreated :: ActionM a
+finishCreated = status created201 >> finish
+
 finishForbidden :: ActionM a
 finishForbidden = status forbidden403 >> finish
 

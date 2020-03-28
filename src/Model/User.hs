@@ -53,6 +53,3 @@ instance ToJSON User where
 
 instance FromRow (WithID User) where
   fromRow = WithID <$> field <*> (User <$> field <*> field <*> field <*> field <*> field)
-
-instance ToRow User where
-  toRow User {..} = toRow (email, name, roles, team, created)

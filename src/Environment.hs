@@ -1,11 +1,14 @@
+{-# LANGUAGE RankNTypes #-}
+
 module Environment where
 
 import Config
 import Control.Monad (unless)
 import qualified Control.Monad.Trans.Class as TR
 import Control.Monad.Trans.Reader
-import Data.Aeson (FromJSON, ToJSON)
-import Data.Map ((!?))
+import Data.Aeson (FromJSON, ToJSON, Value)
+import Control.Lens ((^?), Traversal')
+import Data.Aeson.Lens (key, _String, _Integral)
 import Data.Text (Text)
 import Data.Text.Lazy (fromStrict, toStrict)
 import Database.BasicAuth
@@ -15,21 +18,13 @@ import Model.User (Role)
 import Network.HTTP.Types
 import UserInfo
 import Web.Scotty hiding (json, jsonData, param, rescue, status, text)
-import qualified Web.Scotty as S
-  ( json,
-    jsonData,
-    param,
-    rescue,
-    status,
-    text,
-  )
+import qualified Web.Scotty as S (json, jsonData, param, rescue, status, text)
 
-data Env
-  = Env
-      { envConfig :: ServerConfig,
-        envDBConn :: Maybe DB.Connection,
-        envUser :: Maybe UserInfo
-      }
+data Env = Env
+  { envConfig :: ServerConfig
+  , envDBConn :: Maybe DB.Connection
+  , envUser :: Maybe UserInfo
+  }
 
 type EnvAction a = ReaderT Env ActionM a
 
@@ -62,16 +57,22 @@ rescue act err = do
 text :: Text -> EnvAction ()
 text = lift . S.text . fromStrict
 
-jsonParam :: Text -> EnvAction Text
-jsonParam s = do
-  js <- jsonData `rescue` (catch . (<>) "Query JSON parsing error: ")
-  case js !? s of
-    Nothing -> catch ("Missing string parameter: " <> s)
+jsonParam :: Text -> Traversal' Value a -> EnvAction a
+jsonParam s l = do
+  js <- jsonData `rescue` (catch . (<>) "Query JSON parsing error: ") :: EnvAction Value
+  case js ^? (key s . l) of
+    Nothing -> catch ("Missing or malformed parameter: " <> s)
     Just d -> return d
   where
     catch msg = do
       text msg
       envBadRequest
+
+jsonParamText :: Text -> EnvAction Text
+jsonParamText a = jsonParam a _String
+
+jsonParamInt :: Integral a => Text -> EnvAction a
+jsonParamInt a = jsonParam a _Integral
 
 {- sadly, ActionM doesn't have MonadMask and cannot be easily bracketed. We
  - therefore use the following strategy:
@@ -99,7 +100,7 @@ withEnv config ea =
 withDBEnv :: ServerConfig -> EnvAction a -> ActionM a
 withDBEnv config ea = do
   conn <-
-    liftAndCatchIO (DB.open $ dbPath config) `S.rescue` \msg -> do
+    liftAndCatchIO (DB.open $ dbPathStr config) `S.rescue` \msg -> do
       S.text $ "Database connection failure: " <> msg
       finishServerError
   runReaderT (actionThenCloseDB ea) $ Env config (Just conn) Nothing
@@ -145,6 +146,9 @@ askConfig = envConfig <$> ask
 
 envFinish :: EnvAction a
 envFinish = envCloseDB >> lift finish
+
+envCreated :: EnvAction a
+envCreated = envCloseDB >> lift finishCreated
 
 envForbidden :: EnvAction a
 envForbidden = envCloseDB >> lift finishForbidden

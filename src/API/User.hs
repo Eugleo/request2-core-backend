@@ -1,18 +1,23 @@
 module API.User where
 
+import Control.Monad
+import Crypto (newHash, regToken)
+import qualified Data.Text.IO as T
 import qualified Database.User as DB
+import qualified Database.User (create)
+import DateTime (now)
 import Environment
-import Network.HTTP.Types.Status
+import Model.User
 import qualified UserInfo as U
 
 login :: EnvAction ()
 login = do
-  email <- jsonParam "email"
-  password <- jsonParam "password"
-  res <- DB.login email password
+  eml <- jsonParamText "email"
+  password <- jsonParamText "password"
+  res <- DB.login eml password
   case res of
     Just userInfo -> json userInfo
-    Nothing -> status forbidden403
+    Nothing -> envForbidden
 
 logout :: EnvAction ()
 logout = askUser >>= DB.logout . U.apiKey
@@ -20,12 +25,12 @@ logout = askUser >>= DB.logout . U.apiKey
 changePassword :: EnvAction ()
 changePassword = do
   user <- askUser
-  oldpass <- jsonParam "old"
-  newpass <- jsonParam "new"
+  oldpass <- jsonParamText "old"
+  newpass <- jsonParamText "new"
   match <- DB.checkPassword (U.userID user) oldpass
   if match
     then DB.setPassword (U.userID user) newpass
-    else status forbidden403
+    else envForbidden
 
 getInfo :: EnvAction ()
 getInfo = do
@@ -38,4 +43,32 @@ getDetails = do
   res <- DB.getDetails (U.userID user)
   case res of
     Just details -> json details
-    Nothing -> status forbidden403
+    Nothing -> envForbidden
+
+mailRegToken :: EnvAction ()
+mailRegToken = do
+  eml <- jsonParamText "email"
+  tok' <- regToken eml <$> askConfig
+  case tok' of
+    Just tok -> do
+      envIO . T.putStrLn $ "Sending e-mail to " <> eml <> " with token " <> tok
+      envCreated
+    _ -> envBadRequest
+
+{- TODO: check that the team actually exists -}
+register :: EnvAction ()
+register = do
+  eml <- jsonParamText "email"
+  tok <- jsonParamText "token"
+  tokCheck <- regToken eml <$> askConfig
+  when (Just tok /= tokCheck) $ envForbidden
+  password <- jsonParamText "password"
+  u <-
+    User eml <$> jsonParamText "name" <*> pure [Client] <*> jsonParamInt "team" <*>
+    envIO now
+  newuser <-
+    (envIO (newHash password) >>= Database.User.create u) `rescue` \_ -> do
+      text "Failed to create the new user entry"
+      envServerError
+  json newuser
+  envCreated

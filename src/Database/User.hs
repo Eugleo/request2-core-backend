@@ -10,9 +10,9 @@ import qualified Database.Team as TeamDB
 import DateTime
 import Environment
 import Model.User
-import Model.UserDetails (UserDetails (..))
+import Model.UserDetails (UserDetails(..))
 import UserInfo
-import WithID (ID, WithID (..))
+import WithID (ID, WithID(..))
 
 checkPassword :: ID -> Text -> EnvAction Bool
 checkPassword user password = do
@@ -29,7 +29,7 @@ login email password = do
   db <- askDB
   res <-
     envIO $
-      query db "SELECT pw_hash, user_id FROM users WHERE email = ?" (Only email)
+    query db "SELECT pw_hash, user_id FROM users WHERE email = ?" (Only email)
   case res of
     [(hash, userId)] ->
       if checkHash password hash
@@ -64,24 +64,32 @@ logoutEverywhere userId = do
   envIO $ execute db "DELETE FROM api_keys WHERE user_id = ?" (Only userId)
 
 {- this does not create login credentials, use `setPassword`! -}
-create :: User -> EnvAction ()
-create user = do
+create :: User -> Text -> EnvAction (WithID User)
+create u@(User {..}) pwHash = do
   db <- askDB
-  envIO $
+  userID <- envIO $ do
     execute
       db
       "INSERT INTO users (email, name, pw_hash, team_id, roles, created) VALUES (?, ?, ?, ?, ?, ?)"
-      user
+      (email, name, pwHash, team, roles, created)
+    fromIntegral <$> lastInsertRowId db
+  return $ WithID userID u
 
 getDetails :: ID -> EnvAction (Maybe UserDetails)
 getDetails userId = do
   db <- askDB
-  res <- envIO $ query db "SELECT name, team_id, roles, created FROM users WHERE user_id = ?" (Only userId)
+  res <-
+    envIO $
+    query
+      db
+      "SELECT name, team_id, roles, created FROM users WHERE user_id = ?"
+      (Only userId)
   case res of
     [(name, teamId, roles, created)] -> do
       maybeTeam <- TeamDB.get teamId
       case maybeTeam of
-        Just (WithID _ team) -> return . Just $ UserDetails name roles team created
+        Just (WithID _ team) ->
+          return . Just $ UserDetails name roles team created
         _ -> return Nothing
     _ -> return Nothing
 

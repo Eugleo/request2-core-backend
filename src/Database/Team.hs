@@ -5,19 +5,20 @@ module Database.Team where
 import Database.SQLite.Simple
 import Environment
 import Model.Team
-import WithID (ID, WithID (..))
+import WithID (ID, WithID(..))
 
 add :: Team -> EnvAction (WithID Team)
 add team = do
   db <- askDB
-  envIO $
-    execute
-      db
-      "INSERT INTO teams (name, active) \
-      \ VALUES (?, ?)"
-      team
-  rowID <- envIO $ lastInsertRowId db
-  return $ WithID (fromIntegral rowID) team
+  rowID <-
+    envIO $ do
+      execute
+        db
+        "INSERT INTO teams (name, active) \
+        \ VALUES (?, ?)"
+        team
+      fromIntegral <$> lastInsertRowId db
+  return $ WithID rowID team
 
 deactivate :: ID -> EnvAction ()
 deactivate teamID = do

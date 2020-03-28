@@ -3,7 +3,6 @@ module API.Team where
 import Data.Aeson ((.=), object, toJSON)
 import qualified Database.Team as DB
 import Environment
-import Network.HTTP.Types.Status
 import WithID (WithID (..))
 
 add :: EnvAction ()
@@ -11,7 +10,7 @@ add = do
   team <- jsonData
   new <- DB.add team
   json new
-  status created201
+  envCreated
 
 edit :: EnvAction ()
 edit = do
@@ -30,7 +29,7 @@ get = do
   ann <- DB.get annID
   case ann of
     Just a -> json a
-    Nothing -> status notFound404
+    Nothing -> envNotFound
 
 getMany :: EnvAction ()
 getMany = do
