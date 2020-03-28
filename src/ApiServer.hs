@@ -62,8 +62,8 @@ apiServer config =
     get "/teams" $ withAuth Team.getMany
     get "/teams/:team_id" $ withAuth Team.get
     post "/teams" $ withRoles [Admin] Team.add
-    put "/teams/:ann_id" $ withRoles [Admin] Team.edit
-    delete "/teams/:ann_id" $ withRoles [Admin] Team.deactivate
+    put "/teams/:team_id" $ withRoles [Admin] Team.edit
+    delete "/teams/:team_id" $ withRoles [Admin] Team.deactivate
     {-
      - Standard 404 -- keep this last
      -}

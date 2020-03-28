@@ -26,7 +26,7 @@ deactivate = do
 
 get :: EnvAction ()
 get = do
-  annID <- param "ann_id"
+  annID <- param "team_id"
   ann <- DB.get annID
   case ann of
     Just a -> json a
