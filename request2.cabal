@@ -15,7 +15,7 @@ name:                request2
 version:             0.1.0.0
 
 -- A short (one-line) description of the package.
-synopsis:            reQuest2 the mass cytometry request tracker
+synopsis:            reQuest2 the mass spectrometry request tracker
 
 -- A longer description of the package.
 -- description:
