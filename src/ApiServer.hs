@@ -12,8 +12,15 @@ import qualified Data.Text as T
 import Environment
 import Model.User (Role(..))
 import Network.Wai
-import Web.Scotty (delete, get, middleware, notFound, post, put, scotty)
-import qualified Web.Scotty as S (function, json, options, text)
+import Web.Scotty (delete, get, post, put, scotty)
+import qualified Web.Scotty as S
+  ( function
+  , json
+  , middleware
+  , notFound
+  , options
+  , text
+  )
 
 addCORSHeader :: Middleware
 addCORSHeader =
@@ -21,13 +28,14 @@ addCORSHeader =
   (++)
     [ ("Access-Control-Allow-Origin", "*")
     , ("Access-Control-Allow-Headers", "*")
+    , ("Access-Control-Allow-Methods", "*")
     ]
 
 apiServer :: ServerConfig -> IO ()
 apiServer config =
   scotty (_listenPort config) $ do
     when (_allowCORS config) $ do
-      middleware addCORSHeader
+      S.middleware addCORSHeader
       S.options (S.function $ const $ Just []) $ S.text "CORS OK"
     {-
      - Capabilities
@@ -65,7 +73,7 @@ apiServer config =
     {-
      - Standard 404 -- keep this last
      -}
-    notFound $ S.text "Not found"
+    S.notFound $ S.text "Not found"
   where
     withDB = withDBEnv config
     withAuth = withAuthEnv config
