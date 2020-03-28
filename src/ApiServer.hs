@@ -10,20 +10,18 @@ import Config
 import Control.Monad
 import qualified Data.Text as T
 import Environment
-import Model.User (Role (..))
+import Model.User (Role(..))
 import Network.Wai
 import Web.Scotty (delete, get, middleware, notFound, post, put, scotty)
 import qualified Web.Scotty as S (function, json, options, text)
 
 addCORSHeader :: Middleware
 addCORSHeader =
-  modifyResponse $
-    mapResponseHeaders
-      ( [ ("Access-Control-Allow-Origin", "*"),
-          ("Access-Control-Allow-Headers", "*")
-        ]
-          ++
-      )
+  modifyResponse . mapResponseHeaders $
+  (++)
+    [ ("Access-Control-Allow-Origin", "*")
+    , ("Access-Control-Allow-Headers", "*")
+    ]
 
 apiServer :: ServerConfig -> IO ()
 apiServer config =
@@ -38,7 +36,7 @@ apiServer config =
     {-
      - Users
      -}
-    --post "/register" withDB undefined
+    post "/register-init" $ withDB User.mailRegToken
     --post "/register-verify/:token" withDB undefined
     post "/login" $ withDB User.login
     post "/logout" $ withAuth User.logout

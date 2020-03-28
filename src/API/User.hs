@@ -1,8 +1,9 @@
 module API.User where
 
+import Crypto (regToken)
+import qualified Data.Text.IO as T
 import qualified Database.User as DB
 import Environment
-import Network.HTTP.Types.Status
 import qualified UserInfo as U
 
 login :: EnvAction ()
@@ -12,7 +13,7 @@ login = do
   res <- DB.login email password
   case res of
     Just userInfo -> json userInfo
-    Nothing -> status forbidden403
+    Nothing -> envForbidden
 
 logout :: EnvAction ()
 logout = askUser >>= DB.logout . U.apiKey
@@ -25,7 +26,7 @@ changePassword = do
   match <- DB.checkPassword (U.userID user) oldpass
   if match
     then DB.setPassword (U.userID user) newpass
-    else status forbidden403
+    else envForbidden
 
 getInfo :: EnvAction ()
 getInfo = do
@@ -38,4 +39,15 @@ getDetails = do
   res <- DB.getDetails (U.userID user)
   case res of
     Just details -> json details
-    Nothing -> status forbidden403
+    Nothing -> envForbidden
+
+mailRegToken :: EnvAction ()
+mailRegToken = do
+  eml <- jsonParam "email"
+  tok' <- regToken eml <$> askConfig
+  case tok' of
+    Just tok -> do
+      envIO . T.putStrLn $
+        "Would send e-mail to " <> eml <> " with token " <> tok
+      json $ ("ok" :: String)
+    _ -> envBadRequest

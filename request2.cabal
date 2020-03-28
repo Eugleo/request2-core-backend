@@ -94,6 +94,7 @@ executable request2
     containers >= 0.5.9,
     crypt-sha512,
     directory,
+    email-validate,
     entropy,
     exceptions,
     hslogger,

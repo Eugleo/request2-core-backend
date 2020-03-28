@@ -1,11 +1,11 @@
 {-# LANGUAGE TemplateHaskell #-}
-{-# LANGUAGE TypeApplications #-}
+
 module Config where
 
+import Control.Lens
 import Data.Ini
 import Data.Text
 import System.Environment
-import Control.Lens
 
 data ServerConfig = ServerConfig
   { _dataDir :: Text
@@ -27,7 +27,10 @@ defaultConfig =
     , _regTokenSecret = "31337" --TODO generate a random token for a single run
     }
 
+dataDirStr :: ServerConfig -> String
 dataDirStr = unpack . _dataDir
+
+dbPathStr :: ServerConfig -> String
 dbPathStr = unpack . _dbPath
 
 defaultConfigPath :: String
@@ -46,13 +49,12 @@ updateFromIni ::
   -> Text
   -> Text
   -> ASetter' ServerConfig Text
-  -> ServerConfig
-  -> ServerConfig
+  -> (ServerConfig -> ServerConfig)
 updateFromIni ini sec name l =
   either (const id) (set l) $ lookupValue sec name ini
 
 asText :: (Show a, Read a) => Iso' a Text
-asText = iso (pack.show) (read.unpack) --not really an iso but whatever
+asText = iso (pack . show) (read . unpack) --not really an iso but whatever
 
 readConfig :: String -> IO ServerConfig
 readConfig path = do
