@@ -46,5 +46,5 @@ edit (WithID teamID Team {..}) = do
   envIO $
     execute
       db
-      "UPDATE teams SET name = ?, active = ? WHERE announcement_id = ?"
+      "UPDATE teams SET name = ?, active = ? WHERE team_id = ?"
       (name, active, teamID)

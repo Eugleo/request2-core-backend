@@ -123,7 +123,7 @@ withRolesEnv :: ServerConfig -> [Role] -> EnvAction a -> ActionM a
 withRolesEnv config rs action =
   withAuthEnv config $ do
     userRoles <- roles <$> askUser
-    unless (all (`elem` rs) userRoles) envForbidden
+    unless (all (`elem` userRoles) rs) envForbidden
     action
 
 askUser :: EnvAction UserInfo

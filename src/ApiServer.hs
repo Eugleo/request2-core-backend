@@ -33,8 +33,8 @@ addCORSHeader =
 
 apiServer :: ServerConfig -> IO ()
 apiServer config =
-  scotty (_listenPort config) $ do
-    when (_allowCORS config) $ do
+  scotty (listenPort config) $ do
+    when (allowCORS config) $ do
       S.middleware addCORSHeader
       S.options (S.function $ const $ Just []) $ S.text "CORS OK"
     {-
@@ -65,8 +65,8 @@ apiServer config =
     {-
      - Teams
      -}
-    get "/teams" $ withAuth Team.getMany
-    get "/teams/:team_id" $ withAuth Team.get
+    get "/teams" $ withRoles [Admin] Team.getMany
+    get "/teams/:team_id" $ withRoles [Admin] Team.get
     post "/teams" $ withRoles [Admin] Team.add
     put "/teams/:team_id" $ withRoles [Admin] Team.edit
     delete "/teams/:team_id" $ withRoles [Admin] Team.deactivate
