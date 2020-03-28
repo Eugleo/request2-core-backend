@@ -11,7 +11,7 @@ import Database.SQLite.Simple
 
 createDatabase :: ServerConfig -> IO ()
 createDatabase cfg =
-  withConnection (dbPath cfg) $ \conn -> do
+  withConnection (dbPathStr cfg) $ \conn -> do
     let e = execute_ conn
     e
       "CREATE TABLE IF NOT EXISTS teams ( \

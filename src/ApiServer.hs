@@ -27,8 +27,8 @@ addCORSHeader =
 
 apiServer :: ServerConfig -> IO ()
 apiServer config =
-  scotty (listenPort config) $ do
-    when (allowCORS config) $ do
+  scotty (_listenPort config) $ do
+    when (_allowCORS config) $ do
       middleware addCORSHeader
       S.options (S.function $ const $ Just []) $ S.text "CORS OK"
     {-

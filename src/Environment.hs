@@ -99,7 +99,7 @@ withEnv config ea =
 withDBEnv :: ServerConfig -> EnvAction a -> ActionM a
 withDBEnv config ea = do
   conn <-
-    liftAndCatchIO (DB.open $ dbPath config) `S.rescue` \msg -> do
+    liftAndCatchIO (DB.open $ dbPathStr config) `S.rescue` \msg -> do
       S.text $ "Database connection failure: " <> msg
       finishServerError
   runReaderT (actionThenCloseDB ea) $ Env config (Just conn) Nothing
