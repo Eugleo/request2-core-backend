@@ -43,7 +43,7 @@ getDetails = do
   res <- DB.getDetails (U.userID user)
   case res of
     Just details -> json details
-    Nothing -> envForbidden
+    Nothing -> envServerError -- logged users should have retrievable info
 
 mailRegToken :: EnvAction ()
 mailRegToken = do
@@ -51,7 +51,11 @@ mailRegToken = do
   tok' <- regToken eml <$> askConfig
   case tok' of
     Just tok -> do
-      envIO . T.putStrLn $ "Sending e-mail to " <> eml <> " with token " <> tok
+      envIO
+        (T.putStrLn $
+         "Sending e-mail to with activation link hash: #/register/" <> eml <>
+         "/" <>
+         tok)
       envCreated
     _ -> envBadRequest
 
