@@ -27,13 +27,12 @@ get :: EnvAction ()
 get = do
   annID <- param "team_id"
   ann <- DB.get annID
-  case ann of
-    Just a -> json a
-    Nothing -> envNotFound
+  maybe envNotFound json ann
 
 getMany :: EnvAction ()
 getMany = do
   limit <- param "limit"
   offset <- param "offset"
   teams <- DB.getMany limit offset
-  json (object ["teams" .= toJSON teams])
+  total <- DB.count
+  json (object ["teams" .= toJSON teams, "total" .= total])

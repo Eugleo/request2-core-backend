@@ -2,10 +2,12 @@
 
 module Database.Team where
 
+-- TODO Support search & filter
+
 import Database.SQLite.Simple
 import Environment
 import Model.Team
-import WithID (ID, WithID(..))
+import WithID (ID, WithID (..))
 
 add :: Team -> EnvAction (WithID Team)
 add team = do
@@ -49,3 +51,9 @@ edit (WithID teamID Team {..}) = do
       db
       "UPDATE teams SET name = ?, active = ? WHERE team_id = ?"
       (name, active, teamID)
+
+count :: EnvAction Integer
+count = do
+  db <- askDB
+  [Only len] <- envIO $ query_ db "SELECT COUNT(team_id) FROM teams"
+  return len
