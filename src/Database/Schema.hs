@@ -16,8 +16,8 @@ createDatabase cfg =
     e
       "CREATE TABLE IF NOT EXISTS teams ( \
       \ team_id INTEGER PRIMARY KEY, \
-      \ name TEXT UNIQUE, \
-      \ active INTEGER)"
+      \ name TEXT UNIQUE NOT NULL, \
+      \ active INTEGER NOT NULL)"
     -- search for active teams by name
     e
       "CREATE INDEX IF NOT EXISTS \
@@ -25,12 +25,12 @@ createDatabase cfg =
     e
       "CREATE TABLE IF NOT EXISTS users ( \
       \ user_id INTEGER PRIMARY KEY, \
-      \ email TEXT UNIQUE, \
-      \ name TEXT, \
-      \ pw_hash TEXT, \
-      \ team_id INTEGER REFERENCES teams (team_id), \
-      \ roles TEXT, \
-      \ created INTEGER)"
+      \ email TEXT UNIQUE NOT NULL, \
+      \ name TEXT NOT NULL, \
+      \ pw_hash TEXT NOT NULL, \
+      \ team_id INTEGER NOT NULL REFERENCES teams (team_id), \
+      \ roles TEXT NOT NULL, \
+      \ created INTEGER NOT NULL)"
     -- lsearch for user login
     e
       "CREATE INDEX IF NOT EXISTS \
@@ -42,11 +42,11 @@ createDatabase cfg =
     e
       "CREATE TABLE IF NOT EXISTS requests ( \
       \ request_id INTEGER PRIMARY KEY, \
-      \ user_id INTEGER REFERENCES users (user_id), \
-      \ team_id INTEGER REFERENCES teams (team_id), \
-      \ status TEXT, \
-      \ type TEXT, \
-      \ created INTEGER)"
+      \ user_id INTEGER NOT NULL REFERENCES users (user_id), \
+      \ team_id INTEGER NOT NULL REFERENCES teams (team_id), \
+      \ status TEXT NOT NULL, \
+      \ type TEXT NOT NULL, \
+      \ created INTEGER NOT NULL)"
     -- listing requests by properties
     e
       "CREATE INDEX IF NOT EXISTS \
@@ -60,11 +60,11 @@ createDatabase cfg =
     e
       "CREATE TABLE IF NOT EXISTS announcements ( \
       \ announcement_id INTEGER PRIMARY KEY, \
-      \ title TEXT, \
-      \ body TEXT, \
-      \ user_id INTEGER REFERENCES users (user_id), \
-      \ created INTEGER, \
-      \ active INTEGER)"
+      \ title TEXT NOT NULL, \
+      \ body TEXT NOT NULL, \
+      \ user_id INTEGER NOT NULL REFERENCES users (user_id), \
+      \ created INTEGER NOT NULL, \
+      \ active INTEGER NOT NULL)"
     -- primary display announcement listing
     e
       "CREATE INDEX IF NOT EXISTS \
@@ -72,12 +72,12 @@ createDatabase cfg =
     e
       "CREATE TABLE IF NOT EXISTS properties ( \
       \ property_id INTEGER PRIMARY KEY, \
-      \ request_id INTEGER REFERENCES requests (request_id), \
-      \ user_id INTEGER REFERENCES users (user_id), \
-      \ type TEXT, \
-      \ data TEXT, \
-      \ created INTEGER, \
-      \ enabled INTEGER)"
+      \ request_id INTEGER NOT NULL REFERENCES requests (request_id), \
+      \ user_id INTEGER NOT NULL REFERENCES users (user_id), \
+      \ type TEXT NOT NULL, \
+      \ data TEXT NOT NULL, \
+      \ created INTEGER NOT NULL, \
+      \ enabled INTEGER NOT NULL)"
     -- for displaying the request single-page
     e
       "CREATE INDEX IF NOT EXISTS \
@@ -85,8 +85,8 @@ createDatabase cfg =
     e
       "CREATE TABLE IF NOT EXISTS api_keys ( \
       \ api_key TEXT PRIMARY KEY, \
-      \ user_id INTEGER REFERENCES users (user_id), \
-      \ created INTEGER)"
+      \ user_id INTEGER NOT NULL REFERENCES users (user_id), \
+      \ created INTEGER NOT NULL)"
     -- search keys for full logout
     e
       "CREATE INDEX IF NOT EXISTS \
