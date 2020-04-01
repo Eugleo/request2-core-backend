@@ -3,12 +3,12 @@
 module Environment where
 
 import Config
+import Control.Lens (Traversal', (^?))
 import Control.Monad (unless)
 import qualified Control.Monad.Trans.Class as TR
 import Control.Monad.Trans.Reader
 import Data.Aeson (FromJSON, ToJSON, Value)
-import Control.Lens ((^?), Traversal')
-import Data.Aeson.Lens (key, _String, _Integral)
+import Data.Aeson.Lens (_Integral, _String, key)
 import Data.Text (Text)
 import Data.Text.Lazy (fromStrict, toStrict)
 import Database.BasicAuth
@@ -59,7 +59,8 @@ text = lift . S.text . fromStrict
 
 jsonParam :: Text -> Traversal' Value a -> EnvAction a
 jsonParam s l = do
-  js <- jsonData `rescue` (catch . (<>) "Query JSON parsing error: ") :: EnvAction Value
+  js <-
+    jsonData `rescue` (catch . (<>) "Query JSON parsing error: ") :: EnvAction Value
   case js ^? (key s . l) of
     Nothing -> catch ("Missing or malformed parameter: " <> s)
     Just d -> return d
@@ -100,10 +101,15 @@ withEnv config ea =
 withDBEnv :: ServerConfig -> EnvAction a -> ActionM a
 withDBEnv config ea = do
   conn <-
-    liftAndCatchIO (DB.open $ dbPathStr config) `S.rescue` \msg -> do
+    liftAndCatchIO (connect $ dbPathStr config) `S.rescue` \msg -> do
       S.text $ "Database connection failure: " <> msg
       finishServerError
   runReaderT (actionThenCloseDB ea) $ Env config (Just conn) Nothing
+  where
+    connect db = do
+      conn <- DB.open db
+      DB.execute_ conn "PRAGMA foreign_keys=ON"
+      return conn
 
 withAuthEnv :: ServerConfig -> EnvAction a -> ActionM a
 withAuthEnv config = withDBEnv config . authentized
