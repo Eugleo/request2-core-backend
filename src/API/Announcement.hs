@@ -24,7 +24,6 @@ edit = do
   DB.edit $ WithID annID ann
 
 -- TODO Vyměnit param
--- TODO Only authors + admins should be able to deactivate
 deactivate :: EnvAction ()
 deactivate = do
   annID <- param "ann_id"
@@ -35,9 +34,7 @@ get :: EnvAction ()
 get = do
   annID <- param "ann_id"
   ann <- DB.get annID
-  case ann of
-    Just a -> json a
-    Nothing -> envNotFound
+  maybe envNotFound json ann
 
 getAll :: EnvAction ()
 getAll = DB.getAll >>= json
