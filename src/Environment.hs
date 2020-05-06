@@ -108,7 +108,7 @@ withDBEnv config ea = do
   runReaderT (actionThenCloseDB ea) $ Env config (Just conn) Nothing
   where
     connect db = do
-      conn <- DB.open db
+      conn <- DB.connectPostgreSQL db
       DB.execute_ conn "PRAGMA foreign_keys=ON"
       return conn
 

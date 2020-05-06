@@ -3,8 +3,10 @@
 module Config where
 
 import Control.Lens
+import Data.ByteString (ByteString)
 import Data.Ini
 import Data.Text
+import Data.Text.Encoding (encodeUtf8)
 import System.Environment
 
 data ServerConfig
@@ -32,8 +34,8 @@ defaultConfig =
 dataDirStr :: ServerConfig -> String
 dataDirStr = unpack . _dataDir
 
-dbPathStr :: ServerConfig -> String
-dbPathStr = unpack . _dbPath
+dbPathStr :: ServerConfig -> ByteString
+dbPathStr = encodeUtf8 . _dbPath
 
 defaultConfigPath :: String
 defaultConfigPath = "etc/default.cfg"
