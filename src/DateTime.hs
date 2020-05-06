@@ -5,7 +5,6 @@ import Data.Aeson.Types (prependFailure)
 import Data.Int (Int64)
 import Data.Scientific (toBoundedInteger)
 import Data.UnixTime
-import Database.PostgreSQL.Simple
 import Database.PostgreSQL.Simple.FromField
 import Database.PostgreSQL.Simple.ToField
 import Foreign.C.Types (CTime (..))

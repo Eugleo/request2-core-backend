@@ -1,11 +1,11 @@
+{-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE FlexibleInstances #-}
 
 module Model.Announcement where
 
 import Data.Aeson
-import Database.PostgreSQL.Simple
-import Database.PostgreSQL.Simple.FromRow
+import Database.PostgreSQL.Simple (FromRow, ToRow)
 import DateTime
 import GHC.Generics
 import WithID
@@ -18,14 +18,7 @@ data Announcement
         created :: DateTime,
         active :: Bool
       }
-  deriving (Show, Eq, Generic)
-
-instance FromJSON Announcement
+  deriving (Show, Eq, Generic, FromJSON, FromRow, ToRow)
 
 instance ToJSON Announcement where
   toEncoding = genericToEncoding defaultOptions
-
-instance FromRow (WithID Announcement) where
-  fromRow = WithID <$> field <*> (Ann <$> field <*> field <*> field <*> field <*> field)
-
-instance ToRow Announcement

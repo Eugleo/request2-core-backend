@@ -1,11 +1,11 @@
+{-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE FlexibleInstances #-}
 
 module Model.Property where
 
 import Data.Aeson
-import Database.PostgreSQL.Simple
-import Database.PostgreSQL.Simple.FromRow
+import Database.PostgreSQL.Simple (FromRow, ToRow)
 import DateTime
 import GHC.Generics
 import WithID
@@ -19,14 +19,7 @@ data Property
         dateAdded :: DateTime,
         enabled :: Bool
       }
-  deriving (Show, Eq, Generic)
-
-instance FromJSON Property
+  deriving (Show, Eq, Generic, FromJSON, FromRow, ToRow)
 
 instance ToJSON Property where
   toEncoding = genericToEncoding defaultOptions
-
-instance FromRow (WithID Property) where
-  fromRow = WithID <$> field <*> (Property <$> field <*> field <*> field <*> field <*> field <*> field)
-
-instance ToRow Property

@@ -1,3 +1,4 @@
+{-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE OverloadedStrings #-}
@@ -7,9 +8,8 @@ module Model.Request where
 import Data.Aeson
 import Data.Aeson.Types (prependFailure)
 import Data.Text (pack, toLower)
-import Database.PostgreSQL.Simple
+import Database.PostgreSQL.Simple (FromRow, ToRow)
 import Database.PostgreSQL.Simple.FromField
-import Database.PostgreSQL.Simple.FromRow
 import Database.PostgreSQL.Simple.ToField
 import DateTime
 import GHC.Generics
@@ -47,14 +47,7 @@ data Request
         requestType :: String, -- named `type` in db
         created :: DateTime
       }
-  deriving (Show, Eq, Generic)
-
-instance FromJSON Request
+  deriving (Show, Eq, Generic, FromJSON, ToRow, FromRow)
 
 instance ToJSON Request where
   toEncoding = genericToEncoding defaultOptions
-
-instance FromRow (WithID Request) where
-  fromRow = WithID <$> field <*> (Request <$> field <*> field <*> field <*> field <*> field)
-
-instance ToRow Request

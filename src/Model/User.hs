@@ -1,3 +1,4 @@
+{-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE FlexibleInstances #-}
 
@@ -9,9 +10,8 @@ import qualified Data.ByteString.Char8 as B
 import Data.Maybe (mapMaybe)
 import Data.Text (Text)
 import qualified Data.Text as T
-import Database.PostgreSQL.Simple
+import Database.PostgreSQL.Simple (FromRow)
 import Database.PostgreSQL.Simple.FromField
-import Database.PostgreSQL.Simple.FromRow
 import Database.PostgreSQL.Simple.ToField
 import DateTime
 import GHC.Generics
@@ -46,12 +46,7 @@ data User
         team :: ID,
         created :: DateTime
       }
-  deriving (Show, Eq, Generic)
-
-instance FromJSON User
+  deriving (Show, Eq, Generic, FromRow, FromJSON)
 
 instance ToJSON User where
   toEncoding = genericToEncoding defaultOptions
-
-instance FromRow (WithID User) where
-  fromRow = WithID <$> field <*> (User <$> field <*> field <*> field <*> field <*> field)
