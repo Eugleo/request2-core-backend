@@ -3,6 +3,7 @@
 
 module Database.Request where
 
+import Data.Functor (void)
 import Database.PostgreSQL.Simple
 import Environment (EnvAction, askDB, envIO)
 import Model.Property (Property)
@@ -75,7 +76,7 @@ updateRequest (WithID reqID R.Request {..}, props) = do
   -- Add new properties
   mapM_ (addProperty reqID) props
   -- Update the request itself
-  envIO $
+  void . envIO $
     execute
       db
       "UPDATE requests \
@@ -86,7 +87,7 @@ updateRequest (WithID reqID R.Request {..}, props) = do
 removeProperty :: ID -> EnvAction ()
 removeProperty propID = do
   db <- askDB
-  envIO $
+  void . envIO $
     execute
       db
       "UPDATE properties \

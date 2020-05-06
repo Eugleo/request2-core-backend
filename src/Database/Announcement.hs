@@ -3,6 +3,7 @@
 
 module Database.Announcement where
 
+import Data.Functor (void)
 import Database.PostgreSQL.Simple
 import Environment (EnvAction, askDB, envIO)
 import Model.Announcement (Announcement (..))
@@ -24,7 +25,7 @@ add ann = do
 edit :: WithID Announcement -> EnvAction ()
 edit (WithID annID Ann {..}) = do
   db <- askDB
-  envIO $
+  void . envIO $
     execute
       db
       "UPDATE announcements \
@@ -35,7 +36,7 @@ edit (WithID annID Ann {..}) = do
 deactivate :: ID -> EnvAction ()
 deactivate annID = do
   db <- askDB
-  envIO $
+  void . envIO $
     execute
       db
       "UPDATE announcements SET active = ? WHERE announcement_id = ?"

@@ -3,6 +3,7 @@
 module Database.User where
 
 import Crypto
+import Data.Functor (void)
 import Data.Maybe (fromMaybe)
 import Data.Text
 import Database.PostgreSQL.Simple
@@ -56,12 +57,12 @@ addApiKey userId = do
 logout :: APIKey -> EnvAction ()
 logout apiKey = do
   db <- askDB
-  envIO $ execute db "DELETE FROM api_keys WHERE api_key = ?" (Only apiKey)
+  void . envIO $ execute db "DELETE FROM api_keys WHERE api_key = ?" (Only apiKey)
 
 logoutEverywhere :: ID -> EnvAction ()
 logoutEverywhere userId = do
   db <- askDB
-  envIO $ execute db "DELETE FROM api_keys WHERE user_id = ?" (Only userId)
+  void . envIO $ execute db "DELETE FROM api_keys WHERE user_id = ?" (Only userId)
 
 {- this does not create login credentials, use `setPassword`! -}
 create :: User -> Text -> EnvAction (WithID User)
@@ -96,7 +97,7 @@ getDetails userId = do
 setPassword :: ID -> Text -> EnvAction ()
 setPassword userId password = do
   db <- askDB
-  envIO $ do
+  void . envIO $ do
     pwhash <- newHash $ password
     execute db "UPDATE users SET pw_hash = ? WHERE user_id = ?" (pwhash, userId)
 

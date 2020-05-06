@@ -4,6 +4,7 @@ module Database.Team where
 
 -- TODO Support search & filter
 
+import Data.Functor (void)
 import Database.PostgreSQL.Simple
 import Environment
 import Model.Team
@@ -25,7 +26,7 @@ add team = do
 deactivate :: ID -> EnvAction ()
 deactivate teamID = do
   db <- askDB
-  envIO $
+  void . envIO $
     execute db "UPDATE teams SET active = ? WHERE team_id = ?" (False, teamID)
 
 get :: ID -> EnvAction (Maybe (WithID Team))
@@ -46,7 +47,7 @@ getMany lim offset = do
 edit :: WithID Team -> EnvAction ()
 edit (WithID teamID Team {..}) = do
   db <- askDB
-  envIO $
+  void . envIO $
     execute
       db
       "UPDATE teams SET name = ?, active = ? WHERE team_id = ?"
