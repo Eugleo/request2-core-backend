@@ -20,12 +20,11 @@ import UserInfo
 import Web.Scotty hiding (json, jsonData, param, rescue, status, text)
 import qualified Web.Scotty as S (json, jsonData, param, rescue, status, text)
 
-data Env
-  = Env
-      { envConfig :: ServerConfig,
-        envDBConn :: Maybe DB.Connection,
-        envUser :: Maybe UserInfo
-      }
+data Env = Env
+  { envConfig :: ServerConfig,
+    envDBConn :: Maybe DB.Connection,
+    envUser :: Maybe UserInfo
+  }
 
 type EnvAction a = ReaderT Env ActionM a
 
@@ -102,15 +101,10 @@ withEnv config ea =
 withDBEnv :: ServerConfig -> EnvAction a -> ActionM a
 withDBEnv config ea = do
   conn <-
-    liftAndCatchIO (connect $ dbPathStr config) `S.rescue` \msg -> do
+    liftAndCatchIO (DB.connectPostgreSQL $ dbConnStr config) `S.rescue` \msg -> do
       S.text $ "Database connection failure: " <> msg
       finishServerError
   runReaderT (actionThenCloseDB ea) $ Env config (Just conn) Nothing
-  where
-    connect db = do
-      conn <- DB.connectPostgreSQL db
-      DB.execute_ conn "PRAGMA foreign_keys=ON"
-      return conn
 
 withAuthEnv :: ServerConfig -> EnvAction a -> ActionM a
 withAuthEnv config = withDBEnv config . authentized

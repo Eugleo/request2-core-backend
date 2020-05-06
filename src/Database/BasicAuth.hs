@@ -15,6 +15,5 @@ findApiKeyUser db key = do
       \ WHERE api_key = ?"
       (Only key)
   case res of
-    [(user, rs)] ->
-      return . Just $ UserInfo user key rs
+    [(user, rs)] -> return . Just $ UserInfo user key rs
     _ -> return Nothing

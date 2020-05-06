@@ -9,13 +9,12 @@ import GHC.Generics
 import Model.Team (Team)
 import Model.User (Role)
 
-data UserDetails
-  = UserDetails
-      { name :: Text,
-        roles :: [Role],
-        team :: Team,
-        created :: DateTime
-      }
+data UserDetails = UserDetails
+  { name :: Text,
+    roles :: [Role],
+    team :: Team,
+    created :: DateTime
+  }
   deriving (Show, Eq, Generic)
 
 instance ToJSON UserDetails where

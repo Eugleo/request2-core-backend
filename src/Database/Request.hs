@@ -15,14 +15,13 @@ import WithID
 add :: Request -> EnvAction (WithID Request)
 add req = do
   db <- askDB
-  rowID <-
-    envIO $ do
-      execute
+  [Only rowID] <-
+    envIO $
+      query
         db
         "INSERT INTO requests (user_id, team_id, status, type, created) \
-        \ VALUES (?, ?, ?, ?, ?)"
+        \ VALUES (?, ?, ?, ?, ?) RETURNING request_id"
         req
-      fromIntegral <$> lastInsertRowId db
   return $ WithID rowID req
 
 get :: ID -> EnvAction (Maybe (WithID Request))
@@ -53,20 +52,20 @@ getWithproperties reqID = do
 addProperty :: ID -> Property -> EnvAction (WithID Property)
 addProperty reqID prop@P.Property {..} = do
   db <- askDB
-  rowID <- envIO $ do
-    execute
-      db
-      "INSERT INTO properties (request_id, user_id, type, data, created, enabled) \
-      \ VALUES (?, ?, ?, ?, ?, ?)"
-      (reqID, authorID, propertyType, propertyData, dateAdded, enabled)
-    fromIntegral <$> lastInsertRowId db
+  [Only rowID] <-
+    envIO $
+      query
+        db
+        "INSERT INTO properties (request_id, user_id, type, data, created, enabled) \
+        \ VALUES (?, ?, ?, ?, ?, ?) RETURNING property_id"
+        (reqID, authorID, propertyType, propertyData, dateAdded, enabled)
   return $ WithID rowID prop
 
 updateRequest :: (WithID Request, [Property]) -> EnvAction ()
 updateRequest (WithID reqID R.Request {..}, props) = do
   db <- askDB
   -- Remove old properties
-  envIO $
+  void . envIO $
     execute
       db
       "UPDATE properties \

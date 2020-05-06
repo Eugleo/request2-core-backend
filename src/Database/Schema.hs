@@ -1,23 +1,23 @@
 {-# LANGUAGE OverloadedStrings #-}
 
--- TODO Add missing fields to every table
+-- TODO Add missing fields to every table?
 module Database.Schema
   ( createDatabase,
   )
 where
 
 import Config
+import Control.Exception (bracket)
 import Data.Functor (void)
 import Database.PostgreSQL.Simple
-import Database.PostgreSQL.Simple.Internal (withConnection)
 
 createDatabase :: ServerConfig -> IO ()
 createDatabase cfg =
-  withConnection (dbPathStr cfg) $ \conn -> do
-    let e = execute_ conn
+  bracket (connectPostgreSQL $dbConnStr cfg) close $ \conn -> do
+    let e = void . execute_ conn
     e
       "CREATE TABLE IF NOT EXISTS teams ( \
-      \ team_id INTEGER PRIMARY KEY, \
+      \ team_id BIGSERIAL PRIMARY KEY, \
       \ name TEXT UNIQUE NOT NULL, \
       \ active INTEGER NOT NULL)"
     -- search for active teams by name
@@ -26,13 +26,13 @@ createDatabase cfg =
       \ team_active_name ON teams(active, name)"
     e
       "CREATE TABLE IF NOT EXISTS users ( \
-      \ user_id INTEGER PRIMARY KEY, \
+      \ user_id BIGSERIAL PRIMARY KEY, \
       \ email TEXT UNIQUE NOT NULL, \
       \ name TEXT NOT NULL, \
       \ pw_hash TEXT NOT NULL, \
-      \ team_id INTEGER NOT NULL REFERENCES teams (team_id), \
+      \ team_id BIGINT NOT NULL REFERENCES teams (team_id), \
       \ roles TEXT NOT NULL, \
-      \ created INTEGER NOT NULL)"
+      \ created BIGINT NOT NULL)"
     -- lsearch for user login
     e
       "CREATE INDEX IF NOT EXISTS \
@@ -43,12 +43,12 @@ createDatabase cfg =
       \ users_team_name ON users(team_id, name)"
     e
       "CREATE TABLE IF NOT EXISTS requests ( \
-      \ request_id INTEGER PRIMARY KEY, \
-      \ user_id INTEGER NOT NULL REFERENCES users (user_id), \
-      \ team_id INTEGER NOT NULL REFERENCES teams (team_id), \
+      \ request_id BIGSERIAL PRIMARY KEY, \
+      \ user_id BIGINT NOT NULL REFERENCES users (user_id), \
+      \ team_id BIGINT NOT NULL REFERENCES teams (team_id), \
       \ status TEXT NOT NULL, \
       \ type TEXT NOT NULL, \
-      \ created INTEGER NOT NULL)"
+      \ created BIGINT NOT NULL)"
     -- listing requests by properties
     e
       "CREATE INDEX IF NOT EXISTS \
@@ -61,11 +61,11 @@ createDatabase cfg =
       \ requests_status_type_created ON requests(status, type, created)"
     e
       "CREATE TABLE IF NOT EXISTS announcements ( \
-      \ announcement_id INTEGER PRIMARY KEY, \
+      \ announcement_id BIGSERIAL PRIMARY KEY, \
       \ title TEXT NOT NULL, \
       \ body TEXT NOT NULL, \
-      \ user_id INTEGER NOT NULL REFERENCES users (user_id), \
-      \ created INTEGER NOT NULL, \
+      \ user_id BIGINT NOT NULL REFERENCES users (user_id), \
+      \ created BIGINT NOT NULL, \
       \ active INTEGER NOT NULL)"
     -- primary display announcement listing
     e
@@ -73,12 +73,12 @@ createDatabase cfg =
       \ announcements_active ON announcements(active, created)"
     e
       "CREATE TABLE IF NOT EXISTS properties ( \
-      \ property_id INTEGER PRIMARY KEY, \
-      \ request_id INTEGER NOT NULL REFERENCES requests (request_id), \
-      \ user_id INTEGER NOT NULL REFERENCES users (user_id), \
+      \ property_id BIGSERIAL PRIMARY KEY, \
+      \ request_id BIGINT NOT NULL REFERENCES requests (request_id), \
+      \ user_id BIGINT NOT NULL REFERENCES users (user_id), \
       \ type TEXT NOT NULL, \
       \ data TEXT NOT NULL, \
-      \ created INTEGER NOT NULL, \
+      \ created BIGINT NOT NULL, \
       \ enabled INTEGER NOT NULL)"
     -- for displaying the request single-page
     e
@@ -87,8 +87,8 @@ createDatabase cfg =
     e
       "CREATE TABLE IF NOT EXISTS api_keys ( \
       \ api_key TEXT PRIMARY KEY, \
-      \ user_id INTEGER NOT NULL REFERENCES users (user_id), \
-      \ created INTEGER NOT NULL)"
+      \ user_id BIGINT NOT NULL REFERENCES users (user_id), \
+      \ created BIGINT NOT NULL)"
     -- search keys for full logout
     e
       "CREATE INDEX IF NOT EXISTS \
@@ -98,3 +98,4 @@ createDatabase cfg =
       e
         "CREATE INDEX IF NOT EXISTS \
         \ api_keys_date ON api_keys(created)"
+    close conn

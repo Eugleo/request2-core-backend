@@ -9,7 +9,9 @@ import Database.PostgreSQL.Simple.FromField
 import Database.PostgreSQL.Simple.ToField
 import Foreign.C.Types (CTime (..))
 
-newtype DateTime = DateTime Int64 deriving (Show, Eq, Ord)
+newtype DateTime
+  = DateTime Int64
+  deriving (Show, Eq, Ord)
 
 instance FromJSON DateTime where
   parseJSON =

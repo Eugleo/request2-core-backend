@@ -52,10 +52,12 @@ mailRegToken = do
   case tok' of
     Just tok -> do
       envIO
-        (T.putStrLn $
-         "Sending e-mail to with activation link hash: #/register/" <> eml <>
-         "/" <>
-         tok)
+        ( T.putStrLn $
+            "Sending e-mail to with activation link hash: #/register/"
+              <> eml
+              <> "/"
+              <> tok
+        )
       envCreated
     _ -> envBadRequest
 
@@ -68,8 +70,8 @@ register = do
   when (Just tok /= tokCheck) $ envForbidden
   password <- jsonParamText "password"
   u <-
-    User eml <$> jsonParamText "name" <*> pure [Client] <*> jsonParamInt "team" <*>
-    envIO now
+    User eml <$> jsonParamText "name" <*> pure [Client] <*> jsonParamInt "team"
+      <*> envIO now
   newuser <-
     (envIO (newHash password) >>= Database.User.create u) `rescue` \_ -> do
       text "Failed to create the new user entry"

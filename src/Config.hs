@@ -9,14 +9,13 @@ import Data.Text
 import Data.Text.Encoding (encodeUtf8)
 import System.Environment
 
-data ServerConfig
-  = ServerConfig
-      { _dataDir :: Text,
-        _dbPath :: Text,
-        _listenPort :: Int,
-        _allowCORS :: Bool,
-        _regTokenSecret :: Text
-      }
+data ServerConfig = ServerConfig
+  { _dataDir :: Text,
+    _dbConn :: Text,
+    _listenPort :: Int,
+    _allowCORS :: Bool,
+    _regTokenSecret :: Text
+  }
   deriving (Show)
 
 makeLenses ''ServerConfig
@@ -25,7 +24,7 @@ defaultConfig :: ServerConfig
 defaultConfig =
   ServerConfig
     { _dataDir = "data",
-      _dbPath = "data/database.postgresql",
+      _dbConn = "",
       _listenPort = 9080,
       _allowCORS = True, --TODO switch to False later
       _regTokenSecret = "31337" --TODO generate a random token for a single run
@@ -34,8 +33,8 @@ defaultConfig =
 dataDirStr :: ServerConfig -> String
 dataDirStr = unpack . _dataDir
 
-dbPathStr :: ServerConfig -> ByteString
-dbPathStr = encodeUtf8 . _dbPath
+dbConnStr :: ServerConfig -> ByteString
+dbConnStr = encodeUtf8 . _dbConn
 
 defaultConfigPath :: String
 defaultConfigPath = "etc/default.cfg"
@@ -71,7 +70,7 @@ readConfig path = do
   return
     $ upd "data_dir" dataDir
       . upd "listen_port" (listenPort . asText)
-      . upd "db_path" dbPath
+      . upd "db_conn" dbConn
       . upd "allow_cors" (allowCORS . asText)
       . upd "reg_token_secret" regTokenSecret
     $ defaultConfig

@@ -1,10 +1,10 @@
 module Crypto where
 
 import Config
+import Data.ByteString.Lazy (toStrict)
 import Data.ByteString.Lazy.UTF8 (ByteString)
 import qualified Data.ByteString.Lazy.UTF8 as LU (fromString)
 import Data.ByteString.UTF8 (fromString, toString)
-import Data.ByteString.Lazy (toStrict)
 import Data.Digest.Pure.SHA (sha256, sha512, showDigest)
 import Data.Text
 import System.Entropy (getEntropy)
@@ -15,8 +15,8 @@ type Hash = Text
 
 newHash :: Text -> IO Hash
 newHash password =
-  pack . toString . cryptSHA512' (Just 31337) (fromString $ unpack password) <$>
-  getEntropy 128
+  pack . toString . cryptSHA512' (Just 31337) (fromString $ unpack password)
+    <$> getEntropy 128
 
 checkHash :: Text -> Hash -> Bool
 checkHash password hashStr =

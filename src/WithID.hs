@@ -8,13 +8,12 @@ import Database.PostgreSQL.Simple.FromRow
 
 type ID = Int
 
-data WithID a = WithID ID a deriving (Show, Eq)
+data WithID a
+  = WithID ID a
+  deriving (Show, Eq)
 
 instance FromJSON a => FromJSON (WithID a) where
-  parseJSON (Object v) =
-    WithID
-      <$> v .: "id"
-      <*> v .: "data"
+  parseJSON (Object v) = WithID <$> v .: "id" <*> v .: "data"
   parseJSON _ = empty
 
 instance ToJSON a => ToJSON (WithID a) where

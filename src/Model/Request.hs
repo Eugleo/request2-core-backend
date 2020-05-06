@@ -16,22 +16,31 @@ import GHC.Generics
 import WithID
 
 -- TODO Ask which statuses should be kept
-data Status = Requested | WIP | Done deriving (Show, Eq)
+data Status
+  = Requested
+  | WIP
+  | Done
+  deriving (Show, Eq)
 
 instance FromField Status where
-  fromField f mdata = case mdata of
-    Just "Requested" -> return Requested
-    Just "WIP" -> return Requested
-    Just "Done" -> return Requested
-    _ -> returnError Incompatible f "Expected Requested | WIP | Done"
+  fromField f mdata =
+    case mdata of
+      Just "Requested" -> return Requested
+      Just "WIP" -> return Requested
+      Just "Done" -> return Requested
+      _ -> returnError Incompatible f "Expected Requested | WIP | Done"
 
 instance FromJSON Status where
-  parseJSON = withText "Status field" $ \v ->
-    case toLower v of
-      "requested" -> return Requested
-      "wip" -> return WIP
-      "done" -> return Done
-      _ -> prependFailure "Can't parse status, " (fail $ "incorrect argument: " ++ show v)
+  parseJSON =
+    withText "Status field" $ \v ->
+      case toLower v of
+        "requested" -> return Requested
+        "wip" -> return WIP
+        "done" -> return Done
+        _ ->
+          prependFailure
+            "Can't parse status, "
+            (fail $ "incorrect argument: " ++ show v)
 
 instance ToJSON Status where
   toJSON = String . pack . show
@@ -39,14 +48,13 @@ instance ToJSON Status where
 instance ToField Status where
   toField = toField . show
 
-data Request
-  = Request
-      { authorID :: ID,
-        teamID :: ID,
-        status :: Status,
-        requestType :: String, -- named `type` in db
-        created :: DateTime
-      }
+data Request = Request
+  { authorID :: ID,
+    teamID :: ID,
+    status :: Status,
+    requestType :: String, -- named `type` in db
+    created :: DateTime
+  }
   deriving (Show, Eq, Generic, FromJSON, ToRow, FromRow)
 
 instance ToJSON Request where

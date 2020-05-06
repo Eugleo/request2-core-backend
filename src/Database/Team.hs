@@ -3,7 +3,6 @@
 module Database.Team where
 
 -- TODO Support search & filter
-
 import Data.Functor (void)
 import Database.PostgreSQL.Simple
 import Environment
@@ -13,14 +12,13 @@ import WithID (ID, WithID (..))
 add :: Team -> EnvAction (WithID Team)
 add team = do
   db <- askDB
-  rowID <-
-    envIO $ do
-      execute
+  [Only rowID] <-
+    envIO $
+      query
         db
         "INSERT INTO teams (name, active) \
-        \ VALUES (?, ?)"
+        \ VALUES (?, ?) RETURNING team_id"
         team
-      fromIntegral <$> lastInsertRowId db
   return $ WithID rowID team
 
 deactivate :: ID -> EnvAction ()
@@ -32,7 +30,12 @@ deactivate teamID = do
 get :: ID -> EnvAction (Maybe (WithID Team))
 get teamID = do
   db <- askDB
-  res <- envIO $ query db "SELECT * FROM teams WHERE team_id = ?" (Only teamID)
+  res <-
+    envIO $
+      query
+        db
+        "SELECT team_id, name, active FROM teams WHERE team_id = ?"
+        (Only teamID)
   case res of
     [team] -> return . Just $ team
     _ -> return Nothing
@@ -42,7 +45,11 @@ getMany :: Integer -> Integer -> EnvAction [WithID Team]
 getMany lim offset = do
   db <- askDB
   let limit = min lim 500
-  envIO $ query db "SELECT * FROM teams LIMIT ? OFFSET ?" (limit, offset)
+  envIO $
+    query
+      db
+      "SELECT team_id, name, active FROM teams LIMIT ? OFFSET ?"
+      (limit, offset)
 
 edit :: WithID Team -> EnvAction ()
 edit (WithID teamID Team {..}) = do

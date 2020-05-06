@@ -11,12 +11,11 @@ import WithID (ID)
 
 type APIKey = Text
 
-data UserInfo
-  = UserInfo
-      { userID :: ID,
-        apiKey :: APIKey,
-        roles :: [Role]
-      }
+data UserInfo = UserInfo
+  { userID :: ID,
+    apiKey :: APIKey,
+    roles :: [Role]
+  }
   deriving (Show, Eq, Generic)
 
 instance FromJSON UserInfo

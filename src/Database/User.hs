@@ -22,7 +22,7 @@ checkPassword user password = do
     envIO $ query db "SELECT pw_hash FROM users WHERE user_id = ?" (Only user)
   return $
     case res of
-      [(Only hash)] -> checkHash password hash
+      [Only hash] -> checkHash password hash
       _ -> False
 
 login :: Text -> Text -> EnvAction (Maybe UserInfo)
@@ -48,32 +48,35 @@ addApiKey userId = do
   envIO $ do
     apiKey <- newApiKey
     time <- now
-    execute
-      db
-      "INSERT INTO api_keys (api_key, user_id, created) VALUES (?, ?, ?)"
-      (apiKey, userId, time)
+    void $
+      execute
+        db
+        "INSERT INTO api_keys (api_key, user_id, created) VALUES (?, ?, ?)"
+        (apiKey, userId, time)
     return apiKey
 
 logout :: APIKey -> EnvAction ()
 logout apiKey = do
   db <- askDB
-  void . envIO $ execute db "DELETE FROM api_keys WHERE api_key = ?" (Only apiKey)
+  void . envIO $
+    execute db "DELETE FROM api_keys WHERE api_key = ?" (Only apiKey)
 
 logoutEverywhere :: ID -> EnvAction ()
 logoutEverywhere userId = do
   db <- askDB
-  void . envIO $ execute db "DELETE FROM api_keys WHERE user_id = ?" (Only userId)
+  void . envIO $
+    execute db "DELETE FROM api_keys WHERE user_id = ?" (Only userId)
 
 {- this does not create login credentials, use `setPassword`! -}
 create :: User -> Text -> EnvAction (WithID User)
 create u@(User {..}) pwHash = do
   db <- askDB
-  userID <- envIO $ do
-    execute
-      db
-      "INSERT INTO users (email, name, pw_hash, team_id, roles, created) VALUES (?, ?, ?, ?, ?, ?)"
-      (email, name, pwHash, team, roles, created)
-    fromIntegral <$> lastInsertRowId db
+  [Only userID] <-
+    envIO $
+      query
+        db
+        "INSERT INTO users (email, name, pw_hash, team_id, roles, created) VALUES (?, ?, ?, ?, ?, ?) RETURNING user_id"
+        (email, name, pwHash, team, roles, created)
   return $ WithID userID u
 
 getDetails :: ID -> EnvAction (Maybe UserDetails)

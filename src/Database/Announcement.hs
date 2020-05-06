@@ -12,14 +12,13 @@ import WithID
 add :: Announcement -> EnvAction (WithID Announcement)
 add ann = do
   db <- askDB
-  rowID <-
-    envIO $ do
-      execute
+  [Only rowID] <-
+    envIO $
+      query
         db
         "INSERT INTO announcements (title, body, user_id, created, active) \
-        \ VALUES (?, ?, ?, ?, ?)"
+        \ VALUES (?, ?, ?, ?, ?) RETURNING announcement_id"
         ann
-      fromIntegral <$> lastInsertRowId db
   return $ WithID rowID ann
 
 edit :: WithID Announcement -> EnvAction ()
