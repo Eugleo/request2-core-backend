@@ -6,7 +6,9 @@ module Model.Team where
 
 import Data.Aeson
 import Data.Text (Text)
-import Database.SQLite.Simple
+import Database.PostgreSQL.Simple
+import Database.PostgreSQL.Simple.FromRow
+import Database.PostgreSQL.Simple.ToRow
 import GHC.Generics
 import WithID
 

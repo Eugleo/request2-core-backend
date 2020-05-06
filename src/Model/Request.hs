@@ -8,9 +8,11 @@ module Model.Request where
 import Data.Aeson
 import Data.Aeson.Types (prependFailure)
 import Data.Text (pack, toLower)
-import Database.SQLite.Simple
-import Database.SQLite.Simple.FromField
-import Database.SQLite.Simple.ToField
+import Database.PostgreSQL.Simple
+import Database.PostgreSQL.Simple.FromField
+import Database.PostgreSQL.Simple.FromRow
+import Database.PostgreSQL.Simple.ToField
+import Database.PostgreSQL.Simple.ToRow
 import DateTime
 import GHC.Generics
 import WithID
@@ -19,10 +21,10 @@ import WithID
 data Status = Requested | WIP | Done deriving (Show, Eq)
 
 instance FromField Status where
-  fromField f = case fieldData f of
-    SQLText "Requested" -> return Requested
-    SQLText "WIP" -> return Requested
-    SQLText "Done" -> return Requested
+  fromField f mdata = case mdata of
+    Just "Requested" -> return Requested
+    Just "WIP" -> return Requested
+    Just "Done" -> return Requested
     _ -> returnError Incompatible f "Expected Requested | WIP | Done"
 
 instance FromJSON Status where

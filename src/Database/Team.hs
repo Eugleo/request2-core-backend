@@ -4,7 +4,7 @@ module Database.Team where
 
 -- TODO Support search & filter
 
-import Database.SQLite.Simple
+import Database.PostgreSQL.Simple
 import Environment
 import Model.Team
 import WithID (ID, WithID (..))

@@ -6,11 +6,14 @@ module Model.User where
 
 import Data.Aeson
 import Data.Aeson.Types (prependFailure)
+import qualified Data.ByteString as B
 import Data.Maybe (mapMaybe)
-import Data.Text (Text, pack, unpack)
-import Database.SQLite.Simple
-import Database.SQLite.Simple.FromField
-import Database.SQLite.Simple.ToField
+import Data.Text (Text)
+import qualified Data.Text as T
+import Database.PostgreSQL.Simple
+import Database.PostgreSQL.Simple.FromField
+import Database.PostgreSQL.Simple.FromRow
+import Database.PostgreSQL.Simple.ToField
 import DateTime
 import GHC.Generics
 import Text.Read (readMaybe)
@@ -20,16 +23,16 @@ data Role = Client | Operator | Admin deriving (Show, Read, Eq, Ord)
 
 instance FromJSON Role where
   parseJSON = withText "Role field" $ \v ->
-    case readMaybe $ unpack v of
+    case readMaybe $ T.unpack v of
       Just role -> return role
       Nothing -> prependFailure "Can't parse role, " (fail $ "incorrect argument: " ++ show v)
 
 instance ToJSON Role where
-  toJSON = String . pack . show
+  toJSON = String . T.pack . show
 
 instance FromField [Role] where
-  fromField f = case fieldData f of
-    SQLText txt -> return . mapMaybe readMaybe . words . unpack $ txt
+  fromField f mdata = case mdata of
+    Just txt -> return . mapMaybe readMaybe . words $ txt
     _ -> returnError Incompatible f "Expected Requested | WIP | Done"
 
 instance ToField [Role] where

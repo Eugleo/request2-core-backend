@@ -7,7 +7,9 @@ module Database.Schema
 where
 
 import Config
-import Database.SQLite.Simple
+import Data.Functor (void)
+import Database.PostgreSQL.Simple
+import Database.PostgreSQL.Simple.Internal (withConnection)
 
 createDatabase :: ServerConfig -> IO ()
 createDatabase cfg =
@@ -92,6 +94,7 @@ createDatabase cfg =
       "CREATE INDEX IF NOT EXISTS \
       \ api_keys_userkey ON api_keys(user_id, api_key)"
     -- apikey deprecation
-    e
-      "CREATE INDEX IF NOT EXISTS \
-      \ api_keys_date ON api_keys(created)"
+    void $
+      e
+        "CREATE INDEX IF NOT EXISTS \
+        \ api_keys_date ON api_keys(created)"

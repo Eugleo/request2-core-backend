@@ -7,24 +7,26 @@ import Data.Ini
 import Data.Text
 import System.Environment
 
-data ServerConfig = ServerConfig
-  { _dataDir :: Text
-  , _dbPath :: Text
-  , _listenPort :: Int
-  , _allowCORS :: Bool
-  , _regTokenSecret :: Text
-  } deriving (Show)
+data ServerConfig
+  = ServerConfig
+      { _dataDir :: Text,
+        _dbPath :: Text,
+        _listenPort :: Int,
+        _allowCORS :: Bool,
+        _regTokenSecret :: Text
+      }
+  deriving (Show)
 
 makeLenses ''ServerConfig
 
 defaultConfig :: ServerConfig
 defaultConfig =
   ServerConfig
-    { _dataDir = "data"
-    , _dbPath = "data/database.sqlite"
-    , _listenPort = 9080
-    , _allowCORS = True --TODO switch to False later
-    , _regTokenSecret = "31337" --TODO generate a random token for a single run
+    { _dataDir = "data",
+      _dbPath = "data/database.postgresql",
+      _listenPort = 9080,
+      _allowCORS = True, --TODO switch to False later
+      _regTokenSecret = "31337" --TODO generate a random token for a single run
     }
 
 dataDirStr :: ServerConfig -> String
@@ -45,11 +47,11 @@ getConfig = do
     _ -> error "Specify at most one parameter with config filename"
 
 updateFromIni ::
-     Ini
-  -> Text
-  -> Text
-  -> ASetter' ServerConfig Text
-  -> (ServerConfig -> ServerConfig)
+  Ini ->
+  Text ->
+  Text ->
+  ASetter' ServerConfig Text ->
+  (ServerConfig -> ServerConfig)
 updateFromIni ini sec name l =
   either (const id) (set l) $ lookupValue sec name ini
 
@@ -64,10 +66,10 @@ readConfig path = do
       Left err -> error $ "Could not read config: " ++ err
       Right a -> pure a
   let upd = updateFromIni ini "server"
-  return $
-    upd "data_dir" dataDir .
-    upd "listen_port" (listenPort . asText) .
-    upd "db_path" dbPath .
-    upd "allow_cors" (allowCORS . asText) .
-    upd "reg_token_secret" regTokenSecret $
-    defaultConfig
+  return
+    $ upd "data_dir" dataDir
+      . upd "listen_port" (listenPort . asText)
+      . upd "db_path" dbPath
+      . upd "allow_cors" (allowCORS . asText)
+      . upd "reg_token_secret" regTokenSecret
+    $ defaultConfig

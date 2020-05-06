@@ -3,9 +3,9 @@
 
 module Database.Announcement where
 
-import Database.SQLite.Simple
+import Database.PostgreSQL.Simple
 import Environment (EnvAction, askDB, envIO)
-import Model.Announcement (Announcement(..))
+import Model.Announcement (Announcement (..))
 import WithID
 
 add :: Announcement -> EnvAction (WithID Announcement)
@@ -46,10 +46,10 @@ get annID = do
   db <- askDB
   res <-
     envIO $
-    query
-      db
-      "SELECT * FROM announcements WHERE announcement_id = ?"
-      (Only annID)
+      query
+        db
+        "SELECT * FROM announcements WHERE announcement_id = ?"
+        (Only annID)
   case res of
     [ann] -> return . Just $ ann
     _ -> return Nothing

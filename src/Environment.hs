@@ -12,7 +12,7 @@ import Data.Aeson.Lens (_Integral, _String, key)
 import Data.Text (Text)
 import Data.Text.Lazy (fromStrict, toStrict)
 import Database.BasicAuth
-import qualified Database.SQLite.Simple as DB
+import qualified Database.PostgreSQL.Simple as DB
 import HTTPHelpers
 import Model.User (Role)
 import Network.HTTP.Types
@@ -20,11 +20,12 @@ import UserInfo
 import Web.Scotty hiding (json, jsonData, param, rescue, status, text)
 import qualified Web.Scotty as S (json, jsonData, param, rescue, status, text)
 
-data Env = Env
-  { envConfig :: ServerConfig
-  , envDBConn :: Maybe DB.Connection
-  , envUser :: Maybe UserInfo
-  }
+data Env
+  = Env
+      { envConfig :: ServerConfig,
+        envDBConn :: Maybe DB.Connection,
+        envUser :: Maybe UserInfo
+      }
 
 type EnvAction a = ReaderT Env ActionM a
 

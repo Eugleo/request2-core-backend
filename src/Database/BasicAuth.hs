@@ -2,7 +2,7 @@
 
 module Database.BasicAuth where
 
-import Database.SQLite.Simple
+import Database.PostgreSQL.Simple
 import UserInfo
 
 findApiKeyUser :: Connection -> APIKey -> IO (Maybe UserInfo)

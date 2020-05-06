@@ -106,7 +106,7 @@ executable request2
     scientific,
     scotty,
     SHA,
-    sqlite-simple >= 0.4.18,
+    postgresql-simple,
     text,
     transformers,
     unix-time,

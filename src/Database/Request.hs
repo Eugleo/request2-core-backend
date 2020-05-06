@@ -3,7 +3,7 @@
 
 module Database.Request where
 
-import Database.SQLite.Simple
+import Database.PostgreSQL.Simple
 import Environment (EnvAction, askDB, envIO)
 import Model.Property (Property)
 import qualified Model.Property as P
@@ -45,7 +45,7 @@ getWithproperties reqID = do
     [req] -> do
       props <-
         envIO $
-        query db "SELECT * FROM properties WHERE request_id = ?" (Only reqID)
+          query db "SELECT * FROM properties WHERE request_id = ?" (Only reqID)
       return $ Just (req, props)
     _ -> return Nothing
 

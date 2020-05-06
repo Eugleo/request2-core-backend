@@ -5,14 +5,14 @@ module Database.User where
 import Crypto
 import Data.Maybe (fromMaybe)
 import Data.Text
-import Database.SQLite.Simple
+import Database.PostgreSQL.Simple
 import qualified Database.Team as TeamDB
 import DateTime
 import Environment
 import Model.User
-import Model.UserDetails (UserDetails(..))
+import Model.UserDetails (UserDetails (..))
 import UserInfo
-import WithID (ID, WithID(..))
+import WithID (ID, WithID (..))
 
 checkPassword :: ID -> Text -> EnvAction Bool
 checkPassword user password = do
@@ -29,7 +29,7 @@ login email password = do
   db <- askDB
   res <-
     envIO $
-    query db "SELECT pw_hash, user_id FROM users WHERE email = ?" (Only email)
+      query db "SELECT pw_hash, user_id FROM users WHERE email = ?" (Only email)
   case res of
     [(hash, userId)] ->
       if checkHash password hash
@@ -80,10 +80,10 @@ getDetails userId = do
   db <- askDB
   res <-
     envIO $
-    query
-      db
-      "SELECT name, team_id, roles, created FROM users WHERE user_id = ?"
-      (Only userId)
+      query
+        db
+        "SELECT name, team_id, roles, created FROM users WHERE user_id = ?"
+        (Only userId)
   case res of
     [(name, teamId, roles, created)] -> do
       maybeTeam <- TeamDB.get teamId

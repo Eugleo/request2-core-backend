@@ -5,7 +5,9 @@
 module Model.Property where
 
 import Data.Aeson
-import Database.SQLite.Simple
+import Database.PostgreSQL.Simple
+import Database.PostgreSQL.Simple.FromRow
+import Database.PostgreSQL.Simple.ToRow
 import DateTime
 import GHC.Generics
 import WithID
