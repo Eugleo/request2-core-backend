@@ -1,13 +1,11 @@
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE FlexibleInstances #-}
-{-# LANGUAGE RecordWildCards #-}
 
 module Model.Property where
 
 import Data.Aeson
 import Database.PostgreSQL.Simple
 import Database.PostgreSQL.Simple.FromRow
-import Database.PostgreSQL.Simple.ToRow
 import DateTime
 import GHC.Generics
 import WithID
@@ -31,5 +29,4 @@ instance ToJSON Property where
 instance FromRow (WithID Property) where
   fromRow = WithID <$> field <*> (Property <$> field <*> field <*> field <*> field <*> field <*> field)
 
-instance ToRow Property where
-  toRow Property {..} = toRow (requestID, authorID, propertyType, propertyData, dateAdded, enabled)
+instance ToRow Property

@@ -1,7 +1,6 @@
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE RecordWildCards #-}
 
 module Model.Request where
 
@@ -12,7 +11,6 @@ import Database.PostgreSQL.Simple
 import Database.PostgreSQL.Simple.FromField
 import Database.PostgreSQL.Simple.FromRow
 import Database.PostgreSQL.Simple.ToField
-import Database.PostgreSQL.Simple.ToRow
 import DateTime
 import GHC.Generics
 import WithID
@@ -59,5 +57,4 @@ instance ToJSON Request where
 instance FromRow (WithID Request) where
   fromRow = WithID <$> field <*> (Request <$> field <*> field <*> field <*> field <*> field)
 
-instance ToRow Request where
-  toRow Request {..} = toRow (authorID, teamID, created)
+instance ToRow Request

@@ -1,12 +1,11 @@
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE FlexibleInstances #-}
-{-# LANGUAGE RecordWildCards #-}
 
 module Model.User where
 
 import Data.Aeson
 import Data.Aeson.Types (prependFailure)
-import qualified Data.ByteString as B
+import qualified Data.ByteString.Char8 as B
 import Data.Maybe (mapMaybe)
 import Data.Text (Text)
 import qualified Data.Text as T
@@ -32,7 +31,7 @@ instance ToJSON Role where
 
 instance FromField [Role] where
   fromField f mdata = case mdata of
-    Just txt -> return . mapMaybe readMaybe . words $ txt
+    Just txt -> return . mapMaybe readMaybe . words . B.unpack $ txt
     _ -> returnError Incompatible f "Expected Requested | WIP | Done"
 
 instance ToField [Role] where
