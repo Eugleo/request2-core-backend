@@ -8,9 +8,9 @@ Quick run:
 mkdir data
 cat > config.cfg << ENDCONF
 [server]
-data_dir=data
 listen_port=9080
-db_path=data/database.postgresql
+db_conn=host=localhost dbname=request
+allow_cors=True
 ENDCONF
 cabal run request2 -- config.cfg
 ```
@@ -25,13 +25,12 @@ curl localhost:9080/capability
 
 ### Database setup
 
-You can optionally populate the database with some testing values by first starting the server and the running
+You can optionally populate the database with some testing values by running
 
 ```
-sqlite3 data/database.postgresql "INSERT INTO teams ('Evženův supertým', '1')"
-sqlite3 data/database.postgresql 'INSERT INTO users ("admin", "Evžen", "$6$rounds=31337$zqmLJo8T3acQWalf$FvzezmB.v0hbE8HcFhOqgprJ2p9HAloNqRPUzZifI6cDTzP6IGFXvlrYd2tQIjiABJaT.PrLrIfkX8Qwe45Vw0", "1", "Client Operator Admin")'
-sqlite3 data/database.postgresql "INSERT INTO announcements VALUES(1, 'test', 'kecykecy', 0, 123, 1)"
-sqlite3 data/database.postgresql "INSERT INTO announcements VALUES(2, 'zprava', 'jinykecykecy', 0, 125, 1)"
+psql request
+INSERT INTO teams (name, active) VALUES ('Evženův supertým', TRUE);
+INSERT INTO users (email, name, pw_hash, team_id, roles, created)  VALUES ('admin', 'Evžen', '$6$rounds=31337$zqmLJo8T3acQWalf$FvzezmB.v0hbE8HcFhOqgprJ2p9HAloNqRPUzZifI6cDTzP6IGFXvlrYd2tQIjiABJaT.PrLrIfkX8Qwe45Vw0', '1', 'Client Operator Admin', 1);
 ```
 
 You'll now have a user `admin` with the password `admin` with full privileges.
