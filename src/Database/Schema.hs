@@ -19,7 +19,7 @@ createDatabase cfg =
       "CREATE TABLE IF NOT EXISTS teams ( \
       \ team_id BIGSERIAL PRIMARY KEY, \
       \ name TEXT UNIQUE NOT NULL, \
-      \ active INTEGER NOT NULL)"
+      \ active BOOLEAN NOT NULL)"
     -- search for active teams by name
     e
       "CREATE INDEX IF NOT EXISTS \
@@ -66,7 +66,7 @@ createDatabase cfg =
       \ body TEXT NOT NULL, \
       \ user_id BIGINT NOT NULL REFERENCES users (user_id), \
       \ created BIGINT NOT NULL, \
-      \ active INTEGER NOT NULL)"
+      \ active BOOLEAN NOT NULL)"
     -- primary display announcement listing
     e
       "CREATE INDEX IF NOT EXISTS \
@@ -79,7 +79,7 @@ createDatabase cfg =
       \ type TEXT NOT NULL, \
       \ data TEXT NOT NULL, \
       \ created BIGINT NOT NULL, \
-      \ enabled INTEGER NOT NULL)"
+      \ enabled BOOLEAN NOT NULL)"
     -- for displaying the request single-page
     e
       "CREATE INDEX IF NOT EXISTS \
