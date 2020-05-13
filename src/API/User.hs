@@ -21,7 +21,7 @@ import UserInfo (UserInfo (UserInfo))
 import qualified UserInfo as U
 import Web.Scotty.Trans (finish)
 
--- TODO is 403 the right status code here
+-- TODO is 403 the right status code here?
 login :: EnvAction ()
 login = do
   email <- jsonParamText "email"
