@@ -1,19 +1,20 @@
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE TypeApplications #-}
 
 module ApiServer where
 
-import qualified API.Announcement as Ann
-import qualified API.Team as Team
-import qualified API.User as User
 import Capability
 import Config
 import Control.Monad
 import qualified Data.Text as T
-import Environment
-import Model.User (Role (..))
+import Database.Crud
+import qualified Database.Schema as DB
+import Database.Selda.PostgreSQL (PGConnectInfo (..), withPostgreSQL)
+import Model.AnnWithoutId (AnnWithoutId)
+import Model.Role (Role (..))
+import Model.TeamWithoutId (TeamWithoutId)
 import Network.Wai
-import Web.Scotty (delete, get, post, put, scotty)
-import qualified Web.Scotty as S
+import qualified Web.Scotty.Trans as S
   ( function,
     json,
     middleware,
@@ -21,6 +22,11 @@ import qualified Web.Scotty as S
     options,
     text,
   )
+import Web.Scotty.Trans (delete, get, post, put, scottyT)
+import WithX
+
+connInfo :: PGConnectInfo
+connInfo = PGConnectInfo "localhost" 5432 "request" Nothing (Just "eugen") Nothing
 
 addCORSHeader :: Middleware
 addCORSHeader =
@@ -32,11 +38,10 @@ addCORSHeader =
       ]
 
 apiServer :: ServerConfig -> IO ()
-apiServer config =
-  scotty (_listenPort config) $ do
-    when (_allowCORS config) $ do
-      S.middleware addCORSHeader
-      S.options (S.function $ const $ Just []) $ S.text "CORS OK"
+apiServer config = scottyT (_listenPort config) (withPostgreSQL connInfo) $ do
+  when (_allowCORS config) $ do
+    --   S.middleware addCORSHeader
+    --   S.options (S.function $ const $ Just []) $ S.text "CORS OK"
     {-
      - Capabilities
      -}
@@ -44,32 +49,32 @@ apiServer config =
     {-
      - Users
      -}
-    post "/register-init" $ withDB User.mailRegToken
-    post "/register" $ withDB User.register
-    post "/login" $ withDB User.login
-    post "/logout" $ withAuth User.logout
-    post "/password" $ withAuth User.changePassword
+    -- post "/register-init" $ withDB User.mailRegToken
+    -- post "/register" $ withDB User.register
+    -- post "/login" $ withDB User.login
+    -- post "/logout" $ withAuth User.logout
+    -- post "/password" $ withAuth User.changePassword
     {-
      - User information
      -}
-    get "/me" $ withAuth User.getDetails
+    -- get "/me" $ withAuth User.getDetails
     -- TODO put "/userinfo" $ withAuth undefined
     {-
      - Announcements
      -}
-    get "/announcements" $ withAuth Ann.getAll
-    get "/announcement/:ann_id" $ withAuth Ann.get
-    post "/announcements" $ withRoles [Admin] Ann.create
-    put "/announcement/:ann_id" $ withRoles [Admin] Ann.edit
-    delete "/announcement/:ann_id" $ withRoles [Admin] Ann.deactivate
+    -- get "/announcements" $ withAuth Ann.getAll
+    -- get "/announcement/:ann_id" $ withAuth Ann.get
+    post "/announcements" $ withRoles [Admin] $ create @AnnWithoutId DB.anns
+    -- put "/announcement/:ann_id" $ withRoles [Admin] Ann.edit
+    -- delete "/announcement/:ann_id" $ withRoles [Admin] Ann.deactivate
     {-
      - Teams
      -}
-    get "/teams" $ withRoles [Admin] Team.getMany
-    get "/teams/:team_id" $ withRoles [Admin] Team.get
-    post "/teams" $ withRoles [Admin] Team.add
-    put "/teams/:team_id" $ withRoles [Admin] Team.edit
-    delete "/teams/:team_id" $ withRoles [Admin] Team.deactivate
+    -- get "/teams" $ withRoles [Admin] Team.getMany
+    -- get "/teams/:team_id" $ withRoles [Admin] Team.get
+    post "/teams" $ withRoles [Admin] $ create @TeamWithoutId DB.teams
+    -- put "/teams/:team_id" $ withRoles [Admin] Team.edit
+    -- delete "/teams/:team_id" $ withRoles [Admin] Team.deactivate
     {-
      - Standard 404 -- keep this last
      -}

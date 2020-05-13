@@ -10,31 +10,6 @@ import Model.Property (Property)
 import qualified Model.Property as P
 import Model.Request (Request)
 import qualified Model.Request as R
-import WithID
-
-add :: Request -> EnvAction (WithID Request)
-add req = do
-  db <- askDB
-  [Only rowID] <-
-    envIO $
-      query
-        db
-        "INSERT INTO requests (user_id, team_id, status, type, created) \
-        \ VALUES (?, ?, ?, ?, ?) RETURNING request_id"
-        req
-  return $ WithID rowID req
-
-get :: ID -> EnvAction (Maybe (WithID Request))
-get reqID = do
-  db <- askDB
-  res <-
-    envIO $ query db "SELECT * FROM requests WHERE request_id = ?" (Only reqID)
-  case res of
-    [req] -> return . Just $ req
-    _ -> return Nothing
-
-getAll :: EnvAction [WithID Request]
-getAll = askDB >>= \db -> envIO $ query_ db "SELECT * FROM requests"
 
 getWithproperties :: ID -> EnvAction (Maybe (WithID Request, [WithID Property]))
 getWithproperties reqID = do
@@ -48,18 +23,6 @@ getWithproperties reqID = do
           query db "SELECT * FROM properties WHERE request_id = ?" (Only reqID)
       return $ Just (req, props)
     _ -> return Nothing
-
-addProperty :: ID -> Property -> EnvAction (WithID Property)
-addProperty reqID prop@P.Property {..} = do
-  db <- askDB
-  [Only rowID] <-
-    envIO $
-      query
-        db
-        "INSERT INTO properties (request_id, user_id, type, data, created, enabled) \
-        \ VALUES (?, ?, ?, ?, ?, ?) RETURNING property_id"
-        (reqID, authorID, propertyType, propertyData, dateAdded, enabled)
-  return $ WithID rowID prop
 
 updateRequest :: (WithID Request, [Property]) -> EnvAction ()
 updateRequest (WithID reqID R.Request {..}, props) = do

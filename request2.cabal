@@ -73,21 +73,21 @@ executable request2
     Database.User,
     DateTime,
     Environment,
-    HTTPHelpers,
-    Model.Announcement,
+    Model.Ann,
     Model.Property,
     Model.Request,
     Model.Team,
     Model.User,
     Model.UserDetails,
-    UserInfo,
-    WithID
+    UserInfo
 
   default-extensions:
     OverloadedStrings
 
   -- Other library packages from which modules are imported.
   build-depends:
+    generic-data,
+    generic-data-surgery,
     base >= 4.11,
     aeson,
     bytestring,
@@ -106,6 +106,8 @@ executable request2
     raw-strings-qq,
     scientific,
     scotty,
+    selda,
+    selda-postgresql,
     SHA,
     text,
     transformers,

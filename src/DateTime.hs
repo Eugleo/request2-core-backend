@@ -5,13 +5,19 @@ import Data.Aeson.Types (prependFailure)
 import Data.Int (Int64)
 import Data.Scientific (toBoundedInteger)
 import Data.UnixTime
-import Database.PostgreSQL.Simple.FromField
-import Database.PostgreSQL.Simple.ToField
+import Database.Selda
+import Database.Selda.SqlType
 import Foreign.C.Types (CTime (..))
 
-newtype DateTime
-  = DateTime Int64
+newtype DateTime = DateTime Int64
   deriving (Show, Eq, Ord)
+
+instance SqlType DateTime where
+  mkLit (DateTime t) = LCustom TInt . LInt . fromIntegral $ t
+  sqlType _ = TInt
+  fromSql (SqlInt s) = DateTime $ fromIntegral s
+  fromSql v = error $ "fromSql: DateTime column with non-int value: " ++ show v
+  defaultValue = LCustom TInt $ LInt def
 
 instance FromJSON DateTime where
   parseJSON =
@@ -26,12 +32,6 @@ instance FromJSON DateTime where
 
 instance ToJSON DateTime where
   toJSON (DateTime sec) = Number . fromIntegral $ sec
-
-instance FromField DateTime where
-  fromField f mdata = DateTime <$> fromField f mdata
-
-instance ToField DateTime where
-  toField (DateTime sec) = toField sec
 
 now :: IO DateTime
 now = do

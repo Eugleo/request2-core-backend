@@ -10,9 +10,9 @@ cat > config.cfg << ENDCONF
 [server]
 listen_port=9080
 db_conn=host=localhost dbname=request
-allow_cors=True
+allow_cors=**True**
 ENDCONF
-cabal run request2 -- config.cfg
+cabal run request2 -- config.**cfg**
 ```
 
 Quick test (when the server is running):

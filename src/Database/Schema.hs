@@ -1,101 +1,104 @@
-{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE OverloadedLabels #-}
 
--- TODO Add missing fields to every table?
-module Database.Schema
-  ( createDatabase,
-  )
-where
+module Database.Schema where
 
-import Config
-import Control.Exception (bracket)
-import Data.Functor (void)
-import Database.PostgreSQL.Simple
+import ApiKey (ApiKey)
+import Data.Char (isLower)
+import Data.Maybe (fromMaybe)
+import qualified Data.Text as T
+import Database.Selda
+import Model.Ann (Ann)
+import Model.Property (Property)
+import Model.Request (Request)
+import Model.Team (Team)
+import Model.User (User)
 
-createDatabase :: ServerConfig -> IO ()
-createDatabase cfg =
-  bracket (connectPostgreSQL $dbConnStr cfg) close $ \conn -> do
-    let e = void . execute_ conn
-    e
-      "CREATE TABLE IF NOT EXISTS teams ( \
-      \ team_id BIGSERIAL PRIMARY KEY, \
-      \ name TEXT UNIQUE NOT NULL, \
-      \ active BOOLEAN NOT NULL)"
-    -- search for active teams by name
-    e
-      "CREATE INDEX IF NOT EXISTS \
-      \ team_active_name ON teams(active, name)"
-    e
-      "CREATE TABLE IF NOT EXISTS users ( \
-      \ user_id BIGSERIAL PRIMARY KEY, \
-      \ email TEXT UNIQUE NOT NULL, \
-      \ name TEXT NOT NULL, \
-      \ pw_hash TEXT NOT NULL, \
-      \ team_id BIGINT NOT NULL REFERENCES teams (team_id), \
-      \ roles TEXT NOT NULL, \
-      \ created BIGINT NOT NULL)"
-    -- lsearch for user login
-    e
-      "CREATE INDEX IF NOT EXISTS \
-      \ users_email on users(email)"
-    -- listing the users in team
-    e
-      "CREATE INDEX IF NOT EXISTS \
-      \ users_team_name ON users(team_id, name)"
-    e
-      "CREATE TABLE IF NOT EXISTS requests ( \
-      \ request_id BIGSERIAL PRIMARY KEY, \
-      \ user_id BIGINT NOT NULL REFERENCES users (user_id), \
-      \ team_id BIGINT NOT NULL REFERENCES teams (team_id), \
-      \ status TEXT NOT NULL, \
-      \ type TEXT NOT NULL, \
-      \ created BIGINT NOT NULL)"
-    -- listing requests by properties
-    e
-      "CREATE INDEX IF NOT EXISTS \
-      \ requests_author_created ON requests(user_id,status,created)"
-    e
-      "CREATE INDEX IF NOT EXISTS \
-      \ requests_team_created ON requests(team_id,status,created)"
-    e
-      "CREATE INDEX IF NOT EXISTS \
-      \ requests_status_type_created ON requests(status, type, created)"
-    e
-      "CREATE TABLE IF NOT EXISTS announcements ( \
-      \ announcement_id BIGSERIAL PRIMARY KEY, \
-      \ title TEXT NOT NULL, \
-      \ body TEXT NOT NULL, \
-      \ user_id BIGINT NOT NULL REFERENCES users (user_id), \
-      \ created BIGINT NOT NULL, \
-      \ active BOOLEAN NOT NULL)"
-    -- primary display announcement listing
-    e
-      "CREATE INDEX IF NOT EXISTS \
-      \ announcements_active ON announcements(active, created)"
-    e
-      "CREATE TABLE IF NOT EXISTS properties ( \
-      \ property_id BIGSERIAL PRIMARY KEY, \
-      \ request_id BIGINT NOT NULL REFERENCES requests (request_id), \
-      \ user_id BIGINT NOT NULL REFERENCES users (user_id), \
-      \ type TEXT NOT NULL, \
-      \ data TEXT NOT NULL, \
-      \ created BIGINT NOT NULL, \
-      \ enabled BOOLEAN NOT NULL)"
-    -- for displaying the request single-page
-    e
-      "CREATE INDEX IF NOT EXISTS \
-      \ properties_on_request ON properties(enabled, request_id, type, created)"
-    e
-      "CREATE TABLE IF NOT EXISTS api_keys ( \
-      \ api_key TEXT PRIMARY KEY, \
-      \ user_id BIGINT NOT NULL REFERENCES users (user_id), \
-      \ created BIGINT NOT NULL)"
-    -- search keys for full logout
-    e
-      "CREATE INDEX IF NOT EXISTS \
-      \ api_keys_userkey ON api_keys(user_id, api_key)"
-    -- apikey deprecation
-    void $
-      e
-        "CREATE INDEX IF NOT EXISTS \
-        \ api_keys_date ON api_keys(created)"
-    close conn
+setup :: MonadSelda m => m ()
+setup = do
+  tryCreateTable teams
+  tryCreateTable users
+  tryCreateTable requests
+  tryCreateTable properties
+  tryCreateTable anns
+  tryCreateTable apiKeys
+
+teams :: Table Team
+teams =
+  tableFieldMod
+    "teams"
+    [ #_id :- autoPrimary,
+      (#name :+ #active) :- index
+    ]
+    $ toName "team"
+
+users :: Table User
+users =
+  tableFieldMod
+    "users"
+    [ #_id :- autoPrimary,
+      #teamId :- foreignKey teams #_id,
+      Single #email :- index,
+      (#teamId :+ #name) :- index
+    ]
+    $ toName "request"
+
+requests :: Table Request
+requests =
+  tableFieldMod
+    "requests"
+    [ #_id :- autoPrimary,
+      #authorId :- foreignKey users #_id,
+      #teamId :- foreignKey teams #_id,
+      (#authorId :+ #status :+ #dateCreated) :- index,
+      (#requestType :+ #status :+ #dateCreated) :- index
+    ]
+    $ toName "request"
+
+properties :: Table Property
+properties =
+  tableFieldMod
+    "properties"
+    [ #_id :- autoPrimary,
+      #authorId :- foreignKey users #_id,
+      #requestId :- foreignKey requests #_id,
+      (#_id :+ #requestId :+ #propertyType :+ #dateAdded) :- index
+    ]
+    $ toName "property"
+
+anns :: Table Ann
+anns =
+  tableFieldMod
+    "announcements"
+    [ #_id :- autoPrimary,
+      #authorId :- foreignKey users #_id,
+      (#active :+ #dateCreated) :- index
+    ]
+    $ toName "user"
+
+apiKeys :: Table ApiKey
+apiKeys =
+  tableFieldMod
+    "api_keys"
+    [ #key :- primary,
+      #_id :- foreignKey users #_id,
+      Single #dateCreated :- index,
+      (#_id :+ #key) :- index
+    ]
+    $ toName "key"
+
+toName :: Text -> Text -> Text
+toName name col
+  | T.isPrefixOf "_" col = T.append name col
+  | T.isPrefixOf name col =
+    T.tail
+      . camelToSnake
+      . fromMaybe col
+      $ T.stripPrefix name col
+  | otherwise = camelToSnake col
+
+camelToSnake :: Text -> Text
+camelToSnake = T.intercalate "_" . go []
+  where
+    go acc t = if T.null t then acc else go (word t : acc) (rest t)
+    word = T.takeWhile isLower
+    rest = T.dropWhile isLower

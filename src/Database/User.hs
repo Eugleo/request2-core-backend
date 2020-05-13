@@ -13,7 +13,6 @@ import Environment
 import Model.User
 import Model.UserDetails (UserDetails (..))
 import UserInfo
-import WithID (ID, WithID (..))
 
 checkPassword :: ID -> Text -> EnvAction Bool
 checkPassword user password = do

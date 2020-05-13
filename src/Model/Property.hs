@@ -5,20 +5,22 @@
 module Model.Property where
 
 import Data.Aeson
-import Database.PostgreSQL.Simple (FromRow, ToRow)
+import Database.Selda
 import DateTime
-import GHC.Generics
-import WithID
+import Model.Request
+import Model.User
 
-data Property = Property
-  { requestID :: ID,
-    authorID :: ID,
-    propertyType :: String, -- named `type` in db
-    propertyData :: String, -- named `data` in db
-    dateAdded :: DateTime,
-    enabled :: Bool
-  }
-  deriving (Show, Eq, Generic, FromJSON, FromRow, ToRow)
+data Property
+  = Property
+      { _id :: ID Property,
+        requestId :: ID Request,
+        authorId :: ID User,
+        propertyType :: Text,
+        propertyData :: Text,
+        dateAdded :: DateTime,
+        active :: Bool
+      }
+  deriving (Show, Eq, Generic, FromJSON, SqlRow)
 
 instance ToJSON Property where
   toEncoding = genericToEncoding defaultOptions

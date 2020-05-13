@@ -4,29 +4,29 @@ module Environment where
 
 import Config
 import Control.Lens (Traversal', (^?))
-import Control.Monad (unless)
 import qualified Control.Monad.Trans.Class as TR
 import Control.Monad.Trans.Reader
 import Data.Aeson (FromJSON, ToJSON, Value)
 import Data.Aeson.Lens (_Integral, _String, key)
 import Data.Text (Text)
 import Data.Text.Lazy (fromStrict, toStrict)
-import Database.BasicAuth
-import qualified Database.PostgreSQL.Simple as DB
-import HTTPHelpers
-import Model.User (Role)
+import qualified Data.Text.Lazy as Lazy
+import Database.Selda.Backend.Internal (SeldaM)
+import Database.Selda.PostgreSQL (PG)
 import Network.HTTP.Types
 import UserInfo
-import Web.Scotty hiding (json, jsonData, param, rescue, status, text)
-import qualified Web.Scotty as S (json, jsonData, param, rescue, status, text)
+import qualified Web.Scotty.Trans as S (json, jsonData, param, rescue, status, text)
+import Web.Scotty.Trans hiding (json, jsonData, param, rescue, status, text)
 
-data Env = Env
-  { envConfig :: ServerConfig,
-    envDBConn :: Maybe DB.Connection,
-    envUser :: Maybe UserInfo
-  }
+data Env
+  = Env
+      { envConfig :: ServerConfig,
+        envUser :: Maybe UserInfo
+      }
 
-type EnvAction a = ReaderT Env ActionM a
+type Action a = ActionT Lazy.Text (SeldaM PG) a
+
+type EnvAction a = ReaderT Env (ActionT Lazy.Text (SeldaM PG)) a
 
 -- reexport
 lift :: (TR.MonadTrans t, Monad m) => m a -> t m a
@@ -65,100 +65,10 @@ jsonParam s l = do
     Nothing -> catch ("Missing or malformed parameter: " <> s)
     Just d -> return d
   where
-    catch msg = do
-      text msg
-      envBadRequest
+    catch msg = text msg >> status badRequest400 >> lift finish
 
 jsonParamText :: Text -> EnvAction Text
 jsonParamText a = jsonParam a _String
 
 jsonParamInt :: Integral a => Text -> EnvAction a
 jsonParamInt a = jsonParam a _Integral
-
-{- sadly, ActionM doesn't have MonadMask and cannot be easily bracketed. We
- - therefore use the following strategy:
- - 1. `finish` actions are wrapped with envFinish (and convenience wrappers)
- - 2. db is proactively closed after EnvActionM finishes by default (e.g. by
- -    `withDBEnv`)
- - 3. we hope that no one will use normal `finish` as it leaves the open file
- -    descriptor hanging for the GC. -}
-envCloseDB :: EnvAction ()
-envCloseDB = do
-  mdb <- envDBConn <$> ask
-  case mdb of
-    Just db -> envIO $ DB.close db
-    _ -> return ()
-
-actionThenCloseDB :: EnvAction a -> EnvAction a
-actionThenCloseDB ea =
-  (ea <* envCloseDB) `rescue` \msg ->
-    envCloseDB >> lift (raise $ fromStrict msg)
-
-withEnv :: ServerConfig -> EnvAction a -> ActionM a
-withEnv config ea =
-  runReaderT (actionThenCloseDB ea) $ Env config Nothing Nothing
-
-withDBEnv :: ServerConfig -> EnvAction a -> ActionM a
-withDBEnv config ea = do
-  conn <-
-    liftAndCatchIO (DB.connectPostgreSQL $ dbConnStr config) `S.rescue` \msg -> do
-      S.text $ "Database connection failure: " <> msg
-      finishServerError
-  runReaderT (actionThenCloseDB ea) $ Env config (Just conn) Nothing
-
-withAuthEnv :: ServerConfig -> EnvAction a -> ActionM a
-withAuthEnv config = withDBEnv config . authentized
-
-authentized :: EnvAction a -> EnvAction a
-authentized action = do
-  maybeApikey <- lift $ header "Authorization"
-  case maybeApikey of
-    Just userApiKey -> do
-      conn <- askDB
-      auth <- envIO $ findApiKeyUser conn (toStrict userApiKey)
-      case auth of
-        Just u -> local (\env -> env {envUser = Just u}) action
-        _ -> status unauthorized401 >> envFinish
-    Nothing -> status unauthorized401 >> envFinish
-
-withRolesEnv :: ServerConfig -> [Role] -> EnvAction a -> ActionM a
-withRolesEnv config rs action =
-  withAuthEnv config $ do
-    userRoles <- roles <$> askUser
-    unless (all (`elem` userRoles) rs) envForbidden
-    action
-
-askUser :: EnvAction UserInfo
-askUser = do
-  mu <- envUser <$> ask
-  case mu of
-    Just u -> return u
-    _ -> envForbidden
-
-askDB :: EnvAction DB.Connection
-askDB = do
-  mdb <- envDBConn <$> ask
-  case mdb of
-    Just db -> return db
-    _ -> text "db initialization failure" >> envBadRequest
-
-askConfig :: EnvAction ServerConfig
-askConfig = envConfig <$> ask
-
-envFinish :: EnvAction a
-envFinish = envCloseDB >> lift finish
-
-envCreated :: EnvAction a
-envCreated = envCloseDB >> lift finishCreated
-
-envForbidden :: EnvAction a
-envForbidden = envCloseDB >> lift finishForbidden
-
-envBadRequest :: EnvAction a
-envBadRequest = envCloseDB >> lift finishBadRequest
-
-envNotFound :: EnvAction a
-envNotFound = envCloseDB >> lift finishNotFound
-
-envServerError :: EnvAction a
-envServerError = envCloseDB >> lift finishServerError

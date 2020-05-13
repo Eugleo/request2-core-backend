@@ -1,23 +1,21 @@
 {-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE DeriveGeneric #-}
-{-# LANGUAGE FlexibleInstances #-}
 
 module Model.Team where
 
 import Data.Aeson
-import Data.Text (Text)
-import Database.PostgreSQL.Simple
-import Database.PostgreSQL.Simple.FromRow
-import GHC.Generics
+import Data.Text ()
+import Database.Selda
+import Model.IdInstances ()
 
-data Team = Team
-  { name :: Text,
-    active :: Bool
-  }
-  deriving (Show, Eq, Generic, ToRow, FromJSON)
+data Team
+  = Team
+      { _id :: ID Team,
+        name :: Text,
+        code :: Text,
+        active :: Bool
+      }
+  deriving (Show, Eq, Generic, FromJSON, SqlRow)
 
 instance ToJSON Team where
   toEncoding = genericToEncoding defaultOptions
-
-instance FromRow Team where
-  fromRow = Team <$> field <*> field

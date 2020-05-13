@@ -9,13 +9,14 @@ import Data.Text
 import Data.Text.Encoding (encodeUtf8)
 import System.Environment
 
-data ServerConfig = ServerConfig
-  { _dataDir :: Text,
-    _dbConn :: Text,
-    _listenPort :: Int,
-    _allowCORS :: Bool,
-    _regTokenSecret :: Text
-  }
+data ServerConfig
+  = ServerConfig
+      { _dataDir :: Text,
+        _dbConn :: Text,
+        _listenPort :: Int,
+        _allowCORS :: Bool,
+        _regTokenSecret :: Text
+      }
   deriving (Show)
 
 makeLenses ''ServerConfig
