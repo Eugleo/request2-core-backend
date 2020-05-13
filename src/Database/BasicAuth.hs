@@ -20,7 +20,7 @@ findApiKeyUser key = do
 
 q key = do
   user <- select DB.users
-  ak <- innerJoin (\k -> k ! #_id .== user ! #_id) aks
+  ak <- innerJoin (\k -> k ! #userId .== user ! #_id) aks
   return (user ! #_id :*: ak ! #key :*: user ! #roles)
   where
     aks = do

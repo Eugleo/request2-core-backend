@@ -3,11 +3,12 @@
 
 module ApiServer where
 
+import qualified Api.Common as Api
+import qualified Api.User as User
 import Capability
 import Config
 import Control.Monad
 import qualified Data.Text as T
-import Database.Crud
 import qualified Database.Schema as DB
 import Database.Selda.PostgreSQL (PGConnectInfo (..), withPostgreSQL)
 import Model.AnnWithoutId (AnnWithoutId)
@@ -25,6 +26,7 @@ import qualified Web.Scotty.Trans as S
 import Web.Scotty.Trans (delete, get, post, put, scottyT)
 import WithX
 
+-- TODO Replace with info from config
 connInfo :: PGConnectInfo
 connInfo = PGConnectInfo "localhost" 5432 "request" Nothing (Just "eugen") Nothing
 
@@ -38,10 +40,11 @@ addCORSHeader =
       ]
 
 apiServer :: ServerConfig -> IO ()
-apiServer config = scottyT (_listenPort config) (withPostgreSQL connInfo) $ do
-  when (_allowCORS config) $ do
-    --   S.middleware addCORSHeader
-    --   S.options (S.function $ const $ Just []) $ S.text "CORS OK"
+apiServer config = scottyT (_listenPort config) (withPostgreSQL connInfo)
+  $ when (_allowCORS config)
+  $ do
+    S.middleware addCORSHeader
+    S.options (S.function $ const $ Just []) $ S.text "CORS OK"
     {-
      - Capabilities
      -}
@@ -49,32 +52,32 @@ apiServer config = scottyT (_listenPort config) (withPostgreSQL connInfo) $ do
     {-
      - Users
      -}
-    -- post "/register-init" $ withDB User.mailRegToken
-    -- post "/register" $ withDB User.register
-    -- post "/login" $ withDB User.login
-    -- post "/logout" $ withAuth User.logout
-    -- post "/password" $ withAuth User.changePassword
+    post "/register-init" $ withDB User.mailRegToken
+    post "/register" $ withDB User.register
+    post "/login" $ withDB User.login
+    post "/logout" $ withAuth User.logout
+    post "/password" $ withAuth User.changePassword
     {-
      - User information
      -}
-    -- get "/me" $ withAuth User.getDetails
+    get "/me" $ withAuth User.getDetails
     -- TODO put "/userinfo" $ withAuth undefined
     {-
      - Announcements
      -}
-    -- get "/announcements" $ withAuth Ann.getAll
-    -- get "/announcement/:ann_id" $ withAuth Ann.get
-    post "/announcements" $ withRoles [Admin] $ create @AnnWithoutId DB.anns
+    get "/announcements" $ withAuth $ Api.getMany DB.anns
+    get "/announcement/:_id" $ withAuth $ Api.get DB.anns
+    post "/announcements" $ withRoles [Admin] $ Api.create @AnnWithoutId DB.anns
     -- put "/announcement/:ann_id" $ withRoles [Admin] Ann.edit
-    -- delete "/announcement/:ann_id" $ withRoles [Admin] Ann.deactivate
+    delete "/announcement/:_id" $ withRoles [Admin] $ Api.deactivate DB.anns
     {-
      - Teams
      -}
-    -- get "/teams" $ withRoles [Admin] Team.getMany
-    -- get "/teams/:team_id" $ withRoles [Admin] Team.get
-    post "/teams" $ withRoles [Admin] $ create @TeamWithoutId DB.teams
+    get "/teams" $ withRoles [Admin] $ Api.getMany DB.teams
+    get "/teams/:_id" $ withRoles [Admin] $ Api.get DB.teams
+    post "/teams" $ withRoles [Admin] $ Api.create @TeamWithoutId DB.teams
     -- put "/teams/:team_id" $ withRoles [Admin] Team.edit
-    -- delete "/teams/:team_id" $ withRoles [Admin] Team.deactivate
+    delete "/teams/:_id" $ withRoles [Admin] $ Api.deactivate DB.teams
     {-
      - Standard 404 -- keep this last
      -}

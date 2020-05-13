@@ -80,9 +80,9 @@ apiKeys =
   tableFieldMod
     "api_keys"
     [ #key :- primary,
-      #_id :- foreignKey users #_id,
+      #userId :- foreignKey users #_id,
       Single #dateCreated :- index,
-      (#_id :+ #key) :- index
+      (#userId :+ #key) :- index
     ]
     $ toName "key"
 

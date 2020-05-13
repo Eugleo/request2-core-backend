@@ -47,6 +47,16 @@ param = lift . S.param . fromStrict
 envIO :: IO a -> EnvAction a
 envIO = lift . liftAndCatchIO
 
+askConfig :: EnvAction ServerConfig
+askConfig = envConfig <$> ask
+
+askUserInfo :: EnvAction UserInfo
+askUserInfo = do
+  env <- ask
+  case envUser env of
+    Just ui -> return ui
+    Nothing -> status forbidden403 >> lift finish
+
 rescue :: EnvAction a -> (Text -> EnvAction a) -> EnvAction a
 rescue act err = do
   env <- ask

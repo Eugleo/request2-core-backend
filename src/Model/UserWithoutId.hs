@@ -14,6 +14,7 @@ import Model.Team
 data UserWithoutId
   = User
       { email :: Text,
+        password :: Text,
         name :: Text,
         roles :: [Role],
         teamId :: ID Team,

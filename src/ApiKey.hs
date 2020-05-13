@@ -11,7 +11,7 @@ import Model.User (User)
 data ApiKey
   = ApiKey
       { key :: Text,
-        _id :: ID User,
+        userId :: ID User,
         dateCreated :: DateTime
       }
   deriving (Eq, Show, Generic, SqlRow)

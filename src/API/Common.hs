@@ -18,6 +18,18 @@ import Environment (EnvAction, json, jsonData, lift, param, status)
 import Network.HTTP.Types.Status (notFound404, ok200)
 import Web.Scotty.Trans (finish)
 
+createFrom ::
+  forall a b w.
+  (AddId a b w, Relational b, ToJSON b) =>
+  Table b ->
+  a ->
+  EnvAction ()
+createFrom tbl val = do
+  let valWithDef = addId def val :: b
+  rowId <- lift . lift $ insertWithPK tbl [valWithDef]
+  let valWithId = addId rowId val :: b
+  json valWithId
+
 create ::
   forall a b w.
   (AddId a b w, Relational b, FromJSON a, ToJSON b) =>
@@ -25,10 +37,19 @@ create ::
   EnvAction ()
 create tbl = do
   val <- jsonData :: EnvAction a
-  let valWithDef = addId def val :: b
-  rowId <- lift . lift $ insertWithPK tbl [valWithDef]
-  let valWithId = addId rowId val :: b
-  json valWithId
+  createFrom tbl val
+
+getBy ::
+  (Relational b, HasField "_id" b, FieldType "_id" b ~ ID b) =>
+  Table b ->
+  ID b ->
+  EnvAction (Maybe b)
+getBy tbl valId = do
+  res <- lift . lift . query $ do
+    val <- select tbl
+    restrict (val ! #_id .== literal valId)
+    return val
+  return (listToMaybe res)
 
 get ::
   (Relational b, ToJSON b, HasField "_id" b, FieldType "_id" b ~ ID b) =>
