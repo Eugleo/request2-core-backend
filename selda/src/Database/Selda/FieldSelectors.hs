@@ -7,7 +7,7 @@
 -- | Create Selda selectors from plain record field selectors.
 --   Requires the @OverloadedLabels@ language extension.
 module Database.Selda.FieldSelectors
-  (FieldType, HasField, IsLabel, GRSel
+  (FieldType, HasField, IsLabel
   ) where
 import Database.Selda.Generic (Relational)
 import Database.Selda.Selectors as S
