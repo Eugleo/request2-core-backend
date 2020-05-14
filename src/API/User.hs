@@ -3,22 +3,22 @@
 
 module Api.User where
 
-import Api.Common
-import ApiKey (ApiKey (ApiKey), key)
 import Control.Monad (when)
-import Crypto (checkHash, newApiKey, newHash, regToken)
+import Data.Environment
+import Data.Model.ApiKey (ApiKey (ApiKey), key)
+import Data.Model.DateTime (now)
+import Data.Model.Role (Role (..))
+import Data.Model.User (User)
 import qualified Data.Text.IO as T
+import Data.UserDetails (UserDetails (UserDetails))
+import Data.UserInfo (UserInfo (UserInfo))
+import qualified Data.UserInfo as U
+import qualified Data.UserWithoutId as User
+import Database.Common
 import Database.Selda hiding (text)
 import qualified Database.Table as Table
-import DateTime (now)
-import Environment
-import Model.Role (Role (..))
-import Model.User (User)
-import Model.UserDetails (UserDetails (UserDetails))
-import qualified Model.UserWithoutId as User
 import Network.HTTP.Types.Status (badRequest400, created201, forbidden403, internalServerError500)
-import UserInfo (UserInfo (UserInfo))
-import qualified UserInfo as U
+import Utils.Crypto (checkHash, newApiKey, newHash, regToken)
 
 -- TODO is 403 the right status code here?
 login :: EnvAction ()
@@ -103,7 +103,7 @@ getDetails = do
         :*: user ! #dateCreated
   case res of
     [(name :*: teamId :*: roles :*: created)] -> do
-      maybeTeam <- getBy Table.teams teamId
+      maybeTeam <- get Table.teams teamId
       case maybeTeam of
         Just team -> json $ UserDetails name roles team created
         Nothing -> status internalServerError500 >> finish
@@ -142,7 +142,7 @@ register = do
       <*> envIO now
       <*> pure True
   newuser <-
-    createFrom Table.users u `rescue` \_ -> do
+    create Table.users u `rescue` \_ -> do
       text "Failed to create the new user entry"
       status internalServerError500 >> finish
   json newuser

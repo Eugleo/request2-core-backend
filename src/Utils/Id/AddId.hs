@@ -6,7 +6,7 @@
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeFamilies #-}
 
-module AddId where
+module Utils.Id.AddId where
 
 import Data.Coerce (Coercible)
 import Data.Functor.Contravariant

@@ -4,14 +4,14 @@
 
 module Database.BasicAuth where
 
+import Data.Environment
 import Data.Maybe
+import Data.Model.Role (Role)
+import Data.Model.User (User)
 import Data.Text ()
+import Data.UserInfo (UserInfo (UserInfo))
 import Database.Selda
 import qualified Database.Table as Table
-import Environment
-import Model.Role (Role)
-import Model.User (User)
-import UserInfo (UserInfo (UserInfo))
 
 findApiKeyUser :: Text -> EnvAction (Maybe UserInfo)
 findApiKeyUser key = do

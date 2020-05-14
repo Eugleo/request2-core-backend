@@ -1,12 +1,12 @@
-module Crypto where
+module Utils.Crypto where
 
-import Config
 import Data.ByteString.Lazy (toStrict)
 import Data.ByteString.Lazy.UTF8 (ByteString)
 import qualified Data.ByteString.Lazy.UTF8 as LU (fromString)
 import Data.ByteString.UTF8 (fromString, toString)
 import Data.Digest.Pure.SHA (sha256, sha512, showDigest)
 import Data.Text
+import Server.Config
 import System.Entropy (getEntropy)
 import System.POSIX.Crypt.SHA512
 import Text.Email.Validate (isValid)
@@ -34,7 +34,7 @@ pathHash = pack . showDigest . sha256 . LU.fromString . unpack
 pathHash' :: ByteString -> Hash
 pathHash' = pack . showDigest . sha256
 
-regToken :: Text -> ServerConfig -> Maybe Text
+regToken :: Text -> Config -> Maybe Text
 regToken mail config
   | isValid (toStrict bmail) = Just token
   | otherwise = Nothing

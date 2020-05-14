@@ -1,18 +1,18 @@
-module WithX where
+module Utils.WithX where
 
-import Config
 import Control.Monad (unless)
 import Control.Monad.Reader.Class (ask, local)
+import Data.Environment
+import Data.Model.Role (Role)
+import Data.UserInfo
 import Database.BasicAuth
-import Environment
-import Model.Role (Role)
 import Network.HTTP.Types
-import UserInfo
+import Server.Config
 
-withDBEnv :: ServerConfig -> EnvAction a -> Action a
+withDBEnv :: Config -> EnvAction a -> Action a
 withDBEnv config ea = runEnvAction ea $ Env config Nothing
 
-withAuthEnv :: ServerConfig -> EnvAction a -> Action a
+withAuthEnv :: Config -> EnvAction a -> Action a
 withAuthEnv config = withDBEnv config . authentized
 
 authentized :: EnvAction a -> EnvAction a
@@ -26,7 +26,7 @@ authentized action = do
         _ -> status unauthorized401 >> finish
     Nothing -> status unauthorized401 >> finish
 
-withRolesEnv :: ServerConfig -> [Role] -> EnvAction a -> Action a
+withRolesEnv :: Config -> [Role] -> EnvAction a -> Action a
 withRolesEnv config rs action =
   withAuthEnv config $ do
     userRoles <- roles <$> askUser

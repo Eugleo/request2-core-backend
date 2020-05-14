@@ -2,13 +2,13 @@
 
 module Api.Request where
 
+import Data.Environment (EnvAction, envIO, lift, param)
 import Data.Functor (void)
+import Data.Model.Property (Property)
+import Data.Model.Request (Request)
 import Database.Selda
 import qualified Database.Table as Table
-import Environment (EnvAction, envIO, lift, param)
-import Model.Property (Property)
 import qualified Model.Property as P
-import Model.Request (Request)
 import qualified Model.Request as R
 
 getWithproperties :: EnvAction (Maybe (Request, [Property]))

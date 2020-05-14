@@ -2,16 +2,16 @@
 
 module Database.Table where
 
-import ApiKey (ApiKey)
 import Data.Char (isLower)
 import Data.Maybe (fromMaybe)
+import Data.Model.Ann (Ann)
+import Data.Model.ApiKey (ApiKey)
+import Data.Model.Property (Property)
+import Data.Model.Request (Request)
+import Data.Model.Team (Team)
+import Data.Model.User (User)
 import qualified Data.Text as T
 import Database.Selda
-import Model.Ann (Ann)
-import Model.Property (Property)
-import Model.Request (Request)
-import Model.Team (Team)
-import Model.User (User)
 
 setup :: MonadSelda m => m ()
 setup = do

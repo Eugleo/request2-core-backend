@@ -9,25 +9,14 @@
 
 module Api.Common where
 
-import AddId
 import Data.Aeson ((.=), FromJSON, ToJSON, object, toJSON)
+import Data.Environment
 import Data.Maybe (listToMaybe)
+import qualified Database.Common as Db
 import Database.Selda hiding (update)
 import qualified Database.Selda as Selda (update)
-import Environment
-import Network.HTTP.Types.Status (notFound404, ok200)
-
-createFrom ::
-  forall a b w.
-  (AddId a b w, Relational b, ToJSON b) =>
-  Table b ->
-  a ->
-  EnvAction ()
-createFrom tbl val = do
-  let valWithDef = addId def val :: b
-  rowId <- insertWithPK tbl [valWithDef]
-  let valWithId = addId rowId val :: b
-  json valWithId
+import Network.HTTP.Types.Status (created201, notFound404, ok200)
+import Utils.Id.AddId
 
 create ::
   forall a b w.
@@ -36,19 +25,9 @@ create ::
   EnvAction ()
 create tbl = do
   val <- jsonData :: EnvAction a
-  createFrom tbl val
-
-getBy ::
-  (Relational b, HasField "_id" b, FieldType "_id" b ~ ID b) =>
-  Table b ->
-  ID b ->
-  EnvAction (Maybe b)
-getBy tbl valId = do
-  res <- query $ do
-    val <- select tbl
-    restrict (val ! #_id .== literal valId)
-    return val
-  return (listToMaybe res)
+  newVal <- Db.create tbl val
+  json newVal
+  status created201
 
 get ::
   (Relational b, ToJSON b, HasField "_id" b, FieldType "_id" b ~ ID b) =>
@@ -56,11 +35,8 @@ get ::
   EnvAction ()
 get tbl = do
   valId <- param "_id" :: EnvAction (ID b)
-  res <- query $ do
-    val <- select tbl
-    restrict (val ! #_id .== literal valId)
-    return val
-  maybe (status notFound404 >> finish) json (listToMaybe res)
+  val <- Db.get tbl valId
+  maybe (status notFound404 >> finish) json val
 
 getMany ::
   (Relational b, ToJSON b, HasField "_id" b, FieldType "_id" b ~ ID b) =>
@@ -75,7 +51,7 @@ getMany tbl = do
     return (count (v ! #_id))
   maybe
     (status notFound404 >> finish)
-    (\total -> json (object ["anns" .= toJSON vals, "total" .= total]))
+    (\total -> json (object ["values" .= toJSON vals, "total" .= total]))
     (listToMaybe res)
 
 -- TODO Add update

@@ -1,6 +1,6 @@
 {-# OPTIONS_GHC -fno-warn-orphans #-}
 
-module Model.IdInstances where
+module Utils.Id.IdInstances where
 
 import Data.Aeson
 import Database.Selda

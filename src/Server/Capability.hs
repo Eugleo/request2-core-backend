@@ -1,6 +1,6 @@
 {-# LANGUAGE OverloadedStrings #-}
 
-module Capability where
+module Server.Capability where
 
 import Data.String
 

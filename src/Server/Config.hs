@@ -1,6 +1,6 @@
 {-# LANGUAGE TemplateHaskell #-}
 
-module Config where
+module Server.Config where
 
 import Control.Lens
 import Data.ByteString (ByteString)
@@ -9,8 +9,8 @@ import Data.Text
 import Data.Text.Encoding (encodeUtf8)
 import System.Environment
 
-data ServerConfig
-  = ServerConfig
+data Config
+  = Config
       { _dataDir :: Text,
         _dbConn :: Text,
         _listenPort :: Int,
@@ -19,11 +19,11 @@ data ServerConfig
       }
   deriving (Show)
 
-makeLenses ''ServerConfig
+makeLenses ''Config
 
-defaultConfig :: ServerConfig
+defaultConfig :: Config
 defaultConfig =
-  ServerConfig
+  Config
     { _dataDir = "data",
       _dbConn = "",
       _listenPort = 9080,
@@ -31,16 +31,16 @@ defaultConfig =
       _regTokenSecret = "31337" --TODO generate a random token for a single run
     }
 
-dataDirStr :: ServerConfig -> String
+dataDirStr :: Config -> String
 dataDirStr = unpack . _dataDir
 
-dbConnStr :: ServerConfig -> ByteString
+dbConnStr :: Config -> ByteString
 dbConnStr = encodeUtf8 . _dbConn
 
 defaultConfigPath :: String
 defaultConfigPath = "etc/default.cfg"
 
-getConfig :: IO ServerConfig
+getConfig :: IO Config
 getConfig = do
   args <- getArgs
   case args of
@@ -52,15 +52,15 @@ updateFromIni ::
   Ini ->
   Text ->
   Text ->
-  ASetter' ServerConfig Text ->
-  (ServerConfig -> ServerConfig)
+  ASetter' Config Text ->
+  (Config -> Config)
 updateFromIni ini sec name l =
   either (const id) (set l) $ lookupValue sec name ini
 
 asText :: (Show a, Read a) => Iso' a Text
 asText = iso (pack . show) (read . unpack) --not really an iso but whatever
 
-readConfig :: String -> IO ServerConfig
+readConfig :: String -> IO Config
 readConfig path = do
   cfg <- readIniFile path
   ini <-

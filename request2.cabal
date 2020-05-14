@@ -58,24 +58,33 @@ executable request2
 
   -- Modules included in this executable, other than Main.
   other-modules:
-    Api.Common,
-    Api.Request,
-    Api.User,
-    ApiServer,
-    Capability,
-    Config,
-    Crypto,
-    Database.BasicAuth,
-    Database.Table,
-    DateTime,
-    Environment,
-    Model.Ann,
-    Model.Property,
-    Model.Request,
-    Model.Team,
-    Model.User,
-    Model.UserDetails,
-    UserInfo
+    Api.Common
+    Api.User
+    Data.AnnWithoutId
+    Data.Environment
+    Data.Model.Ann
+    Data.Model.ApiKey
+    Data.Model.DateTime
+    Data.Model.Property
+    Data.Model.Request
+    Data.Model.Role
+    Data.Model.Status
+    Data.Model.Team
+    Data.Model.User
+    Data.TeamWithoutId
+    Data.UserDetails
+    Data.UserInfo
+    Data.UserWithoutId
+    Database.BasicAuth
+    Database.Common
+    Database.Table
+    Server.Capability
+    Server.Config
+    Server.Server
+    Utils.Crypto
+    Utils.Id.AddId
+    Utils.Id.IdInstances
+    Utils.WithX
 
   default-extensions:
     OverloadedStrings

@@ -1,13 +1,13 @@
 module Main where
 
-import ApiServer
-import Config
 import Control.Monad
 import Database.Selda.PostgreSQL
 import Database.Table
+import Server.Config
+import Server.Server
 
 main :: IO ()
 main = do
-  config <- getConfig
+  cfg <- getConfig
   withPostgreSQL connInfo setup
-  void $ apiServer config
+  void $ server cfg

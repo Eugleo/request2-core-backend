@@ -1,20 +1,21 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TypeApplications #-}
 
-module ApiServer where
+module Server.Server where
 
 import qualified Api.Common as Api
 import qualified Api.User as User
-import Capability
-import Config
 import Control.Monad
+import Data.AnnWithoutId (AnnWithoutId)
+import Data.Model.Role (Role (..))
+import Data.TeamWithoutId (TeamWithoutId)
 import qualified Data.Text as T
 import Database.Selda.PostgreSQL (PGConnectInfo (..), withPostgreSQL)
 import qualified Database.Table as Table
-import Model.AnnWithoutId (AnnWithoutId)
-import Model.Role (Role (..))
-import Model.TeamWithoutId (TeamWithoutId)
 import Network.Wai
+import Server.Capability
+import Server.Config
+import Utils.WithX
 import qualified Web.Scotty.Trans as S
   ( function,
     json,
@@ -24,7 +25,6 @@ import qualified Web.Scotty.Trans as S
     text,
   )
 import Web.Scotty.Trans (delete, get, post, put, scottyT)
-import WithX
 
 -- TODO Replace with info from config
 connInfo :: PGConnectInfo
@@ -39,8 +39,8 @@ addCORSHeader =
         ("Access-Control-Allow-Methods", "*")
       ]
 
-apiServer :: ServerConfig -> IO ()
-apiServer config = scottyT (_listenPort config) (withPostgreSQL connInfo)
+server :: Config -> IO ()
+server config = scottyT (_listenPort config) (withPostgreSQL connInfo)
   $ when (_allowCORS config)
   $ do
     S.middleware addCORSHeader
