@@ -28,8 +28,6 @@ getWithProps = do
       return $ Just (req, props)
     _ -> return Nothing
 
--- TODO Add request update
-
 updateWithProps :: EnvAction ()
 updateWithProps = do
   RWP.RWP {RWP.req, RWP.props} <- jsonData
