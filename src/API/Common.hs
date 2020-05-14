@@ -30,7 +30,11 @@ create tbl = do
   status created201
 
 get ::
-  (Relational b, ToJSON b, HasField "_id" b, FieldType "_id" b ~ ID b) =>
+  ( Relational b,
+    ToJSON b,
+    HasField "_id" b,
+    FieldType "_id" b ~ ID b
+  ) =>
   Table b ->
   EnvAction ()
 get tbl = do
@@ -39,7 +43,11 @@ get tbl = do
   maybe (status notFound404 >> finish) json val
 
 getMany ::
-  (Relational b, ToJSON b, HasField "_id" b, FieldType "_id" b ~ ID b) =>
+  ( Relational b,
+    ToJSON b,
+    HasField "_id" b,
+    FieldType "_id" b ~ ID b
+  ) =>
   Table b ->
   EnvAction ()
 getMany tbl = do
@@ -54,42 +62,19 @@ getMany tbl = do
     (\total -> json (object ["values" .= toJSON vals, "total" .= total]))
     (listToMaybe res)
 
--- TODO Add update
-
--- edit :: WithID Announcement -> EnvAction ()
--- edit (WithID annID Ann {..}) = do
---   db <- askDB
---   void . envIO $
---     execute
---       db
---       "UPDATE announcements \
---       \ SET title = ?, body = ?, user_id = ?, created = ?, active = ? \
---       \ WHERE announcement_id = ?"
---       (title, body, authorID, created, active, annID)
-
--- update ::
---   forall a b w.
---   ( AddId a b w,
---     Relational b,
---     FromJSON b,
---     ToJSON b,
---     HasField "_id" b,
---     FieldType "_id" b ~ ID b
---   ) =>
---   Table b ->
---   EnvAction ()
-
--- update tbl = do
---   valId <- param "_id" :: EnvAction (ID b)
---   val <- jsonData :: EnvAction b
---   n <-
---     lift . lift $
---       Selda.update
---         tbl
---         (\v -> v ! #_id .== literal valId)
---         (\v -> v `with` [_ . fromTup $ selectors val])
---   json $ object ["changed" .= n]
---   status ok200
+update ::
+  forall b.
+  ( Relational b,
+    FromJSON b,
+    HasField "_id" b,
+    FieldType "_id" b ~ ID b
+  ) =>
+  Table b ->
+  EnvAction ()
+update tbl = do
+  valId <- param "_id" :: EnvAction (ID b)
+  val <- jsonData :: EnvAction b
+  Db.update tbl valId val
 
 delete ::
   ( Relational b,

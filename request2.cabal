@@ -91,9 +91,6 @@ executable request2
 
   -- Other library packages from which modules are imported.
   build-depends:
-    mtl,
-    generic-data,
-    generic-data-surgery,
     base >= 4.11,
     aeson,
     bytestring,
@@ -103,12 +100,14 @@ executable request2
     email-validate,
     entropy,
     exceptions,
+    generic-data,
+    generic-data-surgery,
     hslogger,
     http-types,
     ini,
     lens,
     lens-aeson,
-    postgresql-simple,
+    mtl,
     raw-strings-qq,
     scientific,
     scotty,
@@ -118,6 +117,7 @@ executable request2
     text,
     transformers,
     unix-time,
+    unordered-containers,
     utf8-string,
     wai
 

@@ -1,18 +1,19 @@
+{-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedLabels #-}
 
 module Api.Request where
 
-import Data.Environment (EnvAction, envIO, lift, param)
-import Data.Functor (void)
+import Data.Environment
 import Data.Model.Property (Property)
-import Data.Model.Request (Request)
+import Data.Model.Request (Request (..))
+import qualified Data.ReqWithProps as RWP
+import qualified Database.Common as Db
 import Database.Selda
 import qualified Database.Table as Table
-import qualified Model.Property as P
-import qualified Model.Request as R
+import Utils.Id.AddId (addId)
 
-getWithproperties :: EnvAction (Maybe (Request, [Property]))
-getWithproperties = do
+getWithProps :: EnvAction (Maybe (Request, [Property]))
+getWithProps = do
   reqId <- param "_id"
   res <- query $ do
     request <- select Table.requests
@@ -26,26 +27,19 @@ getWithproperties = do
         return prop
       return $ Just (req, props)
     _ -> return Nothing
+
 -- TODO Add request update
 
--- updateRequest :: (WithID Request, [Property]) -> EnvAction ()
--- updateRequest (WithID reqID R.Request {..}, props) = do
---   db <- askDB
---   -- Remove old properties
---   void . envIO $
---     execute
---       db
---       "UPDATE properties \
---       \ SET enabled = ? \
---       \ WHERE request_id = ?"
---       (Only reqID)
---   -- Add new properties
---   mapM_ (addProperty reqID) props
---   -- Update the request itself
---   void . envIO $
---     execute
---       db
---       "UPDATE requests \
---       \ SET user_id = ?, team_id = ?, status = ?, type = ?, created = ? \
---       \ WHERE request_id = ?"
---       (authorID, teamID, status, requestType, created)
+updateWithProps :: EnvAction ()
+updateWithProps = do
+  RWP.RWP {RWP.req, RWP.props} <- jsonData
+  let reqId = _id req
+  -- Deactivate old props
+  update_
+    Table.properties
+    (\p -> p ! #requestId .== literal reqId)
+    (\p -> p `with` [#active := false])
+  -- Add the new props
+  insert_ Table.properties (addId def <$> props)
+  -- Update the request
+  Db.update Table.requests reqId req

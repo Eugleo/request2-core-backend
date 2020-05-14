@@ -68,7 +68,7 @@ server config = scottyT (_listenPort config) (withPostgreSQL connInfo)
     get "/announcements" $ withAuth $ Api.getMany Table.anns
     get "/announcement/:_id" $ withAuth $ Api.get Table.anns
     post "/announcements" $ withRoles [Admin] $ Api.create @AnnWithoutId Table.anns
-    -- put "/announcement/:ann_id" $ withRoles [Admin] Ann.edit
+    put "/announcement/:ann_id" $ withRoles [Admin] $ Api.update Table.anns
     delete "/announcement/:_id" $ withRoles [Admin] $ Api.deactivate Table.anns
     {-
      - Teams
@@ -76,7 +76,7 @@ server config = scottyT (_listenPort config) (withPostgreSQL connInfo)
     get "/teams" $ withRoles [Admin] $ Api.getMany Table.teams
     get "/teams/:_id" $ withRoles [Admin] $ Api.get Table.teams
     post "/teams" $ withRoles [Admin] $ Api.create @TeamWithoutId Table.teams
-    -- put "/teams/:team_id" $ withRoles [Admin] Team.edit
+    put "/teams/:team_id" $ withRoles [Admin] $ Api.update Table.teams
     delete "/teams/:_id" $ withRoles [Admin] $ Api.deactivate Table.teams
     {-
      - Standard 404 -- keep this last
