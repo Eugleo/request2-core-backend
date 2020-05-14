@@ -9,8 +9,8 @@ import Capability
 import Config
 import Control.Monad
 import qualified Data.Text as T
-import qualified Database.Schema as DB
 import Database.Selda.PostgreSQL (PGConnectInfo (..), withPostgreSQL)
+import qualified Database.Table as Table
 import Model.AnnWithoutId (AnnWithoutId)
 import Model.Role (Role (..))
 import Model.TeamWithoutId (TeamWithoutId)
@@ -65,19 +65,19 @@ apiServer config = scottyT (_listenPort config) (withPostgreSQL connInfo)
     {-
      - Announcements
      -}
-    get "/announcements" $ withAuth $ Api.getMany DB.anns
-    get "/announcement/:_id" $ withAuth $ Api.get DB.anns
-    post "/announcements" $ withRoles [Admin] $ Api.create @AnnWithoutId DB.anns
+    get "/announcements" $ withAuth $ Api.getMany Table.anns
+    get "/announcement/:_id" $ withAuth $ Api.get Table.anns
+    post "/announcements" $ withRoles [Admin] $ Api.create @AnnWithoutId Table.anns
     -- put "/announcement/:ann_id" $ withRoles [Admin] Ann.edit
-    delete "/announcement/:_id" $ withRoles [Admin] $ Api.deactivate DB.anns
+    delete "/announcement/:_id" $ withRoles [Admin] $ Api.deactivate Table.anns
     {-
      - Teams
      -}
-    get "/teams" $ withRoles [Admin] $ Api.getMany DB.teams
-    get "/teams/:_id" $ withRoles [Admin] $ Api.get DB.teams
-    post "/teams" $ withRoles [Admin] $ Api.create @TeamWithoutId DB.teams
+    get "/teams" $ withRoles [Admin] $ Api.getMany Table.teams
+    get "/teams/:_id" $ withRoles [Admin] $ Api.get Table.teams
+    post "/teams" $ withRoles [Admin] $ Api.create @TeamWithoutId Table.teams
     -- put "/teams/:team_id" $ withRoles [Admin] Team.edit
-    delete "/teams/:_id" $ withRoles [Admin] $ Api.deactivate DB.teams
+    delete "/teams/:_id" $ withRoles [Admin] $ Api.deactivate Table.teams
     {-
      - Standard 404 -- keep this last
      -}

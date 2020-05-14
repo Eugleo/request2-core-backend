@@ -10,7 +10,7 @@ import DateTime
 import Model.Role
 import Model.Team
 
--- TODO Add password hash
+-- TODO Remove password hash
 data UserWithoutId
   = User
       { email :: Text,

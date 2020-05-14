@@ -3,8 +3,8 @@ module Main where
 import ApiServer
 import Config
 import Control.Monad
-import Database.Schema
 import Database.Selda.PostgreSQL
+import Database.Table
 
 main :: IO ()
 main = do

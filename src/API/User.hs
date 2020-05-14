@@ -8,8 +8,8 @@ import ApiKey (ApiKey (ApiKey), key)
 import Control.Monad (when)
 import Crypto (checkHash, newApiKey, newHash, regToken)
 import qualified Data.Text.IO as T
-import qualified Database.Schema as DB
 import Database.Selda hiding (text)
+import qualified Database.Table as Table
 import DateTime (now)
 import Environment
 import Model.Role (Role (..))
@@ -19,15 +19,14 @@ import qualified Model.UserWithoutId as User
 import Network.HTTP.Types.Status (badRequest400, created201, forbidden403, internalServerError500)
 import UserInfo (UserInfo (UserInfo))
 import qualified UserInfo as U
-import Web.Scotty.Trans (finish)
 
 -- TODO is 403 the right status code here?
 login :: EnvAction ()
 login = do
   email <- jsonParamText "email"
   password <- jsonParamText "password"
-  res <- lift . lift . query $ do
-    user <- select DB.users
+  res <- query $ do
+    user <- select Table.users
     restrict (user ! #email .== literal email)
     return (user ! #password :*: user ! #_id :*: user ! #roles)
   case res of
@@ -36,26 +35,26 @@ login = do
         then do
           apiKey <- addApiKey userId
           json $ UserInfo userId (key apiKey) roles
-        else status forbidden403 >> lift finish
-    _ -> status forbidden403 >> lift finish
+        else status forbidden403 >> finish
+    _ -> status forbidden403 >> finish
 
 addApiKey :: ID User -> EnvAction ApiKey
 addApiKey userId = do
   apiKey <- liftIO newApiKey
   time <- liftIO now
   let ak = ApiKey apiKey userId time
-  lift $ lift $ insert_ DB.apiKeys [ak]
+  insert_ Table.apiKeys [ak]
   return ak
 
 logout :: EnvAction ()
 logout = do
   ui <- askUserInfo
-  lift $ lift $ deleteFrom_ DB.apiKeys (\v -> v ! #key .== literal (U.apiKey ui))
+  deleteFrom_ Table.apiKeys (\v -> v ! #key .== literal (U.apiKey ui))
 
 logoutEverywhere :: EnvAction ()
 logoutEverywhere = do
   ui <- askUserInfo
-  lift $ lift $ deleteFrom_ DB.apiKeys (\v -> v ! #userId .== literal (U.userId ui))
+  deleteFrom_ Table.apiKeys (\v -> v ! #userId .== literal (U.userId ui))
 
 changePassword :: EnvAction ()
 changePassword = do
@@ -65,12 +64,12 @@ changePassword = do
   match <- checkPassword (U.userId ui) oldpass
   if match
     then setPassword (U.userId ui) newpass
-    else status forbidden403 >> lift finish
+    else status forbidden403 >> finish
 
 checkPassword :: ID User -> Text -> EnvAction Bool
 checkPassword userId password = do
-  res <- lift . lift . query $ do
-    user <- select DB.users
+  res <- query $ do
+    user <- select Table.users
     restrict (user ! #_id .== literal userId)
     return (user ! #password)
   return $
@@ -81,11 +80,10 @@ checkPassword userId password = do
 setPassword :: ID User -> Text -> EnvAction ()
 setPassword userId password = do
   pwHash <- envIO $ newHash password
-  lift . lift $
-    update_
-      DB.users
-      (\u -> u ! #_id .== literal userId)
-      (\u -> u `with` [#password := literal pwHash])
+  update_
+    Table.users
+    (\u -> u ! #_id .== literal userId)
+    (\u -> u `with` [#password := literal pwHash])
 
 getInfo :: EnvAction ()
 getInfo = do
@@ -95,8 +93,8 @@ getInfo = do
 getDetails :: EnvAction ()
 getDetails = do
   ui <- askUserInfo
-  res <- lift . lift . query $ do
-    user <- select DB.users
+  res <- query $ do
+    user <- select Table.users
     restrict (user ! #_id .== literal (U.userId ui))
     return $
       user ! #name
@@ -105,11 +103,11 @@ getDetails = do
         :*: user ! #dateCreated
   case res of
     [(name :*: teamId :*: roles :*: created)] -> do
-      maybeTeam <- getBy DB.teams teamId
+      maybeTeam <- getBy Table.teams teamId
       case maybeTeam of
         Just team -> json $ UserDetails name roles team created
-        Nothing -> status internalServerError500 >> lift finish
-    _ -> status internalServerError500 >> lift finish
+        Nothing -> status internalServerError500 >> finish
+    _ -> status internalServerError500 >> finish
 
 mailRegToken :: EnvAction ()
 mailRegToken = do
@@ -125,7 +123,7 @@ mailRegToken = do
               <> tok
         )
       status created201
-    _ -> status badRequest400 >> lift finish
+    _ -> status badRequest400 >> finish
 
 -- TODO: check that the team actually exists
 register :: EnvAction ()
@@ -133,7 +131,7 @@ register = do
   email <- jsonParamText "email"
   token <- jsonParamText "token"
   tokenCheck <- regToken email <$> askConfig
-  when (Just token /= tokenCheck) $ status forbidden403 >> lift finish
+  when (Just token /= tokenCheck) $ status forbidden403 >> finish
   passwordHash <- newHash <$> jsonParamText "password"
   u <-
     User.User email
@@ -144,8 +142,8 @@ register = do
       <*> envIO now
       <*> pure True
   newuser <-
-    createFrom DB.users u `rescue` \_ -> do
+    createFrom Table.users u `rescue` \_ -> do
       text "Failed to create the new user entry"
-      status internalServerError500 >> lift finish
+      status internalServerError500 >> finish
   json newuser
   status created201

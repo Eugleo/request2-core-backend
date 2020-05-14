@@ -3,8 +3,8 @@
 module Api.Request where
 
 import Data.Functor (void)
-import qualified Database.Schema as DB
 import Database.Selda
+import qualified Database.Table as Table
 import Environment (EnvAction, envIO, lift, param)
 import Model.Property (Property)
 import qualified Model.Property as P
@@ -14,14 +14,14 @@ import qualified Model.Request as R
 getWithproperties :: EnvAction (Maybe (Request, [Property]))
 getWithproperties = do
   reqId <- param "_id"
-  res <- lift . lift . query $ do
-    request <- select DB.requests
+  res <- query $ do
+    request <- select Table.requests
     restrict (request ! #_id .== literal reqId)
     return request
   case res of
     [req] -> do
-      props <- lift . lift . query $ do
-        prop <- select DB.properties
+      props <- query $ do
+        prop <- select Table.properties
         restrict (prop ! #requestId .== literal reqId)
         return prop
       return $ Just (req, props)

@@ -1,6 +1,6 @@
 {-# LANGUAGE OverloadedLabels #-}
 
-module Database.Schema where
+module Database.Table where
 
 import ApiKey (ApiKey)
 import Data.Char (isLower)

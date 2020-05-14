@@ -14,9 +14,8 @@ import Data.Aeson ((.=), FromJSON, ToJSON, object, toJSON)
 import Data.Maybe (listToMaybe)
 import Database.Selda hiding (update)
 import qualified Database.Selda as Selda (update)
-import Environment (EnvAction, json, jsonData, lift, param, status)
+import Environment
 import Network.HTTP.Types.Status (notFound404, ok200)
-import Web.Scotty.Trans (finish)
 
 createFrom ::
   forall a b w.
@@ -26,7 +25,7 @@ createFrom ::
   EnvAction ()
 createFrom tbl val = do
   let valWithDef = addId def val :: b
-  rowId <- lift . lift $ insertWithPK tbl [valWithDef]
+  rowId <- insertWithPK tbl [valWithDef]
   let valWithId = addId rowId val :: b
   json valWithId
 
@@ -45,7 +44,7 @@ getBy ::
   ID b ->
   EnvAction (Maybe b)
 getBy tbl valId = do
-  res <- lift . lift . query $ do
+  res <- query $ do
     val <- select tbl
     restrict (val ! #_id .== literal valId)
     return val
@@ -57,11 +56,11 @@ get ::
   EnvAction ()
 get tbl = do
   valId <- param "_id" :: EnvAction (ID b)
-  res <- lift . lift . query $ do
+  res <- query $ do
     val <- select tbl
     restrict (val ! #_id .== literal valId)
     return val
-  maybe (status notFound404 >> lift finish) json (listToMaybe res)
+  maybe (status notFound404 >> finish) json (listToMaybe res)
 
 getMany ::
   (Relational b, ToJSON b, HasField "_id" b, FieldType "_id" b ~ ID b) =>
@@ -70,15 +69,12 @@ getMany ::
 getMany tbl = do
   lim <- param "limit"
   offset <- param "offset"
-  vals <-
-    lift . lift . query $
-      limit offset lim (select tbl)
-  res <-
-    lift . lift . query . aggregate $ do
-      v <- select tbl
-      return (count (v ! #_id))
+  vals <- query $ limit offset lim (select tbl)
+  res <- query . aggregate $ do
+    v <- select tbl
+    return (count (v ! #_id))
   maybe
-    (status notFound404 >> lift finish)
+    (status notFound404 >> finish)
     (\total -> json (object ["anns" .= toJSON vals, "total" .= total]))
     (listToMaybe res)
 
@@ -128,7 +124,7 @@ delete ::
   EnvAction ()
 delete tbl = do
   valId <- param "_id" :: EnvAction (ID b)
-  n <- lift . lift $ deleteFrom tbl (\val -> val ! #_id .== literal valId)
+  n <- deleteFrom tbl (\val -> val ! #_id .== literal valId)
   json $ object ["changed" .= n]
   status ok200
 
@@ -144,10 +140,9 @@ deactivate ::
 deactivate tbl = do
   valId <- param "_id" :: EnvAction (ID b)
   n <-
-    lift . lift $
-      Selda.update
-        tbl
-        (\val -> val ! #_id .== literal valId)
-        (\val -> val `with` [#active := false])
+    Selda.update
+      tbl
+      (\val -> val ! #_id .== literal valId)
+      (\val -> val `with` [#active := false])
   json $ object ["changed" .= n]
   status ok200
