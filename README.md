@@ -29,8 +29,8 @@ You can optionally populate the database with some testing values by running
 
 ```
 psql request
-INSERT INTO teams (name, active) VALUES ('Evženův supertým', TRUE);
-INSERT INTO users (email, name, pw_hash, team_id, roles, created)  VALUES ('admin', 'Evžen', '$6$rounds=31337$zqmLJo8T3acQWalf$FvzezmB.v0hbE8HcFhOqgprJ2p9HAloNqRPUzZifI6cDTzP6IGFXvlrYd2tQIjiABJaT.PrLrIfkX8Qwe45Vw0', '1', 'Client Operator Admin', 1);
+INSERT INTO teams (name, code, active) VALUES ('Evženův supertým', 7, TRUE);
+INSERT INTO users (email, name, password, team_id, roles, date_created, active)  VALUES ('admin', 'Evžen', '$6$rounds=31337$zqmLJo8T3acQWalf$FvzezmB.v0hbE8HcFhOqgprJ2p9HAloNqRPUzZifI6cDTzP6IGFXvlrYd2tQIjiABJaT.PrLrIfkX8Qwe45Vw0', 2, 'Client,Operator,Admin', 1, TRUE);
 ```
 
 You'll now have a user `admin` with the password `admin` with full privileges.
