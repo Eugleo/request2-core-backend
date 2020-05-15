@@ -17,10 +17,8 @@ findApiKeyUser :: Text -> EnvAction (Maybe UserInfo)
 findApiKeyUser key = do
   res <- query $ do
     user <- select Table.users
-    apiKey <- innerJoin (\k -> k ! #userId .== user ! #_id) $ do
-      apiKey <- select Table.apiKeys
-      restrict (apiKey ! #key .== literal key)
-      return apiKey
+    apiKey <- select Table.apiKeys
+    restrict (apiKey ! #key .== literal key .&& apiKey ! #userId .== user ! #_id)
     return (user ! #_id :*: apiKey ! #key :*: user ! #roles)
   return $ mkUserInfo <$> listToMaybe res
 
