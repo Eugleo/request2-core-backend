@@ -28,7 +28,7 @@ import Web.Scotty.Trans (delete, get, post, put, scottyT)
 
 -- TODO Replace with info from config
 connInfo :: PGConnectInfo
-connInfo = PGConnectInfo "localhost" 5432 "request" Nothing (Just "eugen") Nothing
+connInfo = PGConnectInfo "localhost" 5432 "request" Nothing Nothing Nothing
 
 addCORSHeader :: Middleware
 addCORSHeader =
