@@ -10,7 +10,7 @@ import Data.AnnWithoutId (AnnWithoutId)
 import Data.Model.Role (Role (..))
 import Data.TeamWithoutId (TeamWithoutId)
 import qualified Data.Text as T
-import Database.Selda.PostgreSQL (PGConnectInfo (..), withPostgreSQL)
+import Database.Selda.PostgreSQL (PGConnectInfo (..), on, withPostgreSQL)
 import qualified Database.Table as Table
 import Network.Wai
 import Server.Capability
@@ -28,7 +28,7 @@ import Web.Scotty.Trans (delete, get, post, put, scottyT)
 
 -- TODO Replace with info from config
 connInfo :: PGConnectInfo
-connInfo = PGConnectInfo "localhost" 5432 "request" Nothing Nothing Nothing
+connInfo = "request" `on` "localhost"
 
 addCORSHeader :: Middleware
 addCORSHeader =
