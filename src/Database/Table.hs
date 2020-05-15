@@ -2,7 +2,7 @@
 
 module Database.Table where
 
-import Data.Char (isLower)
+import Data.Char (isLower, isUpper, toLower)
 import Data.Maybe (fromMaybe)
 import Data.Model.Ann (Ann)
 import Data.Model.ApiKey (ApiKey)
@@ -40,7 +40,7 @@ users =
       Single #email :- index,
       (#teamId :+ #name) :- index
     ]
-    $ toName "request"
+    $ toName "user"
 
 requests :: Table Request
 requests =
@@ -73,7 +73,7 @@ anns =
       #authorId :- foreignKey users #_id,
       (#active :+ #dateCreated) :- index
     ]
-    $ toName "user"
+    $ toName "ann"
 
 apiKeys :: Table ApiKey
 apiKeys =
@@ -84,21 +84,17 @@ apiKeys =
       Single #dateCreated :- index,
       (#userId :+ #key) :- index
     ]
-    $ toName "key"
+    $ toName "api_key"
 
 toName :: Text -> Text -> Text
 toName name col
   | T.isPrefixOf "_" col = T.append name col
   | T.isPrefixOf name col =
-    T.tail
+    T.drop 1
       . camelToSnake
       . fromMaybe col
       $ T.stripPrefix name col
   | otherwise = camelToSnake col
 
 camelToSnake :: Text -> Text
-camelToSnake = T.intercalate "_" . go []
-  where
-    go acc t = if T.null t then acc else go (word t : acc) (rest t)
-    word = T.takeWhile isLower
-    rest = T.dropWhile isLower
+camelToSnake t = T.pack (T.unpack t >>= (\x -> if isUpper x then ['_', toLower x] else [x]))
