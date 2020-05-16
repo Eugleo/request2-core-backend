@@ -6,15 +6,14 @@
 
 module Data.Environment where
 
-import Control.Lens (Getting, Traversal', (^?))
+import Control.Lens (Getting, (^?))
 import Control.Monad.IO.Class (MonadIO)
 import Control.Monad.Reader.Class (MonadReader, ask)
 import Control.Monad.State.Class (get)
 import qualified Control.Monad.Trans.Class as TR
 import Control.Monad.Trans.Reader (ReaderT, runReaderT)
-import Data.Aeson (FromJSON, Result (..), ToJSON, Value, decode, fromJSON)
-import Data.Aeson.Lens (_Integral, _Object, _String, key)
-import qualified Data.HashMap.Lazy as Map
+import Data.Aeson (FromJSON, ToJSON, Value)
+import Data.Aeson.Lens (_Integral, _String, key)
 import Data.Monoid (First)
 import Data.Text (Text)
 import qualified Data.Text.Lazy as Lazy
