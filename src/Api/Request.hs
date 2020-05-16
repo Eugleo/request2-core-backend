@@ -15,16 +15,12 @@ import Utils.Id.AddId (addId)
 getWithProps :: EnvAction (Maybe (Request, [Property]))
 getWithProps = do
   reqId <- param "_id"
-  res <- query $ do
-    request <- select Table.requests
-    restrict (request ! #_id .== literal reqId)
-    return request
+  res <- query $ select Table.requests `suchThat` (\req -> req ! #_id .== literal reqId)
   case res of
     [req] -> do
-      props <- query $ do
-        prop <- select Table.properties
-        restrict (prop ! #requestId .== literal reqId)
-        return prop
+      props <-
+        query $
+          select Table.properties `suchThat` (\prop -> prop ! #requestId .== literal reqId)
       return $ Just (req, props)
     _ -> return Nothing
 

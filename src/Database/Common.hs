@@ -28,10 +28,7 @@ get ::
   ID b ->
   EnvAction (Maybe b)
 get tbl valId = do
-  res <- query $ do
-    val <- select tbl
-    restrict (val ! #_id .== literal valId)
-    return val
+  res <- query $ select tbl `suchThat` (\val -> val ! #_id .== literal valId)
   return (listToMaybe res)
 
 update ::

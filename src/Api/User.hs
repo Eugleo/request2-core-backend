@@ -1,3 +1,4 @@
+{-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedLabels #-}
 {-# LANGUAGE TypeApplications #-}
 
@@ -8,7 +9,7 @@ import Data.Environment
 import Data.Model.ApiKey (ApiKey (ApiKey), key)
 import Data.Model.DateTime (now)
 import Data.Model.Role (Role (..))
-import Data.Model.User (User)
+import Data.Model.User (User (..))
 import qualified Data.Text.IO as T
 import Data.UserDetails (UserDetails (UserDetails))
 import Data.UserInfo (UserInfo (UserInfo))
@@ -24,17 +25,14 @@ import Utils.Crypto (checkHash, newApiKey, newHash, regToken)
 login :: EnvAction ()
 login = do
   email <- jsonParamText "email"
-  password <- jsonParamText "password"
-  res <- query $ do
-    user <- select Table.users
-    restrict (user ! #email .== literal email)
-    return (user ! #password :*: user ! #_id :*: user ! #roles)
+  pw <- jsonParamText "password"
+  res <- query $ select Table.users `suchThat` (\user -> user ! #email .== literal email)
   case res of
-    [pwHash :*: userId :*: roles] ->
-      if checkHash password pwHash
+    [User {password, _id, roles}] ->
+      if checkHash pw password
         then do
-          apiKey <- addApiKey userId
-          json $ UserInfo userId (key apiKey) roles
+          apiKey <- addApiKey _id
+          json $ UserInfo _id (key apiKey) roles
         else status forbidden403 >> finish
     _ -> status forbidden403 >> finish
 
@@ -67,14 +65,11 @@ changePassword = do
     else status forbidden403 >> finish
 
 checkPassword :: ID User -> Text -> EnvAction Bool
-checkPassword userId password = do
-  res <- query $ do
-    user <- select Table.users
-    restrict (user ! #_id .== literal userId)
-    return (user ! #password)
+checkPassword userId pw = do
+  res <- query $ select Table.users `suchThat` (\user -> user ! #_id .== literal userId)
   return $
     case res of
-      [hash] -> checkHash password hash
+      [User {password}] -> checkHash pw password
       _ -> False
 
 setPassword :: ID User -> Text -> EnvAction ()
@@ -93,19 +88,12 @@ getInfo = do
 getDetails :: EnvAction ()
 getDetails = do
   ui <- askUserInfo
-  res <- query $ do
-    user <- select Table.users
-    restrict (user ! #_id .== literal (U.userId ui))
-    return $
-      user ! #name
-        :*: user ! #teamId
-        :*: user ! #roles
-        :*: user ! #dateCreated
+  res <- query $ select Table.users `suchThat` (\user -> user ! #_id .== literal (U.userId ui))
   case res of
-    [(name :*: teamId :*: roles :*: created)] -> do
+    [User {teamId, name, roles, dateCreated}] -> do
       maybeTeam <- get Table.teams teamId
       case maybeTeam of
-        Just team -> json $ UserDetails name roles team created
+        Just team -> json $ UserDetails name roles team dateCreated
         Nothing -> status internalServerError500 >> finish
     _ -> status internalServerError500 >> finish
 
