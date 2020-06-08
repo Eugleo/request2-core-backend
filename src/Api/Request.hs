@@ -3,16 +3,19 @@
 
 module Api.Request where
 
+import Data.Aeson hiding (json)
 import Data.Environment
 import Data.Model.Property (Property)
-import Data.Model.Request (Request (..))
+import Data.Model.Request (Request (_id))
 import qualified Data.ReqWithProps as RWP
+import qualified Data.ReqWithPropsWithoutId as RWPWI
 import qualified Database.Common as Db
 import Database.Selda
 import qualified Database.Table as Table
+import Network.HTTP.Types.Status (created201, notFound404)
 import Utils.Id.AddId (addId)
 
-getWithProps :: EnvAction (Maybe (Request, [Property]))
+getWithProps :: EnvAction ()
 getWithProps = do
   reqId <- param "_id"
   res <- query $ select Table.requests `suchThat` (\req -> req ! #_id .== literal reqId)
@@ -21,8 +24,8 @@ getWithProps = do
       props <-
         query $
           select Table.properties `suchThat` (\prop -> prop ! #requestId .== literal reqId)
-      return $ Just (req, props)
-    _ -> return Nothing
+      json $ object ["request" .= req, "properties" .= props]
+    _ -> status notFound404 >> finish
 
 updateWithProps :: EnvAction ()
 updateWithProps = do
@@ -37,3 +40,11 @@ updateWithProps = do
   insert_ Table.properties (addId def <$> props)
   -- Update the request
   Db.update Table.requests reqId req
+
+createWithProps :: EnvAction ()
+createWithProps = do
+  RWPWI.RWP {RWPWI.req, RWPWI.props} <- jsonData
+  newRequest <- Db.create Table.requests req
+  insert_ Table.properties (addId def <$> props)
+  json newRequest
+  status created201

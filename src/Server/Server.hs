@@ -4,6 +4,7 @@
 module Server.Server where
 
 import qualified Api.Common as Api
+import qualified Api.Request as Request
 import qualified Api.User as User
 import Control.Monad
 import Data.AnnWithoutId (AnnWithoutId)
@@ -70,6 +71,15 @@ server config = scottyT (_listenPort config) (withPostgreSQL connInfo)
     post "/announcements" $ withRoles [Admin] $ Api.create @AnnWithoutId Table.anns
     put "/announcements/:_id" $ withRoles [Admin] $ Api.update Table.anns
     delete "/announcements/:_id" $ withRoles [Admin] $ Api.deactivate Table.anns
+    {-
+     - Requests
+     -}
+    -- TODO Only author and operator can view & edit requests
+    get "/requests" $ withAuth $ Api.getMany Table.requests
+    get "/requests/:_id" $ withAuth Request.getWithProps
+    post "/requests" $ withRoles [Client] Request.createWithProps
+    put "/requests/:_id" $ withRoles [Client] Request.updateWithProps
+    delete "/requests/:_id" $ withRoles [Client] $ Api.deactivate Table.requests
     {-
      - Teams
      -}
