@@ -2,18 +2,16 @@
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE FlexibleInstances #-}
 
-module Data.PropertyWithoutId where
+module Data.BareProperty where
 
 import Data.Aeson
 import Data.Model.DateTime
-import Data.Model.Request
 import Data.Model.User
 import Database.Selda
 
-data PropertyWithoutId
+data BareProperty
   = Property
-      { requestId :: ID Request,
-        authorId :: ID User,
+      { authorId :: ID User,
         propertyType :: Text,
         propertyData :: Text,
         dateAdded :: DateTime,
@@ -21,5 +19,5 @@ data PropertyWithoutId
       }
   deriving (Show, Eq, Generic, FromJSON, SqlRow)
 
-instance ToJSON PropertyWithoutId where
+instance ToJSON BareProperty where
   toEncoding = genericToEncoding defaultOptions

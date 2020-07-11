@@ -12,7 +12,8 @@ import Database.Selda
 
 data RequestWithoutId
   = Request
-      { authorId :: ID User,
+      { name :: Text,
+        authorId :: ID User,
         teamId :: ID Team,
         status :: Status,
         requestType :: Text, -- named `type` in db

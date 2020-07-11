@@ -14,6 +14,7 @@ import Database.Selda
 data Request
   = Request
       { _id :: ID Request,
+        name :: Text,
         authorId :: ID User,
         teamId :: ID Team,
         status :: Status,

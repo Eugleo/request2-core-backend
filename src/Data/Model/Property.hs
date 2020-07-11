@@ -10,6 +10,7 @@ import Data.Model.Request
 import Data.Model.User
 import Database.Selda
 
+-- TODO Add private properties (can only be viewed by author)
 data Property
   = Property
       { _id :: ID Property,

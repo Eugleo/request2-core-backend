@@ -1,12 +1,19 @@
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedLabels #-}
+{-# LANGUAGE RecordWildCards #-}
+
+-- TODO Refactor qualified names
 
 module Api.Request where
 
 import Data.Aeson hiding (json)
+import Data.BareProperty (BareProperty)
+import qualified Data.BareProperty as Bare
 import Data.Environment
 import Data.Model.Property (Property)
 import Data.Model.Request (Request (_id))
+import Data.PropertyWithoutId (PropertyWithoutId)
+import qualified Data.PropertyWithoutId as PWI
 import qualified Data.ReqWithProps as RWP
 import qualified Data.ReqWithPropsWithoutId as RWPWI
 import qualified Database.Common as Db
@@ -45,6 +52,10 @@ createWithProps :: EnvAction ()
 createWithProps = do
   RWPWI.RWP {RWPWI.req, RWPWI.props} <- jsonData
   newRequest <- Db.create Table.requests req
-  insert_ Table.properties (addId def <$> props)
+  insert_ Table.properties (addId def . addReqId (_id newRequest) <$> props)
   json newRequest
   status created201
+
+addReqId :: ID Request -> BareProperty -> PropertyWithoutId
+addReqId reqId Bare.Property {..} =
+  PWI.Property reqId authorId propertyType propertyData dateAdded active

@@ -4,14 +4,14 @@
 module Data.ReqWithPropsWithoutId where
 
 import Data.Aeson
-import Data.PropertyWithoutId
+import Data.BareProperty
 import Data.RequestWithoutId (RequestWithoutId)
 import Database.Selda
 
 data ReqWithPropsWithoutId
   = RWP
       { req :: RequestWithoutId,
-        props :: [PropertyWithoutId]
+        props :: [BareProperty]
       }
   deriving (Show, Eq, Generic, FromJSON)
 
