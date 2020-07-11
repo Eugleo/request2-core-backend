@@ -17,6 +17,7 @@ data Request
         name :: Text,
         authorId :: ID User,
         teamId :: ID Team,
+        assigneeId :: Maybe (ID User),
         status :: Status,
         requestType :: Text, -- named `type` in db
         dateCreated :: DateTime,
