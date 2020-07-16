@@ -1,0 +1,27 @@
+Arguments: 
+  /usr/local/Cellar/node/14.5.0/bin/node /usr/local/Cellar/yarn/1.22.4/libexec/bin/yarn.js add moment
+
+PATH: 
+  /usr/local/sbin:/Applications/Postgres.app/Contents/Versions/latest/bin:/Users/eugen/.local/bin:/Users/eugen/.cabal/bin:/Users/eugen/.ghcup/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:/usr/local/share/dotnet:~/.dotnet/tools:/Library/Frameworks/Mono.framework/Versions/Current/Commands:/Applications/Racket v6.12/bin:/Library/TeX/texbin
+
+Yarn version: 
+  1.22.4
+
+Node version: 
+  14.5.0
+
+Platform: 
+  darwin x64
+
+Trace: 
+  Error: read ECONNRESET
+      at TLSWrap.onStreamRead (internal/stream_base_commons.js:207:27)
+
+npm manifest: 
+  No manifest
+
+yarn manifest: 
+  No manifest
+
+Lockfile: 
+  No lockfile
