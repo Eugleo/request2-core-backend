@@ -6,11 +6,11 @@
 
 module Api.Request where
 
+import Control.Monad (forM_)
 import Data.Aeson hiding (json)
 import Data.BareProperty (BareProperty)
 import qualified Data.BareProperty as Bare
 import Data.Environment
-import Data.Model.Property (Property)
 import Data.Model.Request (Request (_id))
 import Data.PropertyWithoutId (PropertyWithoutId)
 import qualified Data.PropertyWithoutId as PWI
@@ -38,11 +38,12 @@ updateWithProps :: EnvAction ()
 updateWithProps = do
   RWP.RWP {RWP.req, RWP.props} <- jsonData
   let reqId = _id req
-  -- Deactivate old props
-  update_
-    Table.properties
-    (\p -> p ! #requestId .== literal reqId)
-    (\p -> p `with` [#active := false])
+  -- Deactivate the old props that are beng overwritten
+  forM_ (PWI.propertyType <$> props) $ \name ->
+    update_
+      Table.properties
+      (\p -> p ! #requestId .== literal reqId .&& p ! #propertyType .== literal name)
+      (\p -> p `with` [#active := false])
   -- Add the new props
   insert_ Table.properties (addId def <$> props)
   -- Update the request
