@@ -53,6 +53,7 @@ server config = scottyT (_listenPort config) (withPostgreSQL connInfo)
     {-
      - Users
      -}
+    get "/users/:_id" $ withRoles [Admin, Operator] $ Api.get Table.users
     post "/register-init" $ withDB User.mailRegToken
     post "/register" $ withDB User.register
     post "/login" $ withDB User.login
@@ -78,7 +79,7 @@ server config = scottyT (_listenPort config) (withPostgreSQL connInfo)
     get "/requests" $ withAuth $ Api.getMany Table.requests
     get "/requests/:_id" $ withAuth Request.getWithProps
     post "/requests" $ withRoles [Client] Request.createWithProps
-    put "/requests/:_id" $ withRoles [Client] Request.updateWithProps
+    put "/requests/:_id" $ withRoles [Client, Operator] Request.updateWithProps
     delete "/requests/:_id" $ withRoles [Client] $ Api.deactivate Table.requests
     {-
      - Teams

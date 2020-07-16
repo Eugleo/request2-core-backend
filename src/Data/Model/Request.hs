@@ -10,11 +10,11 @@ import Data.Model.Team
 import Data.Model.User
 import Database.Selda
 
--- TODO Add title
 data Request
   = Request
       { _id :: ID Request,
         name :: Text,
+        code :: Text,
         authorId :: ID User,
         teamId :: ID Team,
         assigneeId :: Maybe (ID User),

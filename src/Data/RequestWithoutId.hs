@@ -13,6 +13,7 @@ import Database.Selda
 data RequestWithoutId
   = Request
       { name :: Text,
+        code :: Text,
         authorId :: ID User,
         teamId :: ID Team,
         assigneeId :: Maybe (ID User),
