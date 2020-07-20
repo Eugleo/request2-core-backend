@@ -2,10 +2,9 @@
 {-# LANGUAGE OverloadedLabels #-}
 {-# LANGUAGE RecordWildCards #-}
 
--- TODO Refactor qualified names
-
 module Api.Request where
 
+import Api.Common (failure, success)
 import Control.Monad (forM_)
 import Data.Aeson hiding (json)
 import Data.BareProperty (BareProperty)
@@ -19,7 +18,7 @@ import qualified Data.ReqWithPropsWithoutId as RWPWI
 import qualified Database.Common as Db
 import Database.Selda
 import qualified Database.Table as Table
-import Network.HTTP.Types.Status (created201, notFound404)
+import Network.HTTP.Types.Status (created201)
 import Utils.Id.AddId (addId)
 
 getWithProps :: EnvAction ()
@@ -31,8 +30,8 @@ getWithProps = do
       props <-
         query $
           select Table.properties `suchThat` (\prop -> prop ! #requestId .== literal reqId)
-      json $ object ["request" .= req, "properties" .= props]
-    _ -> status notFound404 >> finish
+      success $ object ["request" .= req, "properties" .= props]
+    _ -> failure
 
 updateWithProps :: EnvAction ()
 updateWithProps = do
@@ -54,7 +53,7 @@ createWithProps = do
   RWPWI.RWP {RWPWI.req, RWPWI.props} <- jsonData
   newRequest <- Db.create Table.requests req
   insert_ Table.properties (addId def . addReqId (_id newRequest) <$> props)
-  json newRequest
+  success newRequest
   status created201
 
 addReqId :: ID Request -> BareProperty -> PropertyWithoutId

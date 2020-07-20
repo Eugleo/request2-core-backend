@@ -18,6 +18,12 @@ import qualified Database.Selda as Selda (update)
 import Network.HTTP.Types.Status (created201, notFound404, ok200)
 import Utils.Id.AddId
 
+success :: ToJSON a => a -> EnvAction ()
+success v = json (object ["data" .= toJSON v])
+
+failure :: EnvAction ()
+failure = json (object ["error" .= ("Error: Not found" :: Text)]) >> status notFound404 >> finish
+
 create ::
   forall a b w.
   (AddId a b w, Relational b, FromJSON a, ToJSON b) =>
@@ -26,7 +32,7 @@ create ::
 create tbl = do
   val <- jsonData :: EnvAction a
   newVal <- Db.create tbl val
-  json newVal
+  json (object ["data" .= newVal])
   status created201
 
 get ::
@@ -40,7 +46,10 @@ get ::
 get tbl = do
   valId <- param "_id" :: EnvAction (ID b)
   val <- Db.get tbl valId
-  maybe (status notFound404 >> finish) json val
+  maybe
+    failure
+    success
+    val
 
 getMany ::
   ( Relational b,
@@ -58,8 +67,8 @@ getMany tbl = do
     v <- select tbl
     return (count (v ! #_id))
   maybe
-    (status notFound404 >> finish)
-    (\total -> json (object ["values" .= toJSON vals, "total" .= total]))
+    failure
+    (\total -> success (object ["values" .= toJSON vals, "total" .= total]))
     (listToMaybe res)
 
 update ::
