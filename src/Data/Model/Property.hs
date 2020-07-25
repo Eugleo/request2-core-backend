@@ -16,7 +16,7 @@ data Property
       { _id :: ID Property,
         requestId :: ID Request,
         authorId :: ID User,
-        propertyType :: Text,
+        propertyPath :: Text,
         propertyData :: Text,
         dateAdded :: DateTime,
         active :: Bool

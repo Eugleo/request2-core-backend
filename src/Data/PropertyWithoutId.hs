@@ -14,7 +14,7 @@ data PropertyWithoutId
   = Property
       { requestId :: ID Request,
         authorId :: ID User,
-        propertyType :: Text,
+        propertyPath :: Text,
         propertyData :: Text,
         dateAdded :: DateTime,
         active :: Bool

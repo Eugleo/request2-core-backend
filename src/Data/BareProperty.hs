@@ -12,7 +12,7 @@ import Database.Selda
 data BareProperty
   = Property
       { authorId :: ID User,
-        propertyType :: Text,
+        propertyPath :: Text,
         propertyData :: Text,
         dateAdded :: DateTime,
         active :: Bool

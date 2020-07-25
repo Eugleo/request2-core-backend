@@ -80,7 +80,6 @@ server config = scottyT (_listenPort config) (withPostgreSQL connInfo)
     get "/requests/:_id" $ withAuth Request.getWithProps
     post "/requests" $ withRoles [Client] Request.createWithProps
     put "/requests/:_id" $ withRoles [Client, Operator] Request.updateWithProps
-    delete "/requests/:_id" $ withRoles [Client] $ Api.deactivate Table.requests
     {-
      - Teams
      -}

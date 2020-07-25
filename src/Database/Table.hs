@@ -2,7 +2,7 @@
 
 module Database.Table where
 
-import Data.Char (isLower, isUpper, toLower)
+import Data.Char (isUpper, toLower)
 import Data.Maybe (fromMaybe)
 import Data.Model.Ann (Ann)
 import Data.Model.ApiKey (ApiKey)
@@ -61,7 +61,7 @@ properties =
     [ #_id :- autoPrimary,
       #authorId :- foreignKey users #_id,
       #requestId :- foreignKey requests #_id,
-      (#_id :+ #requestId :+ #propertyType :+ #dateAdded) :- index
+      (#_id :+ #requestId :+ #propertyPath :+ #dateAdded) :- index
     ]
     $ toName "property"
 

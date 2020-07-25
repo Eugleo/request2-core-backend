@@ -13,14 +13,11 @@ import Database.Selda
 data RequestWithoutId
   = Request
       { name :: Text,
-        code :: Text,
         authorId :: ID User,
         teamId :: ID Team,
-        assigneeId :: Maybe (ID User),
         status :: Status,
         requestType :: Text, -- named `type` in db
-        dateCreated :: DateTime,
-        active :: Bool
+        dateCreated :: DateTime
       }
   deriving (Show, Eq, Generic, FromJSON, SqlRow)
 
