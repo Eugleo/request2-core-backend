@@ -61,7 +61,7 @@ properties =
     [ #_id :- autoPrimary,
       #authorId :- foreignKey users #_id,
       #requestId :- foreignKey requests #_id,
-      (#_id :+ #requestId :+ #propertyPath :+ #dateAdded) :- index
+      (#_id :+ #requestId :+ #propertyName :+ #dateAdded) :- index
     ]
     $ toName "property"
 

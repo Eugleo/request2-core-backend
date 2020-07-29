@@ -6,13 +6,15 @@ module Data.BareProperty where
 
 import Data.Aeson
 import Data.Model.DateTime
+import Data.Model.PropertyType
 import Data.Model.User
 import Database.Selda
 
 data BareProperty
   = Property
       { authorId :: ID User,
-        propertyPath :: Text,
+        propertyType :: PropertyType,
+        propertyName :: Text,
         propertyData :: Text,
         dateAdded :: DateTime,
         active :: Bool

@@ -6,6 +6,7 @@ module Data.Model.Property where
 
 import Data.Aeson
 import Data.Model.DateTime
+import Data.Model.PropertyType
 import Data.Model.Request
 import Data.Model.User
 import Database.Selda
@@ -16,7 +17,8 @@ data Property
       { _id :: ID Property,
         requestId :: ID Request,
         authorId :: ID User,
-        propertyPath :: Text,
+        propertyType :: PropertyType,
+        propertyName :: Text,
         propertyData :: Text,
         dateAdded :: DateTime,
         active :: Bool

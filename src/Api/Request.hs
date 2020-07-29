@@ -38,10 +38,14 @@ updateWithProps = do
   RWP.RWP {RWP.req, RWP.props} <- jsonData
   let reqId = _id req
   -- Deactivate the old props that are beng overwritten
-  forM_ (PWI.propertyPath <$> props) $ \path ->
+  forM_ ((\p -> (PWI.propertyName p, PWI.propertyType p)) <$> props) $ \(name, pType) ->
     update_
       Table.properties
-      (\p -> p ! #requestId .== literal reqId .&& p ! #propertyPath .== literal path)
+      ( \p ->
+          p ! #requestId .== literal reqId
+            .&& p ! #propertyName .== literal name
+            .&& p ! #propertyType .== literal pType
+      )
       (\p -> p `with` [#active := false])
   -- Add the new props
   insert_ Table.properties (addId def <$> props)
@@ -58,4 +62,4 @@ createWithProps = do
 
 addReqId :: ID Request -> BareProperty -> PropertyWithoutId
 addReqId reqId Bare.Property {..} =
-  PWI.Property reqId authorId propertyPath propertyData dateAdded active
+  PWI.Property reqId authorId propertyType propertyName propertyData dateAdded active
