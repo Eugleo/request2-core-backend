@@ -1,15 +1,44 @@
-{-# LANGUAGE ScopedTypeVariables, FlexibleContexts, OverloadedStrings #-}
+{-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE ScopedTypeVariables #-}
+
 -- | API for running Selda operations over databases.
 module Database.Selda.Frontend
-  ( Result, Res, MonadIO (..), MonadSelda (..), SeldaT, OnError (..)
-  , query, queryInto
-  , insert, insert_, insertWithPK, tryInsert, insertWhen, insertUnless
-  , update, update_, upsert
-  , deleteFrom, deleteFrom_
-  , createTable, tryCreateTable, createTableWithoutIndexes, createTableIndexes
-  , dropTable, tryDropTable
-  , transaction, withoutForeignKeyEnforcement
-  ) where
+  ( Result,
+    Res,
+    MonadIO (..),
+    MonadSelda (..),
+    SeldaT,
+    OnError (..),
+    query,
+    queryInto,
+    insert,
+    insert_,
+    insertWithPK,
+    tryInsert,
+    insertWhen,
+    insertUnless,
+    update,
+    update_,
+    upsert,
+    deleteFrom,
+    deleteFrom_,
+    createTable,
+    tryCreateTable,
+    createTableWithoutIndexes,
+    createTableIndexes,
+    dropTable,
+    tryDropTable,
+    transaction,
+    withoutForeignKeyEnforcement,
+  )
+where
+
+import Control.Monad
+import Control.Monad.Catch
+import Control.Monad.IO.Class
+import Data.Proxy
+import Data.Text (Text)
 import Database.Selda.Backend.Internal
 import Database.Selda.Column
 import Database.Selda.Compile
@@ -19,11 +48,6 @@ import Database.Selda.SqlType (ID, invalidId, toId)
 import Database.Selda.Table
 import Database.Selda.Table.Compile
 import Database.Selda.Types (fromTableName)
-import Data.Proxy
-import Data.Text (Text)
-import Control.Monad
-import Control.Monad.Catch
-import Control.Monad.IO.Class
 
 -- | Run a query within a Selda monad. In practice, this is often a 'SeldaT'
 --   transformer on top of some other monad.
@@ -34,14 +58,15 @@ query q = withBackend (flip queryWith q . runStmt)
 
 -- | Perform the given query, and insert the result into the given table.
 --   Returns the number of inserted rows.
-queryInto :: (MonadSelda m, Relational a)
-          => Table a
-          -> Query (Backend m) (Row (Backend m) a)
-          -> m Int
+queryInto ::
+  (MonadSelda m, Relational a) =>
+  Table a ->
+  Query (Backend m) (Row (Backend m) a) ->
+  m Int
 queryInto tbl q = withBackend $ \b -> do
-    let (qry, ps) = compileWith (ppConfig b) q
-        qry' = mconcat ["INSERT INTO ", tblName, " ", qry]
-    fmap fst . liftIO $ runStmt b qry' ps
+  let (qry, ps) = compileWith (ppConfig b) q
+      qry' = mconcat ["INSERT INTO ", tblName, " ", qry]
+  fmap fst . liftIO $ runStmt b qry' ps
   where
     tblName = fromTableName (tableName tbl)
 
@@ -89,9 +114,9 @@ tryInsert :: (MonadSelda m, MonadCatch m, Relational a) => Table a -> [a] -> m B
 tryInsert tbl row = do
   mres <- try $ insert tbl row
   case mres of
-    Right _           -> return True
+    Right _ -> return True
     Left (SqlError _) -> return False
-    Left e            -> throwM e
+    Left e -> throwM e
 
 -- | Attempt to perform the given update. If no rows were updated, insert the
 --   given row.
@@ -102,12 +127,13 @@ tryInsert tbl row = do
 --
 --   Note that this may perform two separate queries: one update, potentially
 --   followed by one insert.
-upsert :: (MonadSelda m, MonadMask m, Relational a)
-       => Table a
-       -> (Row (Backend m) a -> Col (Backend m) Bool)
-       -> (Row (Backend m) a -> Row (Backend m) a)
-       -> [a]
-       -> m (Maybe (ID a))
+upsert ::
+  (MonadSelda m, MonadMask m, Relational a) =>
+  Table a ->
+  (Row (Backend m) a -> Col (Backend m) Bool) ->
+  (Row (Backend m) a -> Row (Backend m) a) ->
+  [a] ->
+  m (Maybe (ID a))
 upsert tbl check upd rows = transaction $ do
   updated <- update tbl check upd
   if updated == 0
@@ -121,20 +147,22 @@ upsert tbl check upd rows = transaction $ do
 --   If called on a table which doesn't have an auto-incrementing primary key,
 --   @Just id@ is always returned on successful insert, where @id@ is a row
 --   identifier guaranteed to not match any row in any table.
-insertUnless :: (MonadSelda m, MonadMask m, Relational a)
-             => Table a
-             -> (Row (Backend m) a -> Col (Backend m) Bool)
-             -> [a]
-             -> m (Maybe (ID a))
+insertUnless ::
+  (MonadSelda m, MonadMask m, Relational a) =>
+  Table a ->
+  (Row (Backend m) a -> Col (Backend m) Bool) ->
+  [a] ->
+  m (Maybe (ID a))
 insertUnless tbl check rows = upsert tbl check id rows
 
 -- | Like 'insertUnless', but performs the insert when at least one row matches
 --   the predicate.
-insertWhen :: (MonadSelda m, MonadMask m, Relational a)
-           => Table a
-           -> (Row (Backend m) a -> Col (Backend m) Bool)
-           -> [a]
-           -> m (Maybe (ID a))
+insertWhen ::
+  (MonadSelda m, MonadMask m, Relational a) =>
+  Table a ->
+  (Row (Backend m) a -> Col (Backend m) Bool) ->
+  [a] ->
+  m (Maybe (ID a))
 insertWhen tbl check rows = transaction $ do
   matches <- update tbl check id
   if matches > 0
@@ -163,38 +191,45 @@ insertWithPK t cs = withBackend $ \b -> do
 
 -- | Update the given table using the given update function, for all rows
 --   matching the given predicate. Returns the number of updated rows.
-update :: (MonadSelda m, Relational a)
-       => Table a                                     -- ^ Table to update.
-       -> (Row (Backend m) a -> Col (Backend m) Bool) -- ^ Predicate.
-       -> (Row (Backend m) a -> Row (Backend m) a)    -- ^ Update function.
-       -> m Int
+update ::
+  (MonadSelda m, Relational a) =>
+  -- | Table to update.
+  Table a ->
+  -- | Predicate.
+  (Row (Backend m) a -> Col (Backend m) Bool) ->
+  -- | Update function.
+  (Row (Backend m) a -> Row (Backend m) a) ->
+  m Int
 update tbl check upd = withBackend $ \b -> do
   res <- uncurry exec $ compileUpdate (ppConfig b) tbl upd check
   return res
 
 -- | Like 'update', but doesn't return the number of updated rows.
-update_ :: (MonadSelda m, Relational a)
-       => Table a
-       -> (Row (Backend m) a -> Col (Backend m) Bool)
-       -> (Row (Backend m) a -> Row (Backend m) a)
-       -> m ()
+update_ ::
+  (MonadSelda m, Relational a) =>
+  Table a ->
+  (Row (Backend m) a -> Col (Backend m) Bool) ->
+  (Row (Backend m) a -> Row (Backend m) a) ->
+  m ()
 update_ tbl check upd = void $ update tbl check upd
 
 -- | From the given table, delete all rows matching the given predicate.
 --   Returns the number of deleted rows.
-deleteFrom :: (MonadSelda m, Relational a)
-           => Table a
-           -> (Row (Backend m) a -> Col (Backend m) Bool)
-           -> m Int
+deleteFrom ::
+  (MonadSelda m, Relational a) =>
+  Table a ->
+  (Row (Backend m) a -> Col (Backend m) Bool) ->
+  m Int
 deleteFrom tbl f = withBackend $ \b -> do
   res <- uncurry exec $ compileDelete (ppConfig b) tbl f
   return res
 
 -- | Like 'deleteFrom', but does not return the number of deleted rows.
-deleteFrom_ :: (MonadSelda m, Relational a)
-            => Table a
-            -> (Row (Backend m) a -> Col (Backend m) Bool)
-            -> m ()
+deleteFrom_ ::
+  (MonadSelda m, Relational a) =>
+  Table a ->
+  (Row (Backend m) a -> Col (Backend m) Bool) ->
+  m ()
 deleteFrom_ tbl f = void $ deleteFrom tbl f
 
 -- | Create a table from the given schema.
@@ -252,13 +287,18 @@ transaction m = mask $ \restore -> transact $ do
 --   constraints. See SQL backend documentation for deferred constraints.
 withoutForeignKeyEnforcement :: (MonadSelda m, MonadMask m) => m a -> m a
 withoutForeignKeyEnforcement m = withBackend $ \b -> do
-  bracket_ (liftIO $ disableForeignKeys b True)
-           (liftIO $ disableForeignKeys b False)
-           m
+  bracket_
+    (liftIO $ disableForeignKeys b True)
+    (liftIO $ disableForeignKeys b False)
+    m
 
 -- | Build the final result from a list of result columns.
-queryWith :: forall m a. (MonadSelda m, Result a)
-          => QueryRunner (Int, [[SqlValue]]) -> Query (Backend m) a -> m [Res a]
+queryWith ::
+  forall m a.
+  (MonadSelda m, Result a) =>
+  QueryRunner (Int, [[SqlValue]]) ->
+  Query (Backend m) a ->
+  m [Res a]
 queryWith run q = withBackend $ \b -> do
   res <- fmap snd . liftIO . uncurry run $ compileWith (ppConfig b) q
   return $ mkResults (Proxy :: Proxy a) res
@@ -268,11 +308,13 @@ mkResults :: Result a => Proxy a -> [[SqlValue]] -> [Res a]
 mkResults p = map (buildResult p)
 
 {-# INLINE exec #-}
+
 -- | Execute a statement without a result.
 exec :: MonadSelda m => Text -> [Param] -> m Int
 exec q ps = withBackend $ \b -> liftIO $ execIO b q ps
 
 {-# INLINE execIO #-}
+
 -- | Like 'exec', but in 'IO'.
 execIO :: SeldaBackend b -> Text -> [Param] -> IO Int
 execIO backend q ps = fmap fst $ runStmt backend q ps

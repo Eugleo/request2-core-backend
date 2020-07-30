@@ -38,15 +38,19 @@ updateWithProps = do
   RWP.RWP {RWP.req, RWP.props} <- jsonData
   let reqId = _id req
   -- Deactivate the old props that are beng overwritten
-  forM_ ((\p -> (PWI.propertyName p, PWI.propertyType p)) <$> props) $ \(name, pType) ->
-    update_
-      Table.properties
-      ( \p ->
-          p ! #requestId .== literal reqId
-            .&& p ! #propertyName .== literal name
-            .&& p ! #propertyType .== literal pType
-      )
-      (\p -> p `with` [#active := false])
+
+  void $ exec "BEGIN TRANSACTION" []
+  forM_ ((\p -> (PWI.propertyName p, PWI.propertyType p, PWI.propertyData p)) <$> props) $
+    \(name, pType, pData) ->
+      update_
+        Table.properties
+        ( \p ->
+            p ! #requestId .== literal reqId
+              .&& p ! #propertyName .== literal name
+              .&& p ! #propertyType .== literal pType
+              .&& p ! #propertyData ./= literal pData
+        )
+        (\p -> p `with` [#active := false])
   -- Add the new props
   insert_ Table.properties (addId def <$> props)
   -- Update the request
