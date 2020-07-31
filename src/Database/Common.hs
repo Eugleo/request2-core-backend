@@ -12,7 +12,7 @@ module Database.Common where
 import Data.Environment
 import Data.Maybe (listToMaybe)
 import Database.Selda hiding (update)
-import qualified Database.Selda as Selda (update_)
+import qualified Database.Selda as Selda
 import Utils.Id.AddId
 
 create :: forall a b w. (AddId a b w, Relational b) => Table b -> a -> EnvAction b

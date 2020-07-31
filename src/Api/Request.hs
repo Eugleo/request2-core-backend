@@ -5,12 +5,14 @@
 module Api.Request where
 
 import Api.Common (failure, success)
-import Control.Monad (forM_)
+import Control.Monad (forM, forM_, join)
 import Data.Aeson hiding (json)
 import Data.BareProperty (BareProperty)
 import qualified Data.BareProperty as Bare
 import Data.Environment
-import Data.Model.Request (Request (_id))
+import Data.List ((\\))
+import qualified Data.Model.Property as P
+import qualified Data.Model.Request as R (Request (_id))
 import Data.PropertyWithoutId (PropertyWithoutId)
 import qualified Data.PropertyWithoutId as PWI
 import qualified Data.ReqWithProps as RWP
@@ -33,37 +35,54 @@ getWithProps = do
       success $ object ["request" .= req, "properties" .= props]
     _ -> failure
 
+-- TODO Add transactions
 updateWithProps :: EnvAction ()
 updateWithProps = do
   RWP.RWP {RWP.req, RWP.props} <- jsonData
-  let reqId = _id req
-  -- Deactivate the old props that are beng overwritten
+  let reqId = R._id req
 
-  void $ exec "BEGIN TRANSACTION" []
-  forM_ ((\p -> (PWI.propertyName p, PWI.propertyType p, PWI.propertyData p)) <$> props) $
-    \(name, pType, pData) ->
-      update_
-        Table.properties
-        ( \p ->
-            p ! #requestId .== literal reqId
-              .&& p ! #propertyName .== literal name
-              .&& p ! #propertyType .== literal pType
-              .&& p ! #propertyData ./= literal pData
-        )
-        (\p -> p `with` [#active := false])
-  -- Add the new props
-  insert_ Table.properties (addId def <$> props)
+  repeatedProps <-
+    fmap join . forM props $ \prop ->
+      query $ do
+        p <- select Table.properties
+        restrict $
+          p ! #requestId .== literal reqId
+            .&& p ! #propertyName .== literal (PWI.propertyName prop)
+            .&& p ! #propertyType .== literal (PWI.propertyType prop)
+        return p
+
+  let ignoredProps = filter (memberBy propEq props) repeatedProps
+  let updatedProps = repeatedProps \\ ignoredProps
+
+  -- Deactivate old properties
+  forM_ updatedProps $ \prop ->
+    update_
+      Table.properties
+      (\p -> p ! #_id .== literal (P._id prop))
+      (\p -> p `with` [#active := false])
+
+  -- Insert new properties
+  insert_ Table.properties $
+    fmap (addId def) $
+      filter (not . memberBy (flip propEq) ignoredProps) props
+
   -- Update the request
   Db.update Table.requests reqId req
+  where
+    memberBy eq xs x = any (eq x) xs
+    propEqName p q =
+      (P.propertyName p == PWI.propertyName q) && (P.propertyType p == PWI.propertyType q)
+    propEq p q =
+      propEqName p q && (P.propertyData p == PWI.propertyData q)
 
 createWithProps :: EnvAction ()
 createWithProps = do
   RWPWI.RWP {RWPWI.req, RWPWI.props} <- jsonData
   newRequest <- Db.create Table.requests req
-  insert_ Table.properties (addId def . addReqId (_id newRequest) <$> props)
+  insert_ Table.properties (addId def . addReqId (R._id newRequest) <$> props)
   success newRequest
   status created201
 
-addReqId :: ID Request -> BareProperty -> PropertyWithoutId
+addReqId :: ID R.Request -> BareProperty -> PropertyWithoutId
 addReqId reqId Bare.Property {..} =
   PWI.Property reqId authorId propertyType propertyName propertyData dateAdded active
