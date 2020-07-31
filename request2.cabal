@@ -72,6 +72,7 @@ executable request2
     Data.Model.ApiKey
     Data.Model.DateTime
     Data.Model.Property
+    Data.Model.PropertyType
     Data.Model.Request
     Data.Model.Role
     Data.Model.Status
