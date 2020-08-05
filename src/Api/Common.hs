@@ -9,7 +9,7 @@
 
 module Api.Common where
 
-import Data.Aeson ((.=), FromJSON, ToJSON, object, toJSON)
+import Data.Aeson (FromJSON, ToJSON, object, toJSON, (.=))
 import Data.Environment
 import Data.Maybe (listToMaybe)
 import qualified Database.Common as Db
