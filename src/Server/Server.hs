@@ -41,7 +41,7 @@ addCORSHeader =
       ]
 
 server :: Config -> IO ()
-server config = scottyT (_listenPort config) (withPostgreSQL connInfo) $ do
+server config = scottyT (_listenOnPort $ _listen config) (withPostgreSQL connInfo) $ do
   when (_allowCORS config) $ do
     S.middleware addCORSHeader
     S.options (S.function $ const $ Just []) $ S.text "CORS OK"
