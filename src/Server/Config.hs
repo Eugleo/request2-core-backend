@@ -3,23 +3,22 @@
 module Server.Config where
 
 import Control.Lens
-import Data.ByteString (ByteString)
 import Data.Ini
 import Data.Text
-import Data.Text.Encoding (encodeUtf8)
 import System.Environment
 
 data ListenConfig
   = ListenOnPort {_listenOnPort :: Int}
-  | ListenOnSocket {_listenOnSocket :: Text}
+  | ListenOnSocket {_listenOnSocket :: String}
   deriving (Show)
 
 data Config = Config
-  { _dataDir :: Text,
-    _dbConn :: Text,
+  { _dataDir :: String,
+    _dbUser :: Text, --TODO eventually modify selda to pass in a connection string, as with internal pgOpen'
+    _dbHost :: Text,
     _listen :: ListenConfig,
     _allowCORS :: Bool,
-    _regTokenSecret :: Text
+    _regTokenSecret :: String
   }
   deriving (Show)
 
@@ -30,17 +29,12 @@ defaultConfig :: Config
 defaultConfig =
   Config
     { _dataDir = "data",
-      _dbConn = "",
+      _dbUser = "request",
+      _dbHost = "localhost",
       _listen = ListenOnPort 9080,
-      _allowCORS = True, --TODO switch to False later
-      _regTokenSecret = "31337" --TODO generate a random token for a single run
+      _allowCORS = False,
+      _regTokenSecret = "31337" --TODO eventually generate a random token for a single run
     }
-
-dataDirStr :: Config -> String
-dataDirStr = unpack . _dataDir
-
-dbConnStr :: Config -> ByteString
-dbConnStr = encodeUtf8 . _dbConn
 
 defaultConfigPath :: String
 defaultConfigPath = "etc/default.cfg"
@@ -72,10 +66,11 @@ readConfig path = do
       Right a -> pure a
   let upd = updateFromIni ini "server"
   return
-    $ upd "data_dir" dataDir id
+    $ upd "data_dir" dataDir unpack
       . upd "listen_port" listen (ListenOnPort . read . unpack)
-      . upd "listen_socket" listen ListenOnSocket
-      . upd "db_conn" dbConn id
+      . upd "listen_socket" listen (ListenOnSocket . unpack)
+      . upd "db_user" dbUser id
+      . upd "db_host" dbHost id
       . upd "allow_cors" allowCORS (read . unpack)
-      . upd "reg_token_secret" regTokenSecret id
+      . upd "reg_token_secret" regTokenSecret unpack
     $ defaultConfig

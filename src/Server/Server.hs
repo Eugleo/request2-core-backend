@@ -34,8 +34,8 @@ import qualified Web.Scotty.Trans as S
 import Web.Scotty.Trans (delete, get, post, put, scottySocketT, scottyT)
 
 -- TODO Replace with info from config
-connInfo :: PGConnectInfo
-connInfo = "exa" `on` "/var/run/postgresql"
+connInfo :: Config -> PGConnectInfo
+connInfo = on <$> _dbUser <*> _dbHost
 
 addCORSHeader :: Middleware
 addCORSHeader =
@@ -62,9 +62,9 @@ runScotty :: Config -> S.ScottyT e (SeldaT PG IO) () -> IO ()
 runScotty config =
   case _listen config of
     ListenOnPort p -> scottyT p db
-    ListenOnSocket s -> \app -> withUnixSocket (T.unpack s) (\sock -> scottySocketT def sock db app)
+    ListenOnSocket s -> \app -> withUnixSocket s (\sock -> scottySocketT def sock db app)
   where
-    db = withPostgreSQL connInfo
+    db = withPostgreSQL (connInfo config)
 
 server :: Config -> IO ()
 server config = runScotty config $ do
