@@ -6,30 +6,36 @@ module Server.Server where
 import qualified Api.Common as Api
 import qualified Api.Request as Request
 import qualified Api.User as User
+import Control.Exception (bracket)
 import Control.Monad
 import Data.AnnWithoutId (AnnWithoutId)
+import Data.Default.Class (def)
 import Data.Model.Role (Role (..))
 import Data.TeamWithoutId (TeamWithoutId)
 import qualified Data.Text as T
-import Database.Selda.PostgreSQL (PGConnectInfo (..), on, withPostgreSQL)
+import Database.Selda (SeldaT)
+import Database.Selda.PostgreSQL (PG, PGConnectInfo (..), on, withPostgreSQL)
 import qualified Database.Table as Table
+import qualified Network.Socket as NS
 import Network.Wai
 import Server.Capability
 import Server.Config
+import System.Directory (removeFile)
 import Utils.WithX
 import qualified Web.Scotty.Trans as S
-  ( function,
+  ( ScottyT,
+    function,
     json,
     middleware,
     notFound,
     options,
     text,
   )
-import Web.Scotty.Trans (delete, get, post, put, scottyT)
+import Web.Scotty.Trans (delete, get, post, put, scottySocketT, scottyT)
 
 -- TODO Replace with info from config
 connInfo :: PGConnectInfo
-connInfo = "request" `on` "localhost"
+connInfo = "exa" `on` "/var/run/postgresql"
 
 addCORSHeader :: Middleware
 addCORSHeader =
@@ -40,8 +46,28 @@ addCORSHeader =
         ("Access-Control-Allow-Methods", "*")
       ]
 
+withUnixSocket :: String -> (NS.Socket -> IO a) -> IO a
+withUnixSocket s = bracket o c
+  where
+    o = do
+      soc <- NS.socket NS.AF_UNIX NS.Stream 0
+      NS.bind soc $ NS.SockAddrUnix s
+      NS.listen soc $ max 32 NS.maxListenQueue
+      return soc
+    c soc = do
+      NS.close soc
+      removeFile s
+
+runScotty :: Config -> S.ScottyT e (SeldaT PG IO) () -> IO ()
+runScotty config =
+  case _listen config of
+    ListenOnPort p -> scottyT p db
+    ListenOnSocket s -> \app -> withUnixSocket (T.unpack s) (\sock -> scottySocketT def sock db app)
+  where
+    db = withPostgreSQL connInfo
+
 server :: Config -> IO ()
-server config = scottyT (_listenOnPort $ _listen config) (withPostgreSQL connInfo) $ do
+server config = runScotty config $ do
   when (_allowCORS config) $ do
     S.middleware addCORSHeader
     S.options (S.function $ const $ Just []) $ S.text "CORS OK"
