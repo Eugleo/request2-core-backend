@@ -12,6 +12,7 @@ import qualified Data.BareProperty as Bare
 import Data.Environment
 import Data.List ((\\))
 import qualified Data.Model.Property as P
+import qualified Data.Model.PropertyType as PropertyType
 import qualified Data.Model.Request as R (Request (_id))
 import Data.PropertyWithoutId (PropertyWithoutId)
 import qualified Data.PropertyWithoutId as PWI
@@ -34,6 +35,18 @@ getWithProps = do
           select Table.properties `suchThat` (\prop -> prop ! #requestId .== literal reqId)
       success $ object ["request" .= req, "properties" .= props]
     _ -> failure
+
+getComments :: EnvAction ()
+getComments = do
+  reqId <- param "_id"
+  props <-
+    query $ select Table.properties `suchThat` (\prop -> fromReq reqId prop .&& isComment prop)
+  success props
+  where
+    fromReq :: ID R.Request -> Row t P.Property -> Col t Bool
+    fromReq reqId prop = prop ! #requestId .== literal reqId
+    isComment :: Row t P.Property -> Col t Bool
+    isComment prop = prop ! #propertyType .== literal PropertyType.Comment
 
 -- TODO Add transactions
 updateWithProps :: EnvAction ()
