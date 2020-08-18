@@ -39,8 +39,8 @@ regToken mail config
   | isValid (toStrict bmail) = Just token
   | otherwise = Nothing
   where
-    bs = LU.fromString . unpack
-    bmail = bs mail
+    bs = LU.fromString
+    bmail = bs $ unpack mail
     padding = bs $ _regTokenSecret config
     token =
       pack . showDigest . sha512 $ padding <> "\0" <> bmail <> "\0" <> padding

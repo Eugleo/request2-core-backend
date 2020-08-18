@@ -9,5 +9,5 @@ import Server.Server
 main :: IO ()
 main = do
   cfg <- getConfig
-  withPostgreSQL connInfo setup
+  withPostgreSQL (connInfo cfg) setup
   void $ server cfg
