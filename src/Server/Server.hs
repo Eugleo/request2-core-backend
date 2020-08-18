@@ -9,6 +9,7 @@ import qualified Api.User as User
 import Control.Exception (bracket)
 import Control.Monad
 import Data.AnnWithoutId (AnnWithoutId)
+import Data.Bool (bool)
 import Data.Default.Class (def)
 import Data.Model.Role (Role (..))
 import Data.TeamWithoutId (TeamWithoutId)
@@ -20,7 +21,7 @@ import qualified Network.Socket as NS
 import Network.Wai
 import Server.Capability
 import Server.Config
-import System.Directory (removeFile)
+import System.Directory (doesFileExist, removeFile)
 import Utils.WithX
 import qualified Web.Scotty.Trans as S
   ( ScottyT,
@@ -50,6 +51,7 @@ withUnixSocket :: String -> (NS.Socket -> IO a) -> IO a
 withUnixSocket s = bracket o c
   where
     o = do
+      doesFileExist s >>= bool (pure ()) (removeFile s)
       soc <- NS.socket NS.AF_UNIX NS.Stream 0
       NS.bind soc $ NS.SockAddrUnix s
       NS.listen soc $ max 32 NS.maxListenQueue
