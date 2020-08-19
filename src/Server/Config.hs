@@ -39,14 +39,6 @@ defaultConfig =
 defaultConfigPath :: String
 defaultConfigPath = "etc/default.cfg"
 
-getConfig :: IO Config
-getConfig = do
-  args <- getArgs
-  case args of
-    [] -> readConfig defaultConfigPath
-    [cf] -> readConfig cf
-    _ -> error "Specify at most one parameter with config filename"
-
 updateFromIni ::
   Ini ->
   Text ->

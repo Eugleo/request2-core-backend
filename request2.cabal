@@ -92,6 +92,7 @@ executable request2
     Utils.Id.AddId
     Utils.Id.IdInstances
     Utils.WithX
+    Version
 
   default-extensions:
     OverloadedStrings
@@ -117,6 +118,7 @@ executable request2
     lens-aeson,
     mtl,
     network,
+    optparse-applicative,
     raw-strings-qq,
     scientific,
     scotty,
