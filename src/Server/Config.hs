@@ -5,7 +5,6 @@ module Server.Config where
 import Control.Lens
 import Data.Ini
 import Data.Text
-import System.Environment
 
 data ListenConfig
   = ListenOnPort {_listenOnPort :: Int}
