@@ -1,8 +1,9 @@
 module Utils.Crypto where
 
-import Data.ByteString.Lazy (toStrict)
+import qualified Data.ByteString.Base64 as B64
+import Data.ByteString.Lazy (fromStrict, toStrict)
 import Data.ByteString.Lazy.UTF8 (ByteString)
-import qualified Data.ByteString.Lazy.UTF8 as LU (fromString)
+import qualified Data.ByteString.Lazy.UTF8 as LU
 import Data.ByteString.UTF8 (fromString, toString)
 import Data.Digest.Pure.SHA (sha256, sha512, showDigest)
 import Data.Text
@@ -10,6 +11,8 @@ import Server.Config
 import System.Entropy (getEntropy)
 import System.POSIX.Crypt.SHA512
 import Text.Email.Validate (isValid)
+
+type ApiKey = Text
 
 type Hash = Text
 
@@ -25,8 +28,20 @@ checkHash password hashStr =
     hash = fromString $ unpack hashStr
 
 -- TODO make sure your system's prng is not dim-witted
-newApiKey :: IO Text
-newApiKey = pack . toString . encode64 <$> getEntropy 32
+newApiKey :: IO (ApiKey, Hash)
+newApiKey = do
+  userKey <- pack . toString . B64.encode <$> getEntropy 32
+  return (userKey, dbApiKey userKey)
+
+dbApiKey :: ApiKey -> Hash
+dbApiKey =
+  pack
+    . showDigest
+    . sha256
+    . fromStrict
+    . B64.decodeLenient
+    . fromString
+    . unpack
 
 pathHash :: Text -> Hash
 pathHash = pack . showDigest . sha256 . LU.fromString . unpack
@@ -34,7 +49,7 @@ pathHash = pack . showDigest . sha256 . LU.fromString . unpack
 pathHash' :: ByteString -> Hash
 pathHash' = pack . showDigest . sha256
 
-regToken :: Text -> Config -> Maybe Text
+regToken :: Text -> Config -> Maybe Hash
 regToken mail config
   | isValid (toStrict bmail) = Just token
   | otherwise = Nothing
