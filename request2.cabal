@@ -103,7 +103,7 @@ executable request2
     aeson,
     bytestring,
     base64-bytestring,
-    containers ^>= 0.5.9,
+    containers ^>= 0.6,
     crypt-sha512,
     data-default-class,
     directory,
