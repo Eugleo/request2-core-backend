@@ -9,6 +9,7 @@ import Data.UserInfo
 import Database.BasicAuth
 import Network.HTTP.Types
 import Server.Config
+import Utils.Crypto (dbApiKey)
 
 withDBEnv :: Config -> EnvAction a -> Action a
 withDBEnv config ea = runEnvAction ea $ Env config Nothing
@@ -21,7 +22,7 @@ authentized action = do
   maybeBearerApikey <- header "Authorization"
   case T.stripPrefix "Bearer " <$> maybeBearerApikey of
     Just (Just userApiKey) -> do
-      auth <- findApiKeyUser userApiKey
+      auth <- findApiKeyUser $ dbApiKey userApiKey
       case auth of
         Just u -> local (\env -> env {envUser = Just u}) action
         _ -> status unauthorized401 >> finish

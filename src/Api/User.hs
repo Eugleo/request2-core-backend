@@ -37,11 +37,11 @@ login = do
 
 addApiKey :: ID User -> EnvAction ApiKey
 addApiKey userId = do
-  apiKey <- liftIO newApiKey
+  (userApiKey,dbApiKey) <- liftIO newApiKey
   time <- liftIO now
-  let ak = ApiKey apiKey userId time
+  let ak = ApiKey dbApiKey userId time
   insert_ Table.apiKeys [ak]
-  return ak
+  return $ ApiKey userApiKey userId time
 
 logout :: EnvAction ()
 logout = do

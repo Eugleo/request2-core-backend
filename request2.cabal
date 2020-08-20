@@ -102,6 +102,7 @@ executable request2
     base >= 4.11,
     aeson,
     bytestring,
+    base64-bytestring,
     containers >= 0.5.9,
     crypt-sha512,
     data-default-class,
