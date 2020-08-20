@@ -20,5 +20,5 @@ versionOption prog =
 helperOption :: Parser (a -> a)
 helperOption =
   abortOption
-    ShowHelpText
+    (ShowHelpText Nothing)
     (long "help" <> short 'h' <> help "Show this help text")
