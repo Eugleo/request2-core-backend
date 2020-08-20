@@ -2,17 +2,17 @@
 
 ## Development info
 
-Quick run:
+### How to start backend
 
 ```
-mkdir data
 cat > config.cfg << ENDCONF
 [server]
 listen_port=9080
-db_conn=host=localhost dbname=request
+db_host=localhost
+db_user=request
 allow_cors=**True**
 ENDCONF
-cabal run request2 -- config.**cfg**
+cabal run request2 -- run-server -c config.**cfg**
 ```
 
 Quick test (when the server is running):
@@ -22,6 +22,21 @@ curl localhost:9080/capability
 ```
 
 (should reply `["request2"]`)
+
+### How to start frontend
+
+```
+cd frontend
+cp env-sample .env  #edit if the location of api server is changed
+yarnpkg run react-scripts start
+```
+
+Building a static site for production:
+
+```
+yarnpkg run react-scripts build
+ls -R build/ #see the result
+```
 
 ### Database setup
 
