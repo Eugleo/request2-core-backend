@@ -2,3 +2,4 @@ dist-newstyle/
 sqlite-simple/
 /data/
 .*.swp
+config.cfg
