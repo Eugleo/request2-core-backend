@@ -27,7 +27,7 @@ curl localhost:9080/capability
 
 ```
 cd frontend
-cp env-sample .env  #edit if the location of api server is changed
+cp sample-env .env  #edit if the location of api server is changed
 yarnpkg run react-scripts start
 ```
 
