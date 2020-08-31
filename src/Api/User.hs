@@ -17,6 +17,7 @@ import qualified Data.UserWithoutId as User
 import Database.Common
 import Database.Selda hiding (text)
 import qualified Database.Table as Table
+import Debug.Trace
 import Network.HTTP.Types.Status (badRequest400, created201, forbidden403, internalServerError500)
 import Utils.Crypto (checkHash, newApiKey, newHash, regToken)
 
@@ -28,7 +29,7 @@ login = do
   res <- query $ select Table.users `suchThat` (\user -> user ! #email .== literal email)
   case res of
     [User {password, _id, roles}] ->
-      if checkHash pw password
+      if traceShow (pw, password, checkHash pw password) (checkHash pw password)
         then do
           apiKey <- addApiKey _id
           json $ UserInfo _id (key apiKey) roles
@@ -37,7 +38,7 @@ login = do
 
 addApiKey :: ID User -> EnvAction ApiKey
 addApiKey userId = do
-  (userApiKey,dbApiKey) <- liftIO newApiKey
+  (userApiKey, dbApiKey) <- liftIO newApiKey
   time <- liftIO now
   let ak = ApiKey dbApiKey userId time
   insert_ Table.apiKeys [ak]

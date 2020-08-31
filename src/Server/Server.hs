@@ -4,6 +4,7 @@
 module Server.Server where
 
 import qualified Api.Common as Api
+import qualified Api.Files as Files
 import qualified Api.Request as Request
 import qualified Api.User as User
 import Control.Exception (bracket)
@@ -15,6 +16,7 @@ import Data.Model.Role (Role (..))
 import Data.PropertyWithoutId (PropertyWithoutId)
 import Data.TeamWithoutId (TeamWithoutId)
 import qualified Data.Text as T
+import Data.UserWithoutId (UserWithoutId)
 import Database.Selda (SeldaT)
 import Database.Selda.PostgreSQL (PG, PGConnectInfo (..), on, withPostgreSQL)
 import qualified Database.Table as Table
@@ -75,8 +77,13 @@ server config = runScotty config $ do
     S.middleware addCORSHeader
     S.options (S.function $ const $ Just []) $ S.text "CORS OK"
   {-
-    - Capabilities
-    -}
+   - Admin interface
+   -}
+  post "/users" $ withRoles [Admin] $ Api.create @UserWithoutId Table.users
+  get "/users" $ withRoles [Admin, Operator] $ Api.getMany Table.users
+  {-
+   - Capabilities
+   -}
   get "/capability" $ S.json (capabilityList :: [T.Text])
   {-
     - Users
@@ -104,6 +111,7 @@ server config = runScotty config $ do
     - Requests
     -}
   -- TODO Only author and operator can view & edit requests
+  post "/requests/:_id/data/results" $ withDB Files.upload
   get "/requests" $ withAuth $ Api.getMany Table.requests
   get "/requests/:_id" $ withAuth Request.getWithProps
   get "/requests/:_id/comments" $ withRoles [Client, Operator] Request.getComments
@@ -115,14 +123,14 @@ server config = runScotty config $ do
   {-
     - Teams
     -}
-  get "/teams" $ withRoles [Admin] $ Api.getMany Table.teams
-  get "/teams/:_id" $ withRoles [Admin] $ Api.get Table.teams
+  get "/teams" $ withRoles [Admin, Operator] $ Api.getMany Table.teams
+  get "/teams/:_id" $ withRoles [Admin, Operator] $ Api.get Table.teams
   post "/teams" $ withRoles [Admin] $ Api.create @TeamWithoutId Table.teams
   put "/teams/:_id" $ withRoles [Admin] $ Api.update Table.teams
   delete "/teams/:_id" $ withRoles [Admin] $ Api.deactivate Table.teams
   {-
-    - Standard 404 -- keep this last
-    -}
+   - Standard 404 -- keep this last
+   -}
   S.notFound $ S.text "Not found"
   where
     withDB = withDBEnv config

@@ -65,6 +65,7 @@ executable request2
     Data.ReqWithPropsWithoutId
     Data.RequestWithoutId
     Api.Common
+    Api.Files
     Api.User
     Data.AnnWithoutId
     Data.Environment
@@ -131,7 +132,8 @@ executable request2
     unix-time,
     unordered-containers,
     utf8-string,
-    wai
+    wai,
+    wai-extra
 
   -- Directories containing source files.
   hs-source-dirs:      src

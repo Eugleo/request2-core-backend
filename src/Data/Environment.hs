@@ -13,25 +13,24 @@ import Control.Monad.State.Class (get)
 import qualified Control.Monad.Trans.Class as TR
 import Control.Monad.Trans.Reader (ReaderT, runReaderT)
 import Data.Aeson (FromJSON, ToJSON, Value)
-import Data.Aeson.Lens (_Integral, _String, key)
+import Data.Aeson.Lens (key, _Integral, _String)
 import Data.Monoid (First)
 import Data.Text (Text)
-import qualified Data.Text.Lazy as Lazy
 import Data.Text.Lazy (fromStrict, toStrict)
+import qualified Data.Text.Lazy as Lazy
 import Data.UserInfo
 import Database.Selda.Backend.Internal
 import Database.Selda.PostgreSQL (PG)
 import Network.HTTP.Types
 import Server.Config
 import Web.Scotty ()
-import qualified Web.Scotty.Trans as S (finish, header, json, jsonData, param, rescue, status, text)
 import Web.Scotty.Trans hiding (finish, get, header, json, jsonData, param, rescue, status, text)
+import qualified Web.Scotty.Trans as S
 
-data Env
-  = Env
-      { envConfig :: Config,
-        envUser :: Maybe UserInfo
-      }
+data Env = Env
+  { envConfig :: Config,
+    envUser :: Maybe UserInfo
+  }
 
 type Action a = ActionT Lazy.Text (SeldaM PG) a
 
@@ -72,6 +71,9 @@ askConfig = envConfig <$> ask
 
 text :: Text -> EnvAction ()
 text = EA . lift . S.text . fromStrict
+
+files :: EnvAction [File]
+files = EA . lift $ S.files
 
 header :: Text -> EnvAction (Maybe Text)
 header = EA . lift . fmap (toStrict <$>) . S.header . fromStrict
