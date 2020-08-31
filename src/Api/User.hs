@@ -17,7 +17,6 @@ import qualified Data.UserWithoutId as User
 import Database.Common
 import Database.Selda hiding (text)
 import qualified Database.Table as Table
-import Debug.Trace
 import Network.HTTP.Types.Status (badRequest400, created201, forbidden403, internalServerError500)
 import Utils.Crypto (checkHash, newApiKey, newHash, regToken)
 
@@ -29,7 +28,7 @@ login = do
   res <- query $ select Table.users `suchThat` (\user -> user ! #email .== literal email)
   case res of
     [User {password, _id, roles}] ->
-      if traceShow (pw, password, checkHash pw password) (checkHash pw password)
+      if checkHash pw password
         then do
           apiKey <- addApiKey _id
           json $ UserInfo _id (key apiKey) roles
@@ -90,10 +89,10 @@ getDetails = do
   ui <- askUserInfo
   res <- query $ select Table.users `suchThat` (\user -> user ! #_id .== literal (U.userId ui))
   case res of
-    [User {teamId, name, roles, dateCreated}] -> do
+    [User {_id, teamId, name, roles, dateCreated}] -> do
       maybeTeam <- get Table.teams teamId
       case maybeTeam of
-        Just team -> json $ UserDetails name roles team dateCreated
+        Just team -> json $ UserDetails _id name roles team dateCreated
         Nothing -> status internalServerError500 >> finish
     _ -> status internalServerError500 >> finish
 
