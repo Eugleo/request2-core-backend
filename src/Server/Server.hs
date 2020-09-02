@@ -79,7 +79,7 @@ server config = runScotty config $ do
   {-
    - Admin interface
    -}
-  post "/users" $ withRoles [Admin] $ Api.create @UserWithoutId Table.users
+  post "/users" $ withRoles [Admin] $ User.createNew
   get "/users" $ withRoles [Admin, Operator] $ Api.getMany Table.users
   {-
    - Capabilities

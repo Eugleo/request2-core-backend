@@ -112,6 +112,25 @@ mailRegToken = do
       status created201
     _ -> status badRequest400 >> finish
 
+createNew :: EnvAction ()
+createNew = do
+  user <- jsonData
+  let passwordHash = newHash $ User.password user
+  u <-
+    User.User (User.email user)
+      <$> envIO passwordHash
+      <*> pure (User.name user)
+      <*> pure (User.roles user)
+      <*> pure (User.teamId user)
+      <*> pure (User.dateCreated user)
+      <*> pure (User.active user)
+  newuser <-
+    create Table.users u `rescue` \_ -> do
+      text "Failed to create the new user entry"
+      status internalServerError500 >> finish
+  json newuser
+  status created201
+
 -- TODO: check that the team actually exists
 register :: EnvAction ()
 register = do
