@@ -4,7 +4,7 @@
 
 module Api.Request where
 
-import Api.Common (failure, success)
+import Api.Common (notFound, success)
 import Control.Monad (forM, forM_, join)
 import Data.Aeson hiding (json)
 import Data.BareProperty (BareProperty)
@@ -34,7 +34,7 @@ getWithProps = do
         query $
           select Table.properties `suchThat` (\prop -> prop ! #requestId .== literal reqId)
       success $ object ["request" .= req, "properties" .= props]
-    _ -> failure
+    _ -> notFound
 
 getComments :: EnvAction ()
 getComments = do

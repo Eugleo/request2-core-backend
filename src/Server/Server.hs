@@ -16,7 +16,6 @@ import Data.Model.Role (Role (..))
 import Data.PropertyWithoutId (PropertyWithoutId)
 import Data.TeamWithoutId (TeamWithoutId)
 import qualified Data.Text as T
-import Data.UserWithoutId (UserWithoutId)
 import Database.Selda (SeldaT)
 import Database.Selda.PostgreSQL (PG, PGConnectInfo (..), on, withPostgreSQL)
 import qualified Database.Table as Table

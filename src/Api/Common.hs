@@ -21,8 +21,8 @@ import Utils.Id.AddId
 success :: ToJSON a => a -> EnvAction ()
 success v = json (object ["data" .= toJSON v])
 
-failure :: EnvAction ()
-failure = json (object ["error" .= ("Error: Not found" :: Text)]) >> status notFound404 >> finish
+notFound :: EnvAction ()
+notFound = json (object ["error" .= ("Error: Not found" :: Text)]) >> status notFound404 >> finish
 
 create ::
   forall a b w.
@@ -47,7 +47,7 @@ get tbl = do
   valId <- param "_id" :: EnvAction (ID b)
   val <- Db.get tbl valId
   maybe
-    failure
+    notFound
     success
     val
 
@@ -67,7 +67,7 @@ getMany tbl = do
     v <- select tbl
     return (count (v ! #_id))
   maybe
-    failure
+    notFound
     (\total -> success (object ["values" .= toJSON vals, "total" .= total]))
     (listToMaybe res)
 
