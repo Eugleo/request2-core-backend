@@ -13,6 +13,7 @@ data ListenConfig
 
 data Config = Config
   { _dataDir :: String,
+    _dataUrlPrefix :: String,
     _dbUser :: Text, --TODO eventually modify selda to pass in a connection string, as with internal pgOpen'
     _dbHost :: Text,
     _listen :: ListenConfig,
@@ -28,6 +29,7 @@ defaultConfig :: Config
 defaultConfig =
   Config
     { _dataDir = "data",
+      _dataUrlPrefix = "/data",
       _dbUser = "request",
       _dbHost = "localhost",
       _listen = ListenOnPort 9080,
@@ -58,6 +60,7 @@ readConfig path = do
   let upd = updateFromIni ini "server"
   return
     $ upd "data_dir" dataDir unpack
+     . upd "data_url_prefix" dataUrlPrefix unpack
       . upd "listen_port" listen (ListenOnPort . read . unpack)
       . upd "listen_socket" listen (ListenOnSocket . unpack)
       . upd "db_user" dbUser id
