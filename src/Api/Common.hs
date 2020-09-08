@@ -22,7 +22,10 @@ success :: ToJSON a => a -> EnvAction ()
 success v = json (object ["data" .= toJSON v])
 
 notFound :: EnvAction ()
-notFound = json (object ["error" .= ("Error: Not found" :: Text)]) >> status notFound404 >> finish
+notFound = do
+  json $ object ["error" .= ("Error: Not found" :: Text)]
+  status notFound404
+  finish
 
 create ::
   forall a b w.

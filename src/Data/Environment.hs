@@ -78,6 +78,12 @@ files = EA . lift $ S.files
 header :: Text -> EnvAction (Maybe Text)
 header = EA . lift . fmap (toStrict <$>) . S.header . fromStrict
 
+redirect :: Text -> EnvAction ()
+redirect = EA . lift . S.redirect . fromStrict
+
+raise :: Text -> EnvAction ()
+raise = EA . lift . S.raise . fromStrict
+
 rescue :: EnvAction a -> (Text -> EnvAction a) -> EnvAction a
 rescue act err = do
   env <- ask

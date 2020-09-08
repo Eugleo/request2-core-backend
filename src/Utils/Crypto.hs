@@ -1,6 +1,7 @@
 module Utils.Crypto where
 
 import qualified Data.ByteString.Base64 as B64
+import qualified Data.ByteString.Base16 as B16
 import Data.ByteString.Lazy (fromStrict, toStrict)
 import Data.ByteString.Lazy.UTF8 (ByteString)
 import qualified Data.ByteString.Lazy.UTF8 as LU
@@ -43,11 +44,8 @@ dbApiKey =
     . fromString
     . unpack
 
-pathHash :: Text -> Hash
-pathHash = pack . showDigest . sha256 . LU.fromString . unpack
-
-pathHash' :: ByteString -> Hash
-pathHash' = pack . showDigest . sha256
+getRandomHash :: IO Text
+getRandomHash = pack . toString . B16.encode <$> getEntropy 16 --overkill.
 
 regToken :: Text -> Config -> Maybe Hash
 regToken mail config

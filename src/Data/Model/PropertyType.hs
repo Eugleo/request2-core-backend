@@ -6,7 +6,8 @@ module Data.Model.PropertyType where
 import Data.Aeson
 import Database.Selda
 
-data PropertyType = Comment | Note | Result | General | Detail
+--TODO explain the differene between Comment&Note and General&Detail
+data PropertyType = Comment | Note | Result | General | Detail | File | ResultFile
   deriving (Show, Read, Eq, Bounded, Enum, Generic, SqlType, FromJSON)
 
 instance ToJSON PropertyType where

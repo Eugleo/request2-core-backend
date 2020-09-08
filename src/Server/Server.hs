@@ -85,8 +85,8 @@ server config = runScotty config $ do
    -}
   get "/capability" $ S.json (capabilityList :: [T.Text])
   {-
-    - Users
-    -}
+   - Users
+   -}
   get "/users/:_id" $ withRoles [Admin, Operator] $ Api.get Table.users
   post "/register-init" $ withDB User.mailRegToken
   post "/register" $ withDB User.register
@@ -94,21 +94,21 @@ server config = runScotty config $ do
   post "/logout" $ withAuth User.logout
   post "/password" $ withAuth User.changePassword
   {-
-    - User information
-    -}
+   - User information
+   -}
   get "/me" $ withAuth User.getDetails
   -- TODO put "/userinfo" $ withAuth undefined
   {-
-    - Announcements
-    -}
+   - Announcements
+   -}
   get "/announcements" $ withAuth $ Api.getMany Table.anns
   get "/announcements/:_id" $ withAuth $ Api.get Table.anns
   post "/announcements" $ withRoles [Admin] $ Api.create @AnnWithoutId Table.anns
   put "/announcements/:_id" $ withRoles [Admin] $ Api.update Table.anns
   delete "/announcements/:_id" $ withRoles [Admin] $ Api.deactivate Table.anns
   {-
-    - Requests
-    -}
+   - Requests
+   -}
   -- TODO Only author and operator can view & edit requests
   post "/requests/:_id/data/results" $ withDB Files.upload
   get "/requests" $ withAuth $ Api.getMany Table.requests
@@ -116,12 +116,17 @@ server config = runScotty config $ do
   get "/requests/:_id/comments" $ withRoles [Client, Operator] Request.getComments
   post "/requests" $ withRoles [Client] Request.createWithProps
   put "/requests/:_id" $ withRoles [Client, Operator] Request.updateWithProps
-  post "/requests/:_id/comments" $
-    withRoles [Client, Operator] $
-      Api.create @PropertyWithoutId Table.properties
+  post "/requests/:_id/comments"
+    $ withRoles [Client, Operator]
+    $ Api.create @PropertyWithoutId Table.properties
   {-
-    - Teams
-    -}
+   - Files
+   -}
+  -- TODO is auth needed here?
+  get "/file/:hash" $ withDB $ Files.getFile
+  {-
+   - Teams
+   -}
   get "/teams" $ withRoles [Admin, Operator] $ Api.getMany Table.teams
   get "/teams/:_id" $ withRoles [Admin, Operator] $ Api.get Table.teams
   post "/teams" $ withRoles [Admin] $ Api.create @TeamWithoutId Table.teams
