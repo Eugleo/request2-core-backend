@@ -66,13 +66,14 @@ filePath h n = do
   pfx <- _dataDir <$> askConfig
   return $ filePath' pfx h n
 
-fileUrl :: T.Text -> T.Text -> EnvAction String
+fileUrl :: T.Text -> T.Text -> EnvAction T.Text
 fileUrl h n = do
   pfx <- _dataUrlPrefix <$> askConfig
-  return $ filePath' pfx h n
+  return . T.pack $ filePath' pfx h n
 
 propIsFileWithHash :: S.Text -> S.Row t Property -> S.Col t Bool
 propIsFileWithHash h property =
+  -- TODO this needs an index!!!
   ((property S.! #propertyData) `S.like` S.literal (T.append h ":%"))
     S..&& ( (property S.! #propertyType S..== S.literal File)
               S..|| (property S.! #propertyType S..== S.literal ResultFile)
@@ -81,7 +82,6 @@ propIsFileWithHash h property =
 getUniqueHash :: EnvAction T.Text
 getUniqueHash = do
   hash <- envIO getRandomHash
-  -- TODO this needs an index!!!
   res <-
     S.query $ S.select properties `S.suchThat` propIsFileWithHash hash
   case res of
@@ -121,22 +121,16 @@ handleUploads = files >>= traverse handleUpload'
         envIO $ B.writeFile path $ BL.toStrict d
         return $ (hash, mime, name)
 
-success :: ToJSON a => a -> EnvAction ()
-success v = json (object ["data" .= toJSON v])
-
 getFile :: EnvAction ()
 getFile = do
   hash <- param "hash"
-  --TODO this needs more checking (ie "is it really a file")
-  --TODO share the condition
   res <-
     S.query $ do
       prop <- S.select properties `S.suchThat` propIsFileWithHash hash
       return $ prop S.! #propertyData
-  envIO $ print res
   case res of
     [d] -> do
       case filePropertyToDesc d of
-        Just (h, _, n) -> fileUrl h n >>= success
+        Just (h, _, n) -> fileUrl h n >>= redirect
         _ -> raise "File property decoding problem"
     _ -> status notFound404

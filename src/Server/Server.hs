@@ -111,7 +111,6 @@ server config = runScotty config $ do
    -}
   -- TODO Only author and operator can view & edit requests
   post "/requests/:_id/data/results" $ withDB Files.upload
-  get "/requests/files/:hash" $ withAuth Files.getFile
   get "/requests" $ withAuth $ Api.getMany Table.requests
   get "/requests/:_id" $ withAuth Request.getWithProps
   get "/requests/:_id/comments" $ withRoles [Client, Operator] Request.getComments
