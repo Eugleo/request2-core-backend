@@ -116,9 +116,9 @@ server config = runScotty config $ do
   get "/requests/:_id/comments" $ withRoles [Client, Operator] Request.getComments
   post "/requests" $ withRoles [Client] Request.createWithProps
   put "/requests/:_id" $ withRoles [Client, Operator] Request.updateWithProps
-  post "/requests/:_id/comments"
-    $ withRoles [Client, Operator]
-    $ Api.create @PropertyWithoutId Table.properties
+  post "/requests/:_id/comments" $
+    withRoles [Client, Operator] $
+      Api.create @PropertyWithoutId Table.properties
   {-
    - Files
    -}
