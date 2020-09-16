@@ -110,7 +110,6 @@ server config = runScotty config $ do
    - Requests
    -}
   -- TODO Only author and operator can view & edit requests
-  post "/requests/:_id/data/results" $ withDB Files.upload
   get "/requests" $ withAuth $ Api.getMany Table.requests
   get "/requests/:_id" $ withAuth Request.getWithProps
   get "/requests/:_id/comments" $ withRoles [Client, Operator] Request.getComments
@@ -123,7 +122,8 @@ server config = runScotty config $ do
    - Files
    -}
   -- TODO is auth needed here?
-  get "/file/:hash" $ withDB $ Files.getFile
+  post "/files" $ withDB Files.upload
+  get "/files/:hash" $ withDB $ Files.getFile
   {-
    - Teams
    -}
