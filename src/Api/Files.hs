@@ -13,12 +13,14 @@ import Data.Environment
     envIO,
     files,
     json,
+    jsonData,
     param,
     raise,
     redirect,
     rescue,
     status,
   )
+import qualified Data.FileDesc as F
 import Data.List (intercalate)
 import Data.Maybe
 import Data.Model.Property (Property)
@@ -26,10 +28,10 @@ import Data.Model.PropertyType (PropertyType (..))
 import qualified Data.Text as T
 import qualified Database.Selda as S
 import Database.Table (properties)
-import Network.HTTP.Types.Status (created201, notFound404, notModified304)
+import Network.HTTP.Types.Status (created201, forbidden403, notFound404, notModified304)
 import Network.Wai.Parse (FileInfo (..))
 import Server.Config (_dataDir, _dataUrlPrefix)
-import System.Directory (createDirectoryIfMissing)
+import System.Directory (createDirectoryIfMissing, removeFile)
 import Utils.Crypto (getRandomHash)
 
 upload :: EnvAction ()
@@ -41,6 +43,18 @@ upload = do
       let fileObjects = map (\(h, m, n) -> object ["hash" .= h, "mime" .= m, "name" .= n]) fs
       json $ object ["files" .= fileObjects]
       status created201
+
+delete :: EnvAction ()
+delete = do
+  fileDesc <- jsonData
+  path <- filePath (F.hash fileDesc) (F.name fileDesc)
+  res <-
+    S.query $ do
+      prop <- S.select properties `S.suchThat` propIsFileWithHash (F.hash fileDesc)
+      return $ prop S.! #propertyData
+  case res of
+    [] -> envIO $ removeFile path
+    _ -> status forbidden403
 
 fileDir' :: String -> T.Text -> String
 fileDir' pfx hash =

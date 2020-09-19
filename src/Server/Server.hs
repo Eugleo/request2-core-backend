@@ -123,6 +123,7 @@ server config = runScotty config $ do
    -}
   -- TODO is auth needed here?
   post "/files" $ withDB Files.upload
+  delete "/files/:hash" $ withDB Files.delete
   get "/files/:hash" $ withDB $ Files.getFile
   {-
    - Teams
