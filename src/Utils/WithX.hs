@@ -33,7 +33,7 @@ withRolesEnv config rs action =
   withAuthEnv config $ do
     userRoles <- roles <$> askUser
     unless
-      (all (`elem` userRoles) rs)
+      (any (`elem` userRoles) rs)
       (status forbidden403 >> finish)
     action
 
