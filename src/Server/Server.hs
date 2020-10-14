@@ -80,6 +80,9 @@ server config = runScotty config $ do
    -}
   post "/users" $ withRoles [Admin] $ User.createNew
   get "/users" $ withRoles [Admin, Operator] $ Api.getMany Table.users
+  -- TODO Make it impossible to update password thourhg this API
+  put "/users/:_id" $ withRoles [Admin] $ Api.update Table.users
+  delete "/users/:_id" $ withRoles [Admin] $ Api.deactivate Table.users
   {-
    - Capabilities
    -}
