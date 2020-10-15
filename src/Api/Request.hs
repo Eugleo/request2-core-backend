@@ -45,7 +45,7 @@ getDetails = getSubsetOfProps $ \prop ->
 getComments :: EnvAction ()
 getComments = getSubsetOfProps $ \prop ->
   prop ! #propertyType .== literal PropertyType.Result
-    .|| prop ! #propertyType .== literal PropertyType.ResultFile
+    .|| prop ! #propertyType .== literal PropertyType.Comment
 
 getResults :: EnvAction ()
 getResults = getSubsetOfProps $ \prop -> prop ! #propertyType .== literal PropertyType.Result
