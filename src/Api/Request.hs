@@ -6,10 +6,10 @@ module Api.Request where
 
 import Api.Common (notFound, success)
 import Control.Monad (forM, forM_, join)
-import Data.Aeson hiding (json)
+import Data.Aeson (KeyValue ((.=)), object)
 import Data.BareProperty (BareProperty)
 import qualified Data.BareProperty as Bare
-import Data.Environment
+import Data.Environment (EnvAction, jsonData, param, status)
 import Data.List ((\\))
 import qualified Data.Model.Property as P
 import qualified Data.Model.PropertyType as PropertyType
@@ -20,6 +20,7 @@ import qualified Data.ReqWithProps as RWP
 import qualified Data.ReqWithPropsWithoutId as RWPWI
 import qualified Database.Common as Db
 import Database.Selda
+import Database.Selda.PostgreSQL (PG)
 import qualified Database.Table as Table
 import Network.HTTP.Types.Status (created201)
 import Utils.Id.AddId (addId)
@@ -36,17 +37,28 @@ getWithProps = do
       success $ object ["request" .= req, "properties" .= props]
     _ -> notFound
 
+getDetails :: EnvAction ()
+getDetails = getSubsetOfProps $ \prop ->
+  prop ! #propertyType .== literal PropertyType.Detail
+    .|| prop ! #propertyType .== literal PropertyType.File
+
 getComments :: EnvAction ()
-getComments = do
+getComments = getSubsetOfProps $ \prop ->
+  prop ! #propertyType .== literal PropertyType.Result
+    .|| prop ! #propertyType .== literal PropertyType.ResultFile
+
+getResults :: EnvAction ()
+getResults = getSubsetOfProps $ \prop -> prop ! #propertyType .== literal PropertyType.Result
+
+getSubsetOfProps :: (Row (Inner PG) P.Property -> Col (Inner PG) Bool) -> EnvAction ()
+getSubsetOfProps keep = do
   reqId <- param "_id"
   props <-
-    query $ select Table.properties `suchThat` (\prop -> fromReq reqId prop .&& isComment prop)
+    query $ select Table.properties `suchThat` (\prop -> fromReq reqId prop .&& keep prop)
   success props
   where
     fromReq :: ID R.Request -> Row t P.Property -> Col t Bool
     fromReq reqId prop = prop ! #requestId .== literal reqId
-    isComment :: Row t P.Property -> Col t Bool
-    isComment prop = prop ! #propertyType .== literal PropertyType.Comment
 
 -- TODO Add transactions
 updateWithProps :: EnvAction ()
