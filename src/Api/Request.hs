@@ -47,7 +47,9 @@ getComments = getSubsetOfProps $ \prop ->
   prop ! #propertyType .== literal PropertyType.Comment
 
 getResults :: EnvAction ()
-getResults = getSubsetOfProps $ \prop -> prop ! #propertyType .== literal PropertyType.Result
+getResults = getSubsetOfProps $ \prop ->
+  prop ! #propertyType .== literal PropertyType.Result
+    .|| prop ! #propertyType .== literal PropertyType.ResultFile
 
 getSubsetOfProps :: (Row (Inner PG) P.Property -> Col (Inner PG) Bool) -> EnvAction ()
 getSubsetOfProps keep = do
