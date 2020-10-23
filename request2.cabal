@@ -65,6 +65,8 @@ executable request2
     Data.ReqWithPropsWithoutId
     Data.RequestWithoutId
     Api.Common
+    Api.Query
+    Api.Query.Parser
     Api.Files
     Api.User
     Data.AnnWithoutId
@@ -102,6 +104,7 @@ executable request2
   -- Other library packages from which modules are imported.
   build-depends:
     base >= 4.11,
+    pretty-simple,
     aeson,
     bytestring,
     base16-bytestring,

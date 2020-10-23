@@ -1,41 +1,46 @@
 module Api.Query.Parser where
 
 import Api.Query
+import Data.Maybe (fromJust)
 import Data.Model.DateTime
 import Data.Text (Text, pack)
 import Data.Void (Void)
 import Text.Megaparsec
 import Text.Megaparsec.Char
 import qualified Text.Megaparsec.Char.Lexer as L
+import Text.Pretty.Simple (pPrint)
+
+parseQuery :: Text -> IO ()
+parseQuery = pPrint . fromJust . parseMaybe query
 
 type Parser = Parsec Void Text
 
 query :: Parser Query
-query = Conjunction <$> listOf' '+' clause
+query = Conjunction <$> listOf' '+' clause <* eof
 
 clause :: Parser Clause
 clause = (try qualifiedClause) <|> literalClause
 
 literalClause :: Parser Clause
-literalClause = extant <|> negated
+literalClause = try negated <|> extant
   where
+    negated = Negated <$ (lexeme $ string "NOT") <*> literal
     extant = Extant <$> literal
-    negated = Negated <$> (try (string "NOT") *> literal)
 
 qualifiedClause :: Parser Clause
-qualifiedClause = extant <|> negated
+qualifiedClause = try negated <|> extant
   where
+    negated = Negated <$ char '-' <*> qualifiedEntity
     extant = Extant <$> qualifiedEntity
-    negated = Negated <$> (try (string "-") *> qualifiedEntity)
 
 literal :: Parser Entity
 literal = Literal <$> text
 
 qualifiedEntity :: Parser Entity
 qualifiedEntity = do
-  name <- pack <$> some asciiChar
+  name <- pack <$> some letterChar
   char ':'
-  qualifiedText name <|> qualifiedDate name <|> qualifiedNumber name
+  qualifiedDate name <|> qualifiedText name <|> qualifiedNumber name
 
 qualifiedText :: Text -> Parser Entity
 qualifiedText name = QualifiedText name <$> listOf text
@@ -66,16 +71,16 @@ date = do
   return $ fromDate year month day
 
 text :: Parser Text
-text = pack <$> (quotedText <|> some letterChar)
+text = pack <$> (quotedText <|> some alphaNumChar)
   where
     quotedText = between (char '"') (char '"') (many word)
-    word = spaceChar <|> letterChar
+    word = spaceChar <|> alphaNumChar
 
 listOf :: Parser a -> Parser [a]
 listOf = listOf' ','
 
 listOf' :: Char -> Parser a -> Parser [a]
-listOf' c p = flip (:) <$> many (p <* char c) <*> p
+listOf' c p = (:) <$> p <*> many (char c *> p)
 
-sc :: Parser ()
-sc = L.space (char '+' *> pure ()) empty empty
+lexeme :: Parser a -> Parser a
+lexeme = L.lexeme (char '+' *> pure ())
