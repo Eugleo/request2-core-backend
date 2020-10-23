@@ -11,7 +11,7 @@ import qualified Text.Megaparsec.Char.Lexer as L
 type Parser = Parsec Void Text
 
 query :: Parser Query
-query = Conjunction <$> listOf clause
+query = Conjunction <$> listOf' '+' clause
 
 clause :: Parser Clause
 clause = (try qualifiedClause) <|> literalClause
@@ -72,7 +72,10 @@ text = pack <$> (quotedText <|> some letterChar)
     word = spaceChar <|> letterChar
 
 listOf :: Parser a -> Parser [a]
-listOf p = flip (:) <$> many (p <* char ',') <*> p
+listOf = listOf' ','
+
+listOf' :: Char -> Parser a -> Parser [a]
+listOf' c p = flip (:) <$> many (p <* char c) <*> p
 
 sc :: Parser ()
 sc = L.space (char '+' *> pure ()) empty empty
