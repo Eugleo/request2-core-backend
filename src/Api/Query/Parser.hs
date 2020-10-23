@@ -10,13 +10,16 @@ import Text.Megaparsec.Char
 import qualified Text.Megaparsec.Char.Lexer as L
 import Text.Pretty.Simple (pPrint)
 
+prettyParseQuery :: Text -> IO ()
+prettyParseQuery = pPrint . fromJust . parseMaybe query
+
 parseQuery :: Text -> IO ()
-parseQuery = pPrint . fromJust . parseMaybe query
+parseQuery = parseTest query
 
 type Parser = Parsec Void Text
 
 query :: Parser Query
-query = Conjunction <$> listOf' '+' clause <* eof
+query = Conjunction <$> listOf' ' ' clause <* eof
 
 clause :: Parser Clause
 clause = (try qualifiedClause) <|> literalClause
@@ -40,7 +43,7 @@ qualifiedEntity :: Parser Entity
 qualifiedEntity = do
   name <- pack <$> some letterChar
   char ':'
-  qualifiedDate name <|> qualifiedText name <|> qualifiedNumber name
+  try (qualifiedDate name) <|> try (qualifiedNumber name) <|> qualifiedText name
 
 qualifiedText :: Text -> Parser Entity
 qualifiedText name = QualifiedText name <$> listOf text
@@ -83,4 +86,4 @@ listOf' :: Char -> Parser a -> Parser [a]
 listOf' c p = (:) <$> p <*> many (char c *> p)
 
 lexeme :: Parser a -> Parser a
-lexeme = L.lexeme (char '+' *> pure ())
+lexeme = L.lexeme (char ' ' *> pure ())
