@@ -23,9 +23,9 @@ instance FromJSON DateTime where
   parseJSON =
     withScientific "UnixTime" $ \v ->
       maybe
-        ( prependFailure "Can't parse time, "
-            $ fail
-            $ "incorrect argument: " ++ show v
+        ( prependFailure "Can't parse time, " $
+            fail $
+              "incorrect argument: " ++ show v
         )
         (return . DateTime)
         $ toBoundedInteger v
@@ -37,3 +37,7 @@ now :: IO DateTime
 now = do
   CTime t <- utSeconds <$> getUnixTime
   return $ DateTime t
+
+-- TODO fixme
+fromDate :: Integer -> Integer -> Integer -> DateTime
+fromDate y m d = DateTime 1000

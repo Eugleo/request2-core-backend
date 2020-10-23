@@ -69,6 +69,7 @@ executable request2
     Api.User
     Data.AnnWithoutId
     Data.Environment
+    Data.FileDesc
     Data.Model.Ann
     Data.Model.ApiKey
     Data.Model.DateTime
@@ -119,6 +120,7 @@ executable request2
     ini,
     lens,
     lens-aeson,
+    megaparsec,
     mtl,
     network,
     optparse-applicative ^>=0.16,
