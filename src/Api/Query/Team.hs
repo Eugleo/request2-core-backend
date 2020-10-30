@@ -5,7 +5,6 @@ module Api.Query.Team where
 
 import Api.Query hiding (Query)
 import qualified Api.Query as Api (Query)
-import Control.Monad (forM_)
 import Data.Environment (EnvAction, envIO)
 import Data.Maybe
 import Data.Model.Team
@@ -30,55 +29,67 @@ buildTeamQuery q = do
       return $ Right res
     Left message -> return $ Left message
 
--- Let's hope Selda translates restrict p1 >>= restrict p2 into WHERE p1 AND p2
 buildTeamPredicate :: Api.Query -> FilteringQuery
-buildTeamPredicate (Conjunction cs) = case mapM (queryFromClause) cs of
-  Right preds -> Right $ \t -> mapM_ ($ t) preds
-  Left message -> Left message
+buildTeamPredicate (Conjunction cs) =
+  case mapM (queryFromClause) cs of
+    Right preds -> Right $ \t -> mapM_ ($ t) preds
+    Left message -> Left message
 
-queryFromClause :: Clause -> Either Text (Row PG Team -> Query PG ())
+queryFromClause :: Clause -> FilteringQuery
 queryFromClause (Extant ent) = queryFromEntity ent id
 queryFromClause (Negated ent) = queryFromEntity ent not_
 
 queryFromEntity :: Entity -> (Col PG Bool -> Col PG Bool) -> FilteringQuery
 queryFromEntity ent f =
   case ent of
-    Literal txt -> Right $ \t -> restrict . f $ t ! #name `like` literal (approx txt)
-    Qualified "member" vals ->
-      Right $ \t -> do
+    Literal txt ->
+      Right $ \t ->
+        restrict . f $ t ! #name `like` literal (approx txt)
+    Qualified "member" vals -> do
+      vs <- mapM (fromEqual "member") vals
+      return $ \t -> do
         user <- select users
-        restrict . disj $ map (\v -> user ! #name `like` literal (approx $ fromEqual v)) vals
+        restrict . disj $ map (\v -> user ! #name `like` literal (approx v)) vs
         restrict $ t ! #_id .== user ! #teamId
-    Qualified "name" vals ->
+    Qualified "name" vals -> do
+      vs <- mapM (fromEqual "name") vals
+      return $ \t ->
+        rfd $
+          map
+            (\v -> t ! #name `like` literal (approx v))
+            vs
+    Qualified "code" vals -> do
+      vs <- mapM (fromEqual "code") vals
       Right $ \t ->
         rfd $
           map
-            (\v -> t ! #name `like` literal (approx $ fromEqual v))
-            vals
-    Qualified "code" vals ->
-      Right $ \t ->
-        rfd $
-          map
-            (\v -> t ! #code `like` literal (approx $ fromEqual v))
-            vals
-    Qualified "active" vals ->
+            (\v -> t ! #code `like` literal (approx v))
+            vs
+    Qualified "active" vals -> do
+      vs <- mapM (fromEqual "active") vals
       Right $ \t ->
         rfd $
           map (\v -> t ! #active .== literal v) $
-            mapMaybe (maybeParseBool . fromEqual) vals
+            mapMaybe maybeParseBool vs
     Qualified "id" vals ->
       Right $ \t ->
         rfd $
           map (delimitedPredicate (t ! #_id)) $
             mapMaybe parseId vals
     Qualified quant _ ->
-      Left ("The quantifier " `append` quant `append` "is not defined for teams")
+      Left ("The quantifier " `append` quant `append` " is not defined for teams")
   where
     rfd = restrict . f . disj
     parseId = sequence . fmap (fmap toId . readMaybe . unpack)
 
-fromEqual :: Delimited a -> a
-fromEqual (Equal x) = x
+-- TODO Error out in other cases
+fromEqual :: Text -> Delimited a -> Either Text a
+fromEqual _ (Equal x) = Right x
+fromEqual nm _ =
+  Left $
+    "The quantifier "
+      `append` nm
+      `append` " doesn't support any ordering operators"
 
 approx :: Text -> Text
 approx txt = "%" `append` txt `append` "%"
