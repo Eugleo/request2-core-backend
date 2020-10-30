@@ -1,8 +1,7 @@
-{-# LANGUAGE DeriveFunctor #-}
+{-# LANGUAGE DeriveTraversable #-}
 
 module Api.Query where
 
-import Data.Model.DateTime
 import Data.Text (Text)
 
 newtype Query = Conjunction [Clause]
@@ -13,11 +12,7 @@ data Clause
   | Negated Entity
   deriving (Eq, Show)
 
-data Entity
-  = QualifiedDate Text [Delimited DateTime]
-  | QualifiedText Text [Text]
-  | QualifiedNumber Text [Delimited Int]
-  | Literal Text
+data Entity = Qualified Text [Delimited Text] | Literal Text
   deriving (Eq, Show)
 
 data Delimited a
@@ -27,4 +22,4 @@ data Delimited a
   | GreaterOrEq a
   | Between a a
   | Equal a
-  deriving (Eq, Show, Functor)
+  deriving (Eq, Show, Functor, Foldable, Traversable)

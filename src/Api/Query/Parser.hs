@@ -43,16 +43,10 @@ qualifiedEntity :: Parser Entity
 qualifiedEntity = do
   name <- pack <$> some letterChar
   char ':'
-  try (qualifiedDate name) <|> try (qualifiedNumber name) <|> qualifiedText name
+  qualified name
 
-qualifiedText :: Text -> Parser Entity
-qualifiedText name = QualifiedText name <$> listOf text
-
-qualifiedDate :: Text -> Parser Entity
-qualifiedDate name = QualifiedDate name <$> listOf (delimited date)
-
-qualifiedNumber :: Text -> Parser Entity
-qualifiedNumber name = QualifiedNumber name <$> listOf (delimited L.decimal)
+qualified :: Text -> Parser Entity
+qualified name = Qualified name <$> listOf (delimited text)
 
 delimited :: Parser a -> Parser (Delimited a)
 delimited p = try gte <|> gt <|> try lte <|> lt <|> try range <|> eq
