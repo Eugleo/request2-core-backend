@@ -15,17 +15,20 @@ import Data.Maybe (listToMaybe)
 import qualified Database.Common as Db
 import Database.Selda hiding (update)
 import qualified Database.Selda as Selda (update)
-import Network.HTTP.Types.Status (created201, notFound404, ok200)
+import Network.HTTP.Types.Status (Status, created201, notFound404, ok200)
 import Utils.Id.AddId
 
 success :: ToJSON a => a -> EnvAction ()
 success v = json (object ["data" .= toJSON v])
 
-notFound :: EnvAction ()
-notFound = do
-  json $ object ["error" .= ("Error: Not found" :: Text)]
-  status notFound404
+failure :: Text -> Status -> EnvAction ()
+failure msg st = do
+  json $ object ["error" .= msg]
+  status st
   finish
+
+notFound :: EnvAction ()
+notFound = failure "Error: Not found" notFound404
 
 create ::
   forall a b w.

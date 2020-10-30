@@ -5,6 +5,8 @@ module Server.Server where
 
 import qualified Api.Common as Api
 import qualified Api.Files as Files
+import Api.Query.Runner
+import Api.Query.Team
 import qualified Api.Request as Request
 import qualified Api.User as User
 import Control.Exception (bracket)
@@ -134,7 +136,7 @@ server config = runScotty config $ do
   {-
    - Teams
    -}
-  get "/teams" $ withRoles [Admin, Operator] $ Api.getMany Table.teams
+  get "/teams" $ withDB $ runSearchQuery buildTeamQuery
   get "/teams/:_id" $ withRoles [Admin, Operator] $ Api.get Table.teams
   post "/teams" $ withRoles [Admin] $ Api.create @TeamWithoutId Table.teams
   put "/teams/:_id" $ withRoles [Admin] $ Api.update Table.teams

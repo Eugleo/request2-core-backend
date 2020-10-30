@@ -14,3 +14,6 @@ instance FromJSON (ID a) where
 
 instance Parsable (ID a) where
   parseParam = fmap toId . parseParam
+
+instance Read (ID a) where
+  readsPrec = readsPrec

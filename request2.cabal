@@ -67,6 +67,8 @@ executable request2
     Api.Common
     Api.Query
     Api.Query.Parser
+    Api.Query.Runner
+    Api.Query.Team
     Api.Files
     Api.User
     Data.AnnWithoutId

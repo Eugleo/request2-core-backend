@@ -1,3 +1,5 @@
+{-# LANGUAGE DeriveFunctor #-}
+
 module Api.Query where
 
 import Data.Model.DateTime
@@ -14,7 +16,7 @@ data Clause
 data Entity
   = QualifiedDate Text [Delimited DateTime]
   | QualifiedText Text [Text]
-  | QualifiedNumber Text [Delimited Integer]
+  | QualifiedNumber Text [Delimited Int]
   | Literal Text
   deriving (Eq, Show)
 
@@ -25,4 +27,4 @@ data Delimited a
   | GreaterOrEq a
   | Between a a
   | Equal a
-  deriving (Eq, Show)
+  deriving (Eq, Show, Functor)
