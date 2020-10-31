@@ -1,3 +1,5 @@
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
+
 module Data.Model.DateTime where
 
 import Data.Aeson
@@ -10,7 +12,7 @@ import Database.Selda.SqlType
 import Foreign.C.Types (CTime (..))
 
 newtype DateTime = DateTime Int64
-  deriving (Show, Eq, Ord)
+  deriving (Show, Eq, Ord, Num)
 
 instance SqlType DateTime where
   mkLit (DateTime t) = LCustom TInt . LInt . fromIntegral $ t

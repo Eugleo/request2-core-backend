@@ -7,6 +7,7 @@ import qualified Api.Common as Api
 import qualified Api.Files as Files
 import Api.Query.Runner
 import Api.Query.Team
+import Api.Query.User
 import qualified Api.Request as Request
 import qualified Api.User as User
 import Control.Exception (bracket)
@@ -80,9 +81,9 @@ server config = runScotty config $ do
   {-
    - Admin interface
    -}
-  post "/users" $ withRoles [Admin] $ User.createNew
-  get "/users" $ withRoles [Admin, Operator] $ Api.getMany Table.users
-  -- TODO Make it impossible to update password thourhg this API
+  post "/users" $ withRoles [Admin] User.createNew
+  get "/users" $ withDB $ runSearchQuery buildUserQuery
+  -- TODO Make it impossible to update password through this API
   put "/users/:_id" $ withRoles [Admin] $ Api.update Table.users
   delete "/users/:_id" $ withRoles [Admin] $ Api.deactivate Table.users
   {-
@@ -132,10 +133,11 @@ server config = runScotty config $ do
   -- TODO is auth needed here?
   post "/files" $ withDB Files.upload
   delete "/files/:hash" $ withDB Files.delete
-  get "/files/:hash" $ withDB $ Files.getFile
+  get "/files/:hash" $ withDB Files.getFile
   {-
    - Teams
    -}
+  -- TODO Add auth
   get "/teams" $ withDB $ runSearchQuery buildTeamQuery
   get "/teams/:_id" $ withRoles [Admin, Operator] $ Api.get Table.teams
   post "/teams" $ withRoles [Admin] $ Api.create @TeamWithoutId Table.teams

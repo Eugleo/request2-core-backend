@@ -11,7 +11,7 @@ import Text.Megaparsec (runParser)
 
 runSearchQuery :: ToJSON a => (Query -> EnvAction (Either Text a)) -> EnvAction ()
 runSearchQuery runQuery = do
-  queryText <- (param "query")
+  queryText <- param "query"
   let eq = runParser Parse.query "" queryText
   case eq of
     Left _ -> failure "Query parsing failed" badRequest400

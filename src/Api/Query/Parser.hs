@@ -1,6 +1,7 @@
 module Api.Query.Parser where
 
 import Api.Query
+import Data.Functor (($>))
 import Data.Maybe (fromJust)
 import Data.Model.DateTime
 import Data.Text (Text, pack)
@@ -22,12 +23,12 @@ query :: Parser Query
 query = Conjunction <$> listOf' ' ' clause <* eof
 
 clause :: Parser Clause
-clause = (try qualifiedClause) <|> literalClause
+clause = try qualifiedClause <|> literalClause
 
 literalClause :: Parser Clause
 literalClause = try negated <|> extant
   where
-    negated = Negated <$ (lexeme $ string "NOT") <*> literal
+    negated = Negated <$ lexeme (string "NOT") <*> literal
     extant = Extant <$> literal
 
 qualifiedClause :: Parser Clause
@@ -80,4 +81,4 @@ listOf' :: Char -> Parser a -> Parser [a]
 listOf' c p = (:) <$> p <*> many (char c *> p)
 
 lexeme :: Parser a -> Parser a
-lexeme = L.lexeme (char ' ' *> pure ())
+lexeme = L.lexeme (char ' ' $> ())
