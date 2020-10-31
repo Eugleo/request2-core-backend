@@ -82,7 +82,7 @@ server config = runScotty config $ do
    - Admin interface
    -}
   post "/users" $ withRoles [Admin] User.createNew
-  get "/users" $ withDB $ runSearchQuery buildUserQuery
+  get "/users" $ withDB $ runQuery Table.users userQueryTranslator
   -- TODO Make it impossible to update password through this API
   put "/users/:_id" $ withRoles [Admin] $ Api.update Table.users
   delete "/users/:_id" $ withRoles [Admin] $ Api.deactivate Table.users
@@ -138,7 +138,7 @@ server config = runScotty config $ do
    - Teams
    -}
   -- TODO Add auth
-  get "/teams" $ withDB $ runSearchQuery buildTeamQuery
+  get "/teams" $ withDB $ runQuery Table.teams teamQueryTranslator
   get "/teams/:_id" $ withRoles [Admin, Operator] $ Api.get Table.teams
   post "/teams" $ withRoles [Admin] $ Api.create @TeamWithoutId Table.teams
   put "/teams/:_id" $ withRoles [Admin] $ Api.update Table.teams

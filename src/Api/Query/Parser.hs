@@ -1,26 +1,23 @@
-module Api.Query.Parser where
+module Api.Query.Parser (parseQuerySpec) where
 
 import Api.Query
 import Data.Functor (($>))
-import Data.Maybe (fromJust)
 import Data.Model.DateTime
 import Data.Text (Text, pack)
 import Data.Void (Void)
 import Text.Megaparsec
 import Text.Megaparsec.Char
 import qualified Text.Megaparsec.Char.Lexer as L
-import Text.Pretty.Simple (pPrint)
 
-prettyParseQuery :: Text -> IO ()
-prettyParseQuery = pPrint . fromJust . parseMaybe query
-
-parseQuery :: Text -> IO ()
-parseQuery = parseTest query
+parseQuerySpec :: Text -> Either Text QuerySpecification
+parseQuerySpec txt = case runParser querySpec "" txt of
+  Left err -> Left . pack $ errorBundlePretty err
+  Right q -> Right q
 
 type Parser = Parsec Void Text
 
-query :: Parser Query
-query = Conjunction <$> listOf' ' ' clause <* eof
+querySpec :: Parser QuerySpecification
+querySpec = Conjunction <$> listOf' ' ' clause <* eof
 
 clause :: Parser Clause
 clause = try qualifiedClause <|> literalClause

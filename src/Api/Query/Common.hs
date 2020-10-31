@@ -1,10 +1,13 @@
+{-# LANGUAGE DataKinds #-}
 {-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE OverloadedLabels #-}
+{-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE TypeFamilies #-}
 
 module Api.Query.Common where
 
-import Api.Query hiding (Query)
-import qualified Api.Query as Api (Query)
-import Data.Environment
+import Api.Query (Delimited (..), Entity)
+import Data.Maybe (mapMaybe)
 import Data.Model.DateTime
 import Data.Model.Role
 import Data.Text (append, toLower, unpack)
@@ -12,23 +15,11 @@ import Database.Selda
 import Database.Selda.PostgreSQL (PG)
 import Text.Read (readMaybe)
 
-type QueryFor a = Either Text (Row PG a -> Query PG ())
+type QueryBuilder a = Row PG a -> Query PG ()
 
-buildQuery ::
-  (Relational a) =>
-  (Api.Query -> QueryFor a) ->
-  Table a ->
-  Api.Query ->
-  EnvAction (Either Text [a])
-buildQuery build tbl q =
-  case build q of
-    Right p -> do
-      res <- query $ do
-        item <- select tbl
-        p item
-        return item
-      return $ Right res
-    Left message -> return $ Left message
+type Translator a b = a -> Either Text (QueryBuilder b)
+
+type EntityTranslator a = (Col PG Bool -> Col PG Bool) -> Translator Entity a
 
 fromEqual :: Text -> Delimited a -> Either Text a
 fromEqual _ (Equal x) = Right x
@@ -89,3 +80,28 @@ parseId = traverse (fmap toId . readMaybe . unpack)
 
 disj :: Foldable f => f (Col a Bool) -> Col a Bool
 disj = foldr (.||) false
+
+idQuantifier ::
+  (HasField "_id" a, FieldType "_id" a ~ ID a) =>
+  (Col PG Bool -> Col PG Bool) ->
+  Translator [Delimited Text] a
+idQuantifier f = return . (\vs t -> delimited f (t ! #_id) vs) . mapMaybe parseId
+
+activeQuantifier ::
+  (HasField "active" a, FieldType "active" a ~ Bool) =>
+  (Col PG Bool -> Col PG Bool) ->
+  Translator [Delimited Text] a
+activeQuantifier f vals = do
+  vs <- mapM (fromEqual "active") vals
+  return $ \t -> exact f (t ! #active) $ mapMaybe parseBool vs
+
+undefinedQuantifier :: Text -> Text -> Either Text a
+undefinedQuantifier name section =
+  Left $ "The quantifier " `append` name `append` " is not defined for " `append` section
+
+literalName ::
+  (Monad m, HasField "name" a, FieldType "name" a ~ Text) =>
+  (Col PG Bool -> Col PG Bool) ->
+  Text ->
+  m (Row PG a -> Query PG ())
+literalName f txt = return $ \u -> restrict . f $ singleSimilar (u ! #name) txt

@@ -89,8 +89,8 @@ updateWithProps = do
 
   -- Insert new properties
   insert_ Table.properties $
-    fmap (addId def) $
-      filter (not . memberBy (flip propEq) ignoredProps) props
+    addId def
+      <$> filter (not . memberBy (flip propEq) ignoredProps) props
 
   -- Update the request
   Db.update Table.requests reqId req

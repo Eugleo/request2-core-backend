@@ -4,7 +4,7 @@ module Api.Query where
 
 import Data.Text (Text)
 
-newtype Query = Conjunction [Clause]
+newtype QuerySpecification = Conjunction [Clause]
   deriving (Eq, Show)
 
 data Clause

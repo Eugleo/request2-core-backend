@@ -1,22 +1,37 @@
+{-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE ScopedTypeVariables #-}
+
 module Api.Query.Runner where
 
 import Api.Common (failure, success)
-import Api.Query
-import qualified Api.Query.Parser as Parse
+import Api.Query (Clause (Extant, Negated), QuerySpecification (..))
+import Api.Query.Common (EntityTranslator, Translator)
+import Api.Query.Parser (parseQuerySpec)
 import Data.Aeson (ToJSON)
-import Data.Environment
-import Data.Text
+import Data.Environment (EnvAction, param)
+import Database.Selda (Relational, Table, not_, query, select)
 import Network.HTTP.Types (badRequest400)
-import Text.Megaparsec (runParser)
 
-runSearchQuery :: ToJSON a => (Query -> EnvAction (Either Text a)) -> EnvAction ()
-runSearchQuery runQuery = do
+runQuery :: (ToJSON a, Relational a) => Table a -> EntityTranslator a -> EnvAction ()
+runQuery tbl entityTranslator = do
   queryText <- param "query"
-  let eq = runParser Parse.query "" queryText
-  case eq of
-    Left _ -> failure "Query parsing failed" badRequest400
-    Right q -> do
-      itemsOrError <- runQuery q
-      case itemsOrError of
-        Left message -> failure message badRequest400
-        Right items -> success items
+  let queryBuilderOrError = do
+        querySpec <- parseQuerySpec queryText
+        let translate = makeQueryTranslator entityTranslator
+        translate querySpec
+  case queryBuilderOrError of
+    Left err -> failure err badRequest400
+    Right queryBuilder -> do
+      items <- query $ do
+        item <- select tbl
+        queryBuilder item
+        return item
+      success items
+
+makeQueryTranslator :: EntityTranslator a -> Translator QuerySpecification a
+makeQueryTranslator entityTranslator (Conjunction cs) = do
+  preds <- mapM clauseTranslator cs
+  return $ \t -> mapM_ ($ t) preds
+  where
+    clauseTranslator (Extant ent) = entityTranslator id ent
+    clauseTranslator (Negated ent) = entityTranslator not_ ent
