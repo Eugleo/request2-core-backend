@@ -5,6 +5,7 @@ module Server.Server where
 
 import qualified Api.Common as Api
 import qualified Api.Files as Files
+import Api.Query.Request (requestQueryTranslator)
 import Api.Query.Runner
 import Api.Query.Team
 import Api.Query.User
@@ -116,7 +117,7 @@ server config = runScotty config $ do
    - Requests
    -}
   -- TODO Only author and operator can view & edit requests
-  get "/requests" $ withAuth $ Api.getMany Table.requests
+  get "/requests" $ withDB $ runQuery Table.requests requestQueryTranslator
   get "/requests/:_id" $ withAuth $ Api.get Table.requests
   get "/requests/:_id/props/comments" $ withAuth Request.getComments
   get "/requests/:_id/props/results" $ withAuth Request.getResults

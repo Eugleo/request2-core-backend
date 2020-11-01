@@ -10,16 +10,15 @@ import Data.Model.Team
 import Data.Model.User
 import Database.Selda
 
-data Request
-  = Request
-      { _id :: ID Request,
-        name :: Text,
-        authorId :: ID User,
-        teamId :: ID Team,
-        status :: Status,
-        requestType :: Text, -- named `type` in db
-        dateCreated :: DateTime
-      }
+data Request = Request
+  { _id :: ID Request,
+    name :: Text,
+    authorId :: ID User,
+    teamId :: ID Team,
+    status :: Status,
+    requestType :: Text, -- named `type` in db
+    dateCreated :: DateTime
+  }
   deriving (Show, Eq, Generic, FromJSON, SqlRow)
 
 instance ToJSON Request where

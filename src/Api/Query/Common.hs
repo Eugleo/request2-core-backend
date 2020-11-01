@@ -10,6 +10,7 @@ import Api.Query (Delimited (..), Entity)
 import Data.Maybe (mapMaybe)
 import Data.Model.DateTime
 import Data.Model.Role
+import Data.Model.Status
 import Data.Text (append, toLower, unpack)
 import Database.Selda
 import Database.Selda.PostgreSQL (PG)
@@ -78,25 +79,40 @@ parseRole t
 parseId :: Traversable t => t Text -> Maybe (t (ID a))
 parseId = traverse (fmap toId . readMaybe . unpack)
 
+parseType :: Text -> Maybe Text
+parseType t
+  | toLower t `elem` ["p", "proteomics"] = Just "proteomics"
+  | toLower t `elem` ["s", "molecule", "small molecule"] = Just "small-molecule"
+  | toLower t `elem` ["l", "lipidomics"] = Just "lipidomics-and-metabolomics"
+
+parseStatus :: Text -> Maybe Status
+parseStatus t
+  | toLower t == "pending" = Just Pending
+  | toLower t == "in progress" = Just InProgress
+  | toLower t == "done" = Just Done
+  | toLower t == "awaiting input" = Just AwaitingInput
+  | toLower t == "deleted" = Just Deleted
+  | otherwise = Nothing
+
 disj :: Foldable f => f (Col a Bool) -> Col a Bool
 disj = foldr (.||) false
 
-idQuantifier ::
+idQualifier ::
   (HasField "_id" a, FieldType "_id" a ~ ID a) =>
   (Col PG Bool -> Col PG Bool) ->
   Translator [Delimited Text] a
-idQuantifier f = return . (\vs t -> delimited f (t ! #_id) vs) . mapMaybe parseId
+idQualifier f = return . (\vs t -> delimited f (t ! #_id) vs) . mapMaybe parseId
 
-activeQuantifier ::
+activeQualifier ::
   (HasField "active" a, FieldType "active" a ~ Bool) =>
   (Col PG Bool -> Col PG Bool) ->
   Translator [Delimited Text] a
-activeQuantifier f vals = do
+activeQualifier f vals = do
   vs <- mapM (fromEqual "active") vals
   return $ \t -> exact f (t ! #active) $ mapMaybe parseBool vs
 
-undefinedQuantifier :: Text -> Text -> Either Text a
-undefinedQuantifier name section =
+undefinedQualifier :: Text -> Text -> Either Text a
+undefinedQualifier name section =
   Left $ "The quantifier " `append` name `append` " is not defined for " `append` section
 
 literalName ::

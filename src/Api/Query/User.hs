@@ -6,15 +6,15 @@ module Api.Query.User (userQueryTranslator) where
 import Api.Query (Entity (Literal, Qualified))
 import Api.Query.Common
   ( EntityTranslator,
-    activeQuantifier,
+    activeQualifier,
     delimited,
     fromEqual,
-    idQuantifier,
+    idQualifier,
     literalName,
     parseDate,
     parseRole,
     similar,
-    undefinedQuantifier,
+    undefinedQualifier,
   )
 import Data.Maybe (mapMaybe)
 import Data.Model.User (User)
@@ -43,6 +43,6 @@ userQueryTranslator f (Qualified "name" vals) = do
 userQueryTranslator f (Qualified "email" vals) = do
   vs <- mapM (fromEqual "email") vals
   return $ \u -> similar f (u ! #email) vs
-userQueryTranslator f (Qualified "active" vals) = activeQuantifier f vals
-userQueryTranslator f (Qualified "id" vals) = idQuantifier f vals
-userQueryTranslator _ (Qualified quant _) = undefinedQuantifier quant "users"
+userQueryTranslator f (Qualified "active" vals) = activeQualifier f vals
+userQueryTranslator f (Qualified "id" vals) = idQualifier f vals
+userQueryTranslator _ (Qualified quant _) = undefinedQualifier quant "users"

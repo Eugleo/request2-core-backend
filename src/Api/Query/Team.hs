@@ -6,12 +6,12 @@ module Api.Query.Team (teamQueryTranslator) where
 import Api.Query (Entity (Literal, Qualified))
 import Api.Query.Common
   ( EntityTranslator,
-    activeQuantifier,
+    activeQualifier,
     fromEqual,
-    idQuantifier,
+    idQualifier,
     literalName,
     similar,
-    undefinedQuantifier,
+    undefinedQualifier,
   )
 import Data.Model.Team (Team)
 import Database.Selda (restrict, select, (!), (.==))
@@ -31,6 +31,6 @@ teamQueryTranslator f (Qualified "name" vals) = do
 teamQueryTranslator f (Qualified "code" vals) = do
   vs <- mapM (fromEqual "code") vals
   return $ \t -> similar f (t ! #code) vs
-teamQueryTranslator f (Qualified "active" vals) = activeQuantifier f vals
-teamQueryTranslator f (Qualified "id" vals) = idQuantifier f vals
-teamQueryTranslator _ (Qualified quant _) = undefinedQuantifier quant "teams"
+teamQueryTranslator f (Qualified "active" vals) = activeQualifier f vals
+teamQueryTranslator f (Qualified "id" vals) = idQualifier f vals
+teamQueryTranslator _ (Qualified quant _) = undefinedQualifier quant "teams"
