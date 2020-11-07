@@ -1,4 +1,5 @@
 {-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE OverloadedLabels #-}
 
 module Api.Query.User (userQueryTranslator) where
@@ -16,10 +17,11 @@ import Api.Query.Common
     similar,
     undefinedQualifier,
   )
+import Control.Monad (forM_)
 import Data.Maybe (mapMaybe)
 import Data.Model.User (User)
 import Data.Text (pack)
-import Database.Selda (restrict, select, toString, (!), (.==))
+import Database.Selda (ascending, descending, order, restrict, select, toString, (!), (.==))
 import Database.Table (teams)
 
 -- TODO Implement Roles better, if possible
@@ -45,4 +47,22 @@ userQueryTranslator f (Qualified "email" vals) = do
   return $ \u -> similar f (u ! #email) vs
 userQueryTranslator f (Qualified "active" vals) = activeQualifier f vals
 userQueryTranslator f (Qualified "id" vals) = idQualifier f vals
+userQueryTranslator _ (Qualified "sort" vals) = do
+  vs <- mapM (fromEqual "member") vals
+  return $ \u -> forM_ (reverse vs) $ \case
+    "name" -> order (u ! #name) ascending
+    "name-asc" -> order (u ! #name) ascending
+    "name-desc" -> order (u ! #name) descending
+    "email" -> order (u ! #email) ascending
+    "email-asc" -> order (u ! #email) ascending
+    "email-desc" -> order (u ! #email) descending
+    "created" -> order (u ! #dateCreated) ascending
+    "created-asc" -> order (u ! #dateCreated) ascending
+    "created-desc" -> order (u ! #dateCreated) descending
+    "id" -> order (u ! #_id) ascending
+    "id-asc" -> order (u ! #_id) ascending
+    "id-desc" -> order (u ! #_id) descending
+    "active" -> order (u ! #active) ascending
+    "active-asc" -> order (u ! #active) ascending
+    "active-desc" -> order (u ! #active) descending
 userQueryTranslator _ (Qualified quant _) = undefinedQualifier quant "users"

@@ -66,16 +66,16 @@ date = do
   return $ fromDate year month day
 
 text :: Parser Text
-text = pack <$> (quotedText <|> some alphaNumChar)
+text = pack <$> (quotedText <|> some (alphaNumChar <|> char '-'))
   where
     quotedText = between (char '"') (char '"') (many word)
-    word = spaceChar <|> alphaNumChar
+    word = spaceChar <|> alphaNumChar <|> char '-'
 
 listOf :: Parser a -> Parser [a]
 listOf = listOf' ','
 
 listOf' :: Char -> Parser a -> Parser [a]
-listOf' c p = (:) <$> p <*> many (char c *> p)
+listOf' c p = (:) <$> p <*> many (some (char c) *> p)
 
 lexeme :: Parser a -> Parser a
-lexeme = L.lexeme (char ' ' $> ())
+lexeme = L.lexeme (some (char ' ') $> ())
