@@ -16,6 +16,7 @@ import Database.Selda
 import Database.Selda.PostgreSQL (PG)
 import Network.HTTP.Types (badRequest400)
 
+-- TODO Return the URL pointing to the next page
 runQuery ::
   (ToJSON a, HasField "_id" a, FieldType "_id" a ~ ID a) =>
   Table a ->
