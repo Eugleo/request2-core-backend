@@ -3,7 +3,7 @@
 
 module Api.Files where
 
-import Data.Aeson (KeyValue ((.=)), ToJSON (toJSON), object)
+import Data.Aeson (KeyValue ((.=)), object)
 import qualified Data.ByteString as B
 import qualified Data.ByteString.Lazy as BL
 import Data.ByteString.UTF8 (toString)
@@ -22,7 +22,7 @@ import Data.Environment
   )
 import qualified Data.FileDesc as F
 import Data.List (intercalate)
-import Data.Maybe
+import Data.Maybe (catMaybes)
 import Data.Model.Property (Property)
 import Data.Model.PropertyType (PropertyType (..))
 import qualified Data.Text as T
@@ -120,20 +120,20 @@ handleUploads = files >>= traverse handleUpload'
 
     handleUpload :: FileInfo BL.ByteString -> EnvAction (T.Text, T.Text, T.Text)
     handleUpload
-      ( FileInfo
-          { fileName = name',
-            fileContentType = mime',
-            fileContent = d
-          }
-        ) = do
-        hash <- getUniqueHash --TODO check if it is unique
-        let mime = T.pack $ toString mime'
-            name = T.pack $ toString name'
-        path <- filePath hash name
-        dir <- fileDir hash
-        envIO $ createDirectoryIfMissing True dir
-        envIO $ B.writeFile path $ BL.toStrict d
-        return $ (hash, mime, name)
+      FileInfo
+        { fileName = name',
+          fileContentType = mime',
+          fileContent = d
+        } =
+        do
+          hash <- getUniqueHash --TODO check if it is unique
+          let mime = T.pack $ toString mime'
+              name = T.pack $ toString name'
+          path <- filePath hash name
+          dir <- fileDir hash
+          envIO $ createDirectoryIfMissing True dir
+          envIO $ B.writeFile path $ BL.toStrict d
+          return (hash, mime, name)
 
 getFile :: EnvAction ()
 getFile = do
@@ -143,7 +143,7 @@ getFile = do
       prop <- S.select properties `S.suchThat` propIsFileWithHash hash
       return $ prop S.! #propertyData
   case res of
-    [d] -> do
+    [d] ->
       case filePropertyToDesc d of
         Just (h, _, n) -> fileUrl h n >>= redirect
         _ -> raise "File property decoding problem"

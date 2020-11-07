@@ -10,11 +10,13 @@ import Api.Query.Common
     fromEqual,
     idQualifier,
     literalName,
+    makeSorter,
     similar,
     undefinedQualifier,
   )
+import Control.Monad (forM)
 import Data.Model.Team (Team)
-import Database.Selda (restrict, select, (!), (.==))
+import Database.Selda
 import Database.Table (users)
 
 teamQueryTranslator :: EntityTranslator Team
@@ -33,4 +35,15 @@ teamQueryTranslator f (Qualified "code" vals) = do
   return $ \t -> similar f (t ! #code) vs
 teamQueryTranslator f (Qualified "active" vals) = activeQualifier f vals
 teamQueryTranslator f (Qualified "id" vals) = idQualifier f vals
+teamQueryTranslator _ (Qualified "sort" vals) = do
+  vs <- mapM (fromEqual "member") vals
+  s <-
+    forM (reverse vs) $
+      makeSorter
+        [ ("name", #name),
+          ("code", #code),
+          ("id", #_id),
+          ("active", #active)
+        ]
+  return $ \t -> sequence_ $ s <*> [t]
 teamQueryTranslator _ (Qualified quant _) = undefinedQualifier quant "teams"

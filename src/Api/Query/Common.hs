@@ -7,7 +7,7 @@
 module Api.Query.Common where
 
 import Api.Query (Delimited (..), Entity)
-import Data.Maybe (mapMaybe)
+import Data.Maybe (fromJust, mapMaybe)
 import Data.Model.DateTime
 import Data.Model.Role
 import Data.Model.Status
@@ -21,6 +21,16 @@ type QueryBuilder a = Row PG a -> Query PG ()
 type Translator a b = a -> Either Text (QueryBuilder b)
 
 type EntityTranslator a = (Col PG Bool -> Col PG Bool) -> Translator Entity a
+
+makeSorter :: SqlType b => [(Text, Selector a b)] -> Translator Text a
+makeSorter fields field = return . fromJust . lookup field $ addAscDesc fields
+  where
+    triplet n f =
+      [ (n, \item -> order (item ! f) ascending),
+        (n `append` "-asc", \item -> order (item ! f) ascending),
+        (n `append` "-desc", \item -> order (item ! f) descending)
+      ]
+    addAscDesc = foldr (\(n, f) acc -> triplet n f ++ acc) []
 
 fromEqual :: Text -> Delimited a -> Either Text a
 fromEqual _ (Equal x) = Right x
