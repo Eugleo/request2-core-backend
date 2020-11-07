@@ -8,11 +8,10 @@
 module Api.Query.Common where
 
 import Api.Query (Delimited (..), Entity)
-import Data.Maybe
-import Data.Maybe (fromJust, mapMaybe)
-import Data.Model.DateTime
-import Data.Model.Role
-import Data.Model.Status
+import Data.Maybe (mapMaybe)
+import Data.Model.DateTime (DateTime)
+import Data.Model.Role (Role (..))
+import Data.Model.Status (Status (..))
 import Data.Text (append, toLower, unpack)
 import Database.Selda
 import Database.Selda.PostgreSQL (PG)

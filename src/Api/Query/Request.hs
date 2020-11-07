@@ -58,6 +58,7 @@ requestQueryTranslator _ (Qualified "sort" vals) = do
           ("created", orderBy (ToSelector #dateCreated)),
           ("id", orderBy (ToSelector #_id)),
           ("type", orderBy (ToSelector #requestType)),
+          ("status", orderBy (ToSelector #status)),
           ( "author",
             \ordering r -> do
               user <- select users
