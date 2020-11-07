@@ -26,7 +26,7 @@ import Data.Model.Request (Request)
 import Database.Selda (order, restrict, select, (!), (.==))
 import Database.Table (teams, users)
 
-requestQueryTranslator :: EntityTranslator Request
+requestQueryTranslator :: EntityTranslator t Request
 requestQueryTranslator f (Literal txt) = literalName f txt
 requestQueryTranslator f (Qualified "id" vals) = idQualifier f vals
 requestQueryTranslator f (Qualified "author" vals) = do

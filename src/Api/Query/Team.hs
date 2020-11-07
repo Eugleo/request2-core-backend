@@ -25,7 +25,7 @@ import Database.Selda
   )
 import Database.Table (users)
 
-teamQueryTranslator :: EntityTranslator Team
+teamQueryTranslator :: EntityTranslator t Team
 teamQueryTranslator f (Literal txt) = literalName f txt
 teamQueryTranslator f (Qualified "member" vals) = do
   vs <- mapM (fromEqual "member") vals

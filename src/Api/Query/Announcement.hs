@@ -24,7 +24,7 @@ import Data.Model.Ann (Ann)
 import Database.Selda (order, restrict, select, (!), (.==))
 import Database.Table (users)
 
-annQueryTranslator :: EntityTranslator Ann
+annQueryTranslator :: EntityTranslator t Ann
 annQueryTranslator f (Literal txt) =
   return $ \a -> restrict . f $ singleSimilar (a ! #title) txt
 annQueryTranslator f (Qualified "id" vals) = idQualifier f vals

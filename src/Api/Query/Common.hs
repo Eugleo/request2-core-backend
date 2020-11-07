@@ -8,31 +8,31 @@
 module Api.Query.Common where
 
 import Api.Query (Delimited (..), Entity)
+import Data.Bifunctor (Bifunctor (second))
 import Data.Maybe (mapMaybe)
 import Data.Model.DateTime (DateTime)
 import Data.Model.Role (Role (..))
 import Data.Model.Status (Status (..))
 import Data.Text (append, toLower, unpack)
-import Database.Selda
-import Database.Selda.PostgreSQL (PG)
+import Database.Selda hiding (second)
 import Text.Read (readMaybe)
 
-type QueryBuilder a = Row PG a -> Query PG ()
+type QueryBuilder t a = Row t a -> Query t ()
 
-type Translator a b = a -> Either Text (QueryBuilder b)
+type Translator t a b = a -> Either Text (QueryBuilder t b)
 
-type EntityTranslator a = (Col PG Bool -> Col PG Bool) -> Translator Entity a
+type EntityTranslator t a = (Col t Bool -> Col t Bool) -> Translator t Entity a
 
 data GenericSelector t where
   ToSelector :: (SqlType a) => Selector t a -> GenericSelector t
 
-makeSimpleSorter :: [(Text, GenericSelector a)] -> Translator Text a
-makeSimpleSorter = makeSorter . map (\(n, selector) -> (n, orderBy selector))
+makeSimpleSorter :: [(Text, GenericSelector a)] -> Translator t Text a
+makeSimpleSorter = makeSorter . map (second orderBy)
 
-orderBy :: GenericSelector a -> Order -> QueryBuilder a
+orderBy :: GenericSelector a -> Order -> QueryBuilder t a
 orderBy (ToSelector s) o a = order (a ! s) o
 
-makeSorter :: [(Text, Order -> QueryBuilder a)] -> Translator Text a
+makeSorter :: [(Text, Order -> QueryBuilder t a)] -> Translator t Text a
 makeSorter fields field = toEither . lookup field $ addAscDesc fields
   where
     toEither (Just x) = Right x
@@ -58,10 +58,10 @@ approx txt = "%" `append` txt `append` "%"
 multiple :: (Col a1 Bool -> Col t Bool) -> (a2 -> Col a1 Bool) -> [a2] -> Query t ()
 multiple f p = restrict . f . disj . map p
 
-delimited :: SqlOrd a => (Col PG Bool -> Col t Bool) -> Col PG a -> [Delimited a] -> Query t ()
+delimited :: SqlOrd a => (Col t Bool -> Col t Bool) -> Col t a -> [Delimited a] -> Query t ()
 delimited f = multiple f . singleDelimited
 
-singleDelimited :: (SqlOrd a) => Col PG a -> Delimited a -> Col PG Bool
+singleDelimited :: (SqlOrd a) => Col t a -> Delimited a -> Col t Bool
 singleDelimited field (LessThan val) = field .< literal val
 singleDelimited field (GreaterThan val) = field .> literal val
 singleDelimited field (LessOrEq val) = field .<= literal val
@@ -69,16 +69,16 @@ singleDelimited field (GreaterOrEq val) = field .>= literal val
 singleDelimited field (Between l r) = field .> literal l .&& field .< literal r
 singleDelimited field (Equal val) = field .== literal val
 
-similar :: (Col PG Bool -> Col t Bool) -> Col PG Text -> [Text] -> Query t ()
+similar :: (Col t Bool -> Col t Bool) -> Col t Text -> [Text] -> Query t ()
 similar f = multiple f . singleSimilar
 
-singleSimilar :: Col PG Text -> Text -> Col PG Bool
+singleSimilar :: Col t Text -> Text -> Col t Bool
 singleSimilar field val = field `like` literal (approx val)
 
-exact :: SqlType a => (Col PG Bool -> Col t Bool) -> Col PG a -> [a] -> Query t ()
+exact :: SqlType a => (Col t Bool -> Col t Bool) -> Col t a -> [a] -> Query t ()
 exact f = multiple f . singleExact
 
-singleExact :: SqlType a => Col PG a -> a -> Col PG Bool
+singleExact :: SqlType a => Col t a -> a -> Col t Bool
 singleExact field val = field .== literal val
 
 -- TODO implement
@@ -121,14 +121,14 @@ disj = foldr (.||) false
 
 idQualifier ::
   (HasField "_id" a, FieldType "_id" a ~ ID a) =>
-  (Col PG Bool -> Col PG Bool) ->
-  Translator [Delimited Text] a
+  (Col t Bool -> Col t Bool) ->
+  Translator t [Delimited Text] a
 idQualifier f = return . (\vs t -> delimited f (t ! #_id) vs) . mapMaybe parseId
 
 activeQualifier ::
   (HasField "active" a, FieldType "active" a ~ Bool) =>
-  (Col PG Bool -> Col PG Bool) ->
-  Translator [Delimited Text] a
+  (Col t Bool -> Col t Bool) ->
+  Translator t [Delimited Text] a
 activeQualifier f vals = do
   vs <- mapM (fromEqual "active") vals
   return $ \t -> exact f (t ! #active) $ mapMaybe parseBool vs
@@ -139,7 +139,7 @@ undefinedQualifier name section =
 
 literalName ::
   (Monad m, HasField "name" a, FieldType "name" a ~ Text) =>
-  (Col PG Bool -> Col PG Bool) ->
+  (Col t Bool -> Col t Bool) ->
   Text ->
-  m (Row PG a -> Query PG ())
+  m (Row t a -> Query t ())
 literalName f txt = return $ \u -> restrict . f $ singleSimilar (u ! #name) txt

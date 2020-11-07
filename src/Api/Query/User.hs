@@ -26,7 +26,7 @@ import Database.Selda (restrict, select, toString, (!), (.==))
 import Database.Table (teams)
 
 -- TODO Implement Roles better, if possible
-userQueryTranslator :: EntityTranslator User
+userQueryTranslator :: EntityTranslator t User
 userQueryTranslator f (Literal txt) = literalName f txt
 userQueryTranslator f (Qualified "dateCreated" vals) =
   return $ \u -> delimited f (u ! #dateCreated) $ mapMaybe parseDate vals
