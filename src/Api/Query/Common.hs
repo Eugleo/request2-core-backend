@@ -1,5 +1,6 @@
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE GADTs #-}
 {-# LANGUAGE OverloadedLabels #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeFamilies #-}
@@ -7,6 +8,7 @@
 module Api.Query.Common where
 
 import Api.Query (Delimited (..), Entity)
+import Data.Maybe
 import Data.Maybe (fromJust, mapMaybe)
 import Data.Model.DateTime
 import Data.Model.Role
@@ -22,15 +24,26 @@ type Translator a b = a -> Either Text (QueryBuilder b)
 
 type EntityTranslator a = (Col PG Bool -> Col PG Bool) -> Translator Entity a
 
-makeSorter :: SqlType b => [(Text, Selector a b)] -> Translator Text a
-makeSorter fields field = return . fromJust . lookup field $ addAscDesc fields
+data GenericSelector t where
+  ToSelector :: (SqlType a) => Selector t a -> GenericSelector t
+
+makeSimpleSorter :: [(Text, GenericSelector a)] -> Translator Text a
+makeSimpleSorter = makeSorter . map (\(n, selector) -> (n, orderBy selector))
+
+orderBy :: GenericSelector a -> Order -> QueryBuilder a
+orderBy (ToSelector s) o a = order (a ! s) o
+
+makeSorter :: [(Text, Order -> QueryBuilder a)] -> Translator Text a
+makeSorter fields field = toEither . lookup field $ addAscDesc fields
   where
-    triplet n f =
-      [ (n, \item -> order (item ! f) ascending),
-        (n `append` "-asc", \item -> order (item ! f) ascending),
-        (n `append` "-desc", \item -> order (item ! f) descending)
+    toEither (Just x) = Right x
+    toEither Nothing = Left $ "Sorting by " `append` field `append` " isn't supported"
+    triplet n q =
+      [ (n, q ascending),
+        (n `append` "-asc", q ascending),
+        (n `append` "-desc", q descending)
       ]
-    addAscDesc = foldr (\(n, f) acc -> triplet n f ++ acc) []
+    addAscDesc = foldr (\(n, q) acc -> triplet n q ++ acc) []
 
 fromEqual :: Text -> Delimited a -> Either Text a
 fromEqual _ (Equal x) = Right x

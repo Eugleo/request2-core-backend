@@ -1,5 +1,4 @@
 {-# LANGUAGE FlexibleContexts #-}
-{-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE OverloadedLabels #-}
 
 module Api.Query.Announcement (annQueryTranslator) where
@@ -7,19 +6,22 @@ module Api.Query.Announcement (annQueryTranslator) where
 import Api.Query (Entity (Literal, Qualified))
 import Api.Query.Common
   ( EntityTranslator,
+    GenericSelector (..),
     activeQualifier,
     delimited,
     fromEqual,
     idQualifier,
+    makeSorter,
+    orderBy,
     parseDate,
     similar,
     singleSimilar,
     undefinedQualifier,
   )
-import Control.Monad (forM_)
+import Control.Monad (forM)
 import Data.Maybe (mapMaybe)
 import Data.Model.Ann (Ann)
-import Database.Selda (ascending, descending, order, restrict, select, (!), (.==))
+import Database.Selda (order, restrict, select, (!), (.==))
 import Database.Table (users)
 
 annQueryTranslator :: EntityTranslator Ann
@@ -40,29 +42,19 @@ annQueryTranslator f (Qualified "created" vals) =
 annQueryTranslator f (Qualified "active" vals) = activeQualifier f vals
 annQueryTranslator _ (Qualified "sort" vals) = do
   vs <- mapM (fromEqual "member") vals
-  return $ \a -> forM_ (reverse vs) $ \case
-    "title" -> order (a ! #title) ascending
-    "title-asc" -> order (a ! #title) ascending
-    "title-desc" -> order (a ! #title) descending
-    "author" -> do
-      user <- select users
-      restrict $ a ! #authorId .== user ! #_id
-      order (user ! #name) ascending
-    "author-asc" -> do
-      user <- select users
-      restrict $ a ! #authorId .== user ! #_id
-      order (user ! #name) ascending
-    "author-desc" -> do
-      user <- select users
-      restrict $ a ! #authorId .== user ! #_id
-      order (user ! #name) descending
-    "created" -> order (a ! #dateCreated) ascending
-    "created-asc" -> order (a ! #dateCreated) ascending
-    "created-desc" -> order (a ! #dateCreated) descending
-    "id" -> order (a ! #_id) ascending
-    "id-asc" -> order (a ! #_id) ascending
-    "id-desc" -> order (a ! #_id) descending
-    "active" -> order (a ! #active) ascending
-    "active-asc" -> order (a ! #active) ascending
-    "active-desc" -> order (a ! #active) descending
+  sorters <-
+    forM (reverse vs) $
+      makeSorter
+        [ ("title", orderBy (ToSelector #title)),
+          ("created", orderBy (ToSelector #dateCreated)),
+          ("id", orderBy (ToSelector #_id)),
+          ( "author",
+            \ordering a -> do
+              user <- select users
+              restrict $ a ! #authorId .== user ! #_id
+              order (user ! #name) ordering
+          ),
+          ("active", orderBy (ToSelector #active))
+        ]
+  return $ \t -> sequence_ $ sorters <*> [t]
 annQueryTranslator _ (Qualified quant _) = undefinedQualifier quant "announcements"
