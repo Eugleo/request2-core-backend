@@ -1,7 +1,6 @@
 module Api.Query.Parser (parseQuerySpec) where
 
 import Api.Query
-import Data.Functor (($>))
 import Data.Model.DateTime
 import Data.Text (Text, pack)
 import Data.Void (Void)
@@ -17,7 +16,7 @@ parseQuerySpec txt = case runParser querySpec "" txt of
 type Parser = Parsec Void Text
 
 querySpec :: Parser QuerySpecification
-querySpec = Conjunction <$> listOf' ' ' clause <* eof
+querySpec = Conjunction <$ space <*> many (lexeme clause) <* eof
 
 clause :: Parser Clause
 clause = try qualifiedClause <|> literalClause
@@ -68,14 +67,13 @@ date = do
 text :: Parser Text
 text = pack <$> (quotedText <|> some (alphaNumChar <|> char '-'))
   where
-    quotedText = between (char '"') (char '"') (many word)
-    word = spaceChar <|> alphaNumChar <|> char '-'
+    quotedText = char '\"' *> manyTill L.charLiteral (char '\"')
 
 listOf :: Parser a -> Parser [a]
 listOf = listOf' ','
 
 listOf' :: Char -> Parser a -> Parser [a]
-listOf' c p = (:) <$> p <*> many (some (char c) *> p)
+listOf' c p = (:) <$> p <*> many (lexeme (char c) *> p)
 
 lexeme :: Parser a -> Parser a
-lexeme = L.lexeme (some (char ' ') $> ())
+lexeme = L.lexeme (L.space space1 empty empty)

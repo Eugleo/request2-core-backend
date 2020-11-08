@@ -27,11 +27,12 @@ runQuery tbl entityTranslator = do
   offset <- param "offset"
   queryText <- param "query"
   let queryBuilderOrError = do
-        querySpec <- parseQuerySpec queryText
+        querySpec <- parseQuerySpec (queryText <> " sort:id")
         let translate = makeQueryTranslator entityTranslator
         translate querySpec
   case queryBuilderOrError of
     Left err -> failure err badRequest400
+    -- TODO Don't run the query twice
     Right queryBuilder -> do
       items <- query $
         limit offset lim $ do
@@ -39,13 +40,16 @@ runQuery tbl entityTranslator = do
           queryBuilder item
           return item
       res <- query . aggregate $ do
-        v <- select tbl
-        return (count (v ! #_id))
+        item <- select tbl
+        queryBuilder item
+        return (count (item ! #_id))
       success (object ["values" .= toJSON items, "total" .= head res])
 
 makeQueryTranslator :: EntityTranslator t a -> Translator t QuerySpecification a
 makeQueryTranslator entityTranslator (Conjunction cs) = do
-  preds <- mapM clauseTranslator cs
+  -- Reverse, because of the order of multiple sort qualifiers
+  -- The last one should have the least significance
+  preds <- mapM clauseTranslator (reverse cs)
   return $ \t -> mapM_ ($ t) preds
   where
     clauseTranslator (Extant ent) = entityTranslator id ent

@@ -68,6 +68,7 @@ executable request2
     Api.Query
     Api.Query.Common
     Api.Query.Parser
+    Api.Query.Request
     Api.Query.Runner
     Api.Query.Team
     Api.Query.User

@@ -9,12 +9,14 @@ module Api.Query.Common where
 
 import Api.Query (Delimited (..), Entity)
 import Data.Bifunctor (Bifunctor (second))
+import Data.Char (isLower)
 import Data.Maybe (mapMaybe)
 import Data.Model.DateTime (DateTime)
 import Data.Model.Role (Role (..))
 import Data.Model.Status (Status (..))
 import Data.Text (append, toLower, unpack)
 import Database.Selda hiding (second)
+import Database.Selda.Unsafe (operator)
 import Text.Read (readMaybe)
 
 type QueryBuilder t a = Row t a -> Query t ()
@@ -22,6 +24,8 @@ type QueryBuilder t a = Row t a -> Query t ()
 type Translator t a b = a -> Either Text (QueryBuilder t b)
 
 type EntityTranslator t a = (Col t Bool -> Col t Bool) -> Translator t Entity a
+
+type Modifier t = Col t Bool -> Col t Bool
 
 data GenericSelector t where
   ToSelector :: (SqlType a) => Selector t a -> GenericSelector t
@@ -36,11 +40,11 @@ makeSorter :: [(Text, Order -> QueryBuilder t a)] -> Translator t Text a
 makeSorter fields field = toEither . lookup field $ addAscDesc fields
   where
     toEither (Just x) = Right x
-    toEither Nothing = Left $ "Sorting by " `append` field `append` " isn't supported"
+    toEither Nothing = Left $ "Sorting by " <> field <> " isn't supported"
     triplet n q =
       [ (n, q ascending),
-        (n `append` "-asc", q ascending),
-        (n `append` "-desc", q descending)
+        (n <> "-asc", q ascending),
+        (n <> "-desc", q descending)
       ]
     addAscDesc = foldr (\(n, q) acc -> triplet n q ++ acc) []
 
@@ -49,11 +53,11 @@ fromEqual _ (Equal x) = Right x
 fromEqual nm _ =
   Left $
     "The quantifier "
-      `append` nm
-      `append` " doesn't support any ordering operators"
+      <> nm
+      <> " doesn't support any ordering operators"
 
 approx :: Text -> Text
-approx txt = "%" `append` txt `append` "%"
+approx txt = "%" <> txt <> "%"
 
 multiple :: (Col a1 Bool -> Col t Bool) -> (a2 -> Col a1 Bool) -> [a2] -> Query t ()
 multiple f p = restrict . f . disj . map p
@@ -69,13 +73,16 @@ singleDelimited field (GreaterOrEq val) = field .>= literal val
 singleDelimited field (Between l r) = field .> literal l .&& field .< literal r
 singleDelimited field (Equal val) = field .== literal val
 
-similar :: (Col t Bool -> Col t Bool) -> Col t Text -> [Text] -> Query t ()
+similar :: Modifier t -> Col t Text -> [Text] -> Query t ()
 similar f = multiple f . singleSimilar
 
+-- TODO Change t to PG to signal the use of ILIKE?
 singleSimilar :: Col t Text -> Text -> Col t Bool
-singleSimilar field val = field `like` literal (approx val)
+singleSimilar field val = field `op` literal (approx val)
+  where
+    op = if all isLower (unpack val) then operator "ILIKE" else like
 
-exact :: SqlType a => (Col t Bool -> Col t Bool) -> Col t a -> [a] -> Query t ()
+exact :: SqlType a => Modifier t -> Col t a -> [a] -> Query t ()
 exact f = multiple f . singleExact
 
 singleExact :: SqlType a => Col t a -> a -> Col t Bool
@@ -106,6 +113,7 @@ parseType t
   | toLower t `elem` ["p", "proteomics"] = Just "proteomics"
   | toLower t `elem` ["s", "molecule", "small molecule"] = Just "small-molecule"
   | toLower t `elem` ["l", "lipidomics"] = Just "lipidomics-and-metabolomics"
+  | otherwise = Nothing
 
 parseStatus :: Text -> Maybe Status
 parseStatus t
@@ -121,13 +129,13 @@ disj = foldr (.||) false
 
 idQualifier ::
   (HasField "_id" a, FieldType "_id" a ~ ID a) =>
-  (Col t Bool -> Col t Bool) ->
+  Modifier t ->
   Translator t [Delimited Text] a
 idQualifier f = return . (\vs t -> delimited f (t ! #_id) vs) . mapMaybe parseId
 
 activeQualifier ::
   (HasField "active" a, FieldType "active" a ~ Bool) =>
-  (Col t Bool -> Col t Bool) ->
+  Modifier t ->
   Translator t [Delimited Text] a
 activeQualifier f vals = do
   vs <- mapM (fromEqual "active") vals
@@ -135,11 +143,11 @@ activeQualifier f vals = do
 
 undefinedQualifier :: Text -> Text -> Either Text a
 undefinedQualifier name section =
-  Left $ "The quantifier " `append` name `append` " is not defined for " `append` section
+  Left $ "The quantifier " <> name <> " is not defined for " <> section
 
 literalName ::
   (Monad m, HasField "name" a, FieldType "name" a ~ Text) =>
-  (Col t Bool -> Col t Bool) ->
+  Modifier t ->
   Text ->
   m (Row t a -> Query t ())
 literalName f txt = return $ \u -> restrict . f $ singleSimilar (u ! #name) txt
