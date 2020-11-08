@@ -27,7 +27,8 @@ runQuery tbl entityTranslator = do
   offset <- param "offset"
   queryText <- param "query" `rescue` const (pure "")
   let queryBuilderOrError = do
-        querySpec <- parseQuerySpec (queryText <> " sort:id")
+        -- Defaultly sorts by descending id (i.e. newest on top)
+        querySpec <- parseQuerySpec (queryText <> " sort:id-desc")
         let translate = makeQueryTranslator entityTranslator
         translate querySpec
   case queryBuilderOrError of

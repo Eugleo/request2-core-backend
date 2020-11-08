@@ -1,7 +1,6 @@
 module Api.Query.Parser (parseQuerySpec) where
 
 import Api.Query
-import Data.Model.DateTime
 import Data.Text (Text, pack)
 import Data.Void (Void)
 import Text.Megaparsec
@@ -54,15 +53,6 @@ delimited p = try gte <|> gt <|> try lte <|> lt <|> try range <|> eq
     lte = LessOrEq <$ string "<=" <*> p
     range = Between <$> p <* string ".." <*> p
     eq = Equal <$> p
-
-date :: Parser DateTime
-date = do
-  year <- L.decimal
-  char '-'
-  month <- L.decimal
-  char '-'
-  day <- L.decimal
-  return $ fromDate year month day
 
 text :: Parser Text
 text = pack <$> (quotedText <|> some (alphaNumChar <|> char '-'))

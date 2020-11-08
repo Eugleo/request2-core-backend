@@ -6,6 +6,7 @@ import Data.Aeson
 import Data.Aeson.Types (prependFailure)
 import Data.Int (Int64)
 import Data.Scientific (toBoundedInteger)
+import Data.Text.Encoding (encodeUtf8)
 import Data.UnixTime
 import Database.Selda
 import Database.Selda.SqlType
@@ -36,10 +37,10 @@ instance ToJSON DateTime where
   toJSON (DateTime sec) = Number . fromIntegral $ sec
 
 now :: IO DateTime
-now = do
-  CTime t <- utSeconds <$> getUnixTime
-  return $ DateTime t
+now = fromUnixTime <$> getUnixTime
 
--- TODO fixme
-fromDate :: Integer -> Integer -> Integer -> DateTime
-fromDate y m d = DateTime 1000
+fromUnixTime :: UnixTime -> DateTime
+fromUnixTime = DateTime . (\(CTime t) -> t) . utSeconds
+
+parseDateTime :: Text -> DateTime
+parseDateTime = fromUnixTime . parseUnixTimeGMT "%Y-%m-%d" . encodeUtf8

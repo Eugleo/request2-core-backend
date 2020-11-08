@@ -1,9 +1,8 @@
 module Utils.Crypto where
 
-import qualified Data.ByteString.Base64 as B64
 import qualified Data.ByteString.Base16 as B16
+import qualified Data.ByteString.Base64 as B64
 import Data.ByteString.Lazy (fromStrict, toStrict)
-import Data.ByteString.Lazy.UTF8 (ByteString)
 import qualified Data.ByteString.Lazy.UTF8 as LU
 import Data.ByteString.UTF8 (fromString, toString)
 import Data.Digest.Pure.SHA (sha256, sha512, showDigest)

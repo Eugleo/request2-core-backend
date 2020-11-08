@@ -11,7 +11,7 @@ import Api.Query (Delimited (..), Entity)
 import Data.Bifunctor (Bifunctor (second))
 import Data.Char (isLower)
 import Data.Maybe (mapMaybe)
-import Data.Model.DateTime (DateTime)
+import Data.Model.DateTime (DateTime, parseDateTime)
 import Data.Model.Role (Role (..))
 import Data.Model.Status (Status (..))
 import Data.Text (toLower, unpack)
@@ -88,9 +88,8 @@ exact f = multiple f . singleExact
 singleExact :: SqlType a => Col t a -> a -> Col t Bool
 singleExact field val = field .== literal val
 
--- TODO implement
 parseDate :: Traversable t => t Text -> Maybe (t DateTime)
-parseDate _ = Nothing
+parseDate = traverse (Just . parseDateTime)
 
 parseBool :: Text -> Maybe Bool
 parseBool t
