@@ -5,6 +5,7 @@ module Server.Server where
 
 import qualified Api.Common as Api
 import qualified Api.Files as Files
+import Api.Query.Announcement (annQueryTranslator)
 import Api.Query.Request (requestQueryTranslator)
 import Api.Query.Runner
 import Api.Query.Team
@@ -108,7 +109,7 @@ server config = runScotty config $ do
   {-
    - Announcements
    -}
-  get "/announcements" $ withAuth $ Api.getMany Table.anns
+  get "/announcements" $ withAuth $ runQuery Table.anns annQueryTranslator
   get "/announcements/:_id" $ withAuth $ Api.get Table.anns
   post "/announcements" $ withRoles [Admin] $ Api.create @AnnWithoutId Table.anns
   put "/announcements/:_id" $ withRoles [Admin] $ Api.update Table.anns

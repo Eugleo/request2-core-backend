@@ -66,6 +66,7 @@ executable request2
     Data.RequestWithoutId
     Api.Common
     Api.Query
+    Api.Query.Announcement
     Api.Query.Common
     Api.Query.Parser
     Api.Query.Request

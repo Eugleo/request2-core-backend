@@ -11,7 +11,7 @@ import Api.Query (Clause (Extant, Negated), QuerySpecification (..))
 import Api.Query.Common (EntityTranslator, Translator)
 import Api.Query.Parser (parseQuerySpec)
 import Data.Aeson (ToJSON, object, toJSON, (.=))
-import Data.Environment (EnvAction, param)
+import Data.Environment (EnvAction, param, rescue)
 import Database.Selda
 import Database.Selda.PostgreSQL (PG)
 import Network.HTTP.Types (badRequest400)
@@ -25,7 +25,7 @@ runQuery ::
 runQuery tbl entityTranslator = do
   lim <- param "limit"
   offset <- param "offset"
-  queryText <- param "query"
+  queryText <- param "query" `rescue` const (pure "")
   let queryBuilderOrError = do
         querySpec <- parseQuerySpec (queryText <> " sort:id")
         let translate = makeQueryTranslator entityTranslator
