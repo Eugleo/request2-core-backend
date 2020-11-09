@@ -10,6 +10,8 @@ module Database.Selda.Frontend
     MonadSelda (..),
     SeldaT,
     OnError (..),
+    exec,
+    execIO,
     query,
     queryInto,
     insert,
