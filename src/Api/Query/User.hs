@@ -10,7 +10,6 @@ import Api.Query.Common
     activeQualifier,
     delimited,
     fromEqual,
-    idQualifier,
     literalName,
     makeSimpleSorter,
     parseDate,
@@ -47,7 +46,6 @@ userQueryTranslator f (Qualified "email" vals) = do
   vs <- mapM (fromEqual "email") vals
   return $ \u -> similar f (u ! #email) vs
 userQueryTranslator f (Qualified "active" vals) = activeQualifier f vals
-userQueryTranslator f (Qualified "id" vals) = idQualifier f vals
 userQueryTranslator _ (Qualified "sort" vals) = do
   vs <- mapM (fromEqual "member") vals
   sorters <-

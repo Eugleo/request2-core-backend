@@ -1,7 +1,7 @@
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE OverloadedLabels #-}
 
-module Api.Query.Request (requestQueryTranslator) where
+module Api.Query.Request where
 
 import Api.Query (Entity (Literal, Qualified))
 import Api.Query.Common
@@ -10,7 +10,6 @@ import Api.Query.Common
     delimited,
     exact,
     fromEqual,
-    idQualifier,
     literalName,
     makeSorter,
     orderBy,
@@ -21,14 +20,18 @@ import Api.Query.Common
     undefinedQualifier,
   )
 import Control.Monad (forM)
+import Data.List (elemIndex)
 import Data.Maybe (mapMaybe)
 import Data.Model.Request (Request)
-import Database.Selda (order, restrict, select, (!), (.==))
+import Data.Text (Text, toUpper, unpack)
+import qualified Data.Text as T
+import Database.Selda (ID, order, restrict, select, toId, (!), (.==))
 import Database.Table (teams, users)
 
 requestQueryTranslator :: EntityTranslator t Request
 requestQueryTranslator f (Literal txt) = literalName f txt
-requestQueryTranslator f (Qualified "id" vals) = idQualifier f vals
+requestQueryTranslator f (Qualified "id" vals) =
+  return $ \r -> delimited f (r ! #_id) $ mapMaybe parseId vals
 requestQueryTranslator f (Qualified "author" vals) = do
   vs <- mapM (fromEqual "author") vals
   return $ \r -> do
@@ -74,3 +77,16 @@ requestQueryTranslator _ (Qualified "sort" vals) = do
         ]
   return $ \t -> sequence_ $ sorters <*> [t]
 requestQueryTranslator _ (Qualified quant _) = undefinedQualifier quant "requests"
+
+-- DON'T CHANGE THIS UNLESS YOU CHANGE /Request/Request.ts AS WELL
+parseId :: Traversable t => t Text -> Maybe (t (ID Request))
+parseId = traverse (fmap toId . go (0 :: Int) . unpack . T.reverse . T.toUpper)
+  where
+    alphabetSize = length alphabet
+    alphabet = "123456789ABCDEFGHIJKLMNPQRSTUVWXYZ"
+    toCodePoint = flip elemIndex alphabet
+    go _ [] = Just 0
+    go i (c : cs) = do
+      digit <- toCodePoint c
+      rest <- go (i + 1) cs
+      return $ rest + digit * (alphabetSize ^ i)

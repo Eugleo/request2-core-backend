@@ -10,7 +10,6 @@ import Api.Query.Common
     activeQualifier,
     delimited,
     fromEqual,
-    idQualifier,
     makeSorter,
     orderBy,
     parseDate,
@@ -27,7 +26,6 @@ import Database.Table (users)
 annQueryTranslator :: EntityTranslator t Ann
 annQueryTranslator f (Literal txt) =
   return $ \a -> restrict . f $ singleSimilar (a ! #title) txt
-annQueryTranslator f (Qualified "id" vals) = idQualifier f vals
 annQueryTranslator f (Qualified "content" vals) = do
   vs <- mapM (fromEqual "content") vals
   return $ \a -> similar f (a ! #body) vs

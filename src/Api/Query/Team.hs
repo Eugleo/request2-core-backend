@@ -9,7 +9,6 @@ import Api.Query.Common
     GenericSelector (..),
     activeQualifier,
     fromEqual,
-    idQualifier,
     literalName,
     makeSimpleSorter,
     similar,
@@ -40,7 +39,6 @@ teamQueryTranslator f (Qualified "code" vals) = do
   vs <- mapM (fromEqual "code") vals
   return $ \t -> similar f (t ! #code) vs
 teamQueryTranslator f (Qualified "active" vals) = activeQualifier f vals
-teamQueryTranslator f (Qualified "id" vals) = idQualifier f vals
 teamQueryTranslator _ (Qualified "sort" vals) = do
   vs <- mapM (fromEqual "member") vals
   sorters <-
