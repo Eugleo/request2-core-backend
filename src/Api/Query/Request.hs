@@ -28,8 +28,7 @@ import Database.Table (teams, users)
 
 requestQueryTranslator :: EntityTranslator t Request
 requestQueryTranslator f (Literal txt) = literalName f txt
-requestQueryTranslator f (Qualified "id" vals) = do
-
+requestQueryTranslator f (Qualified "id" vals) = idQualifier f vals
 requestQueryTranslator f (Qualified "author" vals) = do
   vs <- mapM (fromEqual "author") vals
   return $ \r -> do
