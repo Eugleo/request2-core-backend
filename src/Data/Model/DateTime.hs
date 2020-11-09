@@ -3,44 +3,56 @@
 module Data.Model.DateTime where
 
 import Data.Aeson
-import Data.Aeson.Types (prependFailure)
-import Data.Int (Int64)
-import Data.Scientific (toBoundedInteger)
-import Data.Text.Encoding (encodeUtf8)
-import Data.UnixTime
+import Data.Text (unpack)
+import Data.Time
+import Data.Time.Clock.POSIX
 import Database.Selda
 import Database.Selda.SqlType
-import Foreign.C.Types (CTime (..))
+  ( Lit (LCustom, LInt),
+    SqlTypeRep (TInt),
+    SqlValue (SqlInt),
+  )
 
-newtype DateTime = DateTime Int64
-  deriving (Show, Eq, Ord, Num)
+newtype DateTime = DateTime UTCTime
+  deriving (Show, Eq, Ord, FormatTime, SqlOrd)
 
 instance SqlType DateTime where
-  mkLit (DateTime t) = LCustom TInt . LInt . fromIntegral $ t
+  mkLit (DateTime ut) =
+    LCustom TInt
+      . LInt
+      . round
+      . nominalDiffTimeToSeconds
+      . utcTimeToPOSIXSeconds
+      $ ut
   sqlType _ = TInt
-  fromSql (SqlInt s) = DateTime $ fromIntegral s
+  fromSql (SqlInt s) =
+    DateTime
+      . posixSecondsToUTCTime
+      . secondsToNominalDiffTime
+      . fromIntegral
+      $ s
   fromSql v = error $ "fromSql: DateTime column with non-int value: " ++ show v
   defaultValue = LCustom TInt $ LInt def
 
 instance FromJSON DateTime where
   parseJSON =
-    withScientific "UnixTime" $ \v ->
-      maybe
-        ( prependFailure "Can't parse time, " $
-            fail $
-              "incorrect argument: " ++ show v
-        )
-        (return . DateTime)
-        $ toBoundedInteger v
+    withScientific "UnixTime" $
+      return
+        . DateTime
+        . posixSecondsToUTCTime
+        . secondsToNominalDiffTime
+        . realToFrac
 
 instance ToJSON DateTime where
-  toJSON (DateTime sec) = Number . fromIntegral $ sec
+  toJSON (DateTime dt) =
+    Number
+      . realToFrac
+      . nominalDiffTimeToSeconds
+      . utcTimeToPOSIXSeconds
+      $ dt
 
 now :: IO DateTime
-now = fromUnixTime <$> getUnixTime
+now = DateTime <$> getCurrentTime
 
-fromUnixTime :: UnixTime -> DateTime
-fromUnixTime = DateTime . (\(CTime t) -> t) . utSeconds
-
-parseDateTime :: Text -> DateTime
-parseDateTime = fromUnixTime . parseUnixTimeGMT "%Y-%m-%d" . encodeUtf8
+parseDateTime :: Text -> Maybe DateTime
+parseDateTime = fmap DateTime . parseTimeM True defaultTimeLocale "%Y-%-m-%-d" . unpack

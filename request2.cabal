@@ -140,6 +140,7 @@ executable request2
     selda-postgresql,
     SHA,
     text,
+    time,
     transformers,
     unix-time,
     unordered-containers,

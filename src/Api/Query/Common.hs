@@ -89,7 +89,7 @@ singleExact :: SqlType a => Col t a -> a -> Col t Bool
 singleExact field val = field .== literal val
 
 parseDate :: Traversable t => t Text -> Maybe (t DateTime)
-parseDate = traverse (Just . parseDateTime)
+parseDate = traverse parseDateTime
 
 parseBool :: Text -> Maybe Bool
 parseBool t
