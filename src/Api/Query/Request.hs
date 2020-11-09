@@ -23,7 +23,7 @@ import Control.Monad (forM)
 import Data.List (elemIndex)
 import Data.Maybe (mapMaybe)
 import Data.Model.Request (Request)
-import Data.Text (Text, toUpper, unpack)
+import Data.Text (Text, unpack)
 import qualified Data.Text as T
 import Database.Selda (ID, order, restrict, select, toId, (!), (.==))
 import Database.Table (teams, users)
@@ -31,6 +31,8 @@ import Database.Table (teams, users)
 requestQueryTranslator :: EntityTranslator t Request
 requestQueryTranslator f (Literal txt) = literalName f txt
 requestQueryTranslator f (Qualified "id" vals) =
+  return $ \r -> delimited f (r ! #_id) $ mapMaybe parseId vals
+requestQueryTranslator f (Qualified "code" vals) =
   return $ \r -> delimited f (r ! #_id) $ mapMaybe parseId vals
 requestQueryTranslator f (Qualified "author" vals) = do
   vs <- mapM (fromEqual "author") vals
