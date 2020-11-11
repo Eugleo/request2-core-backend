@@ -40,7 +40,7 @@ teamQueryTranslator f (Qualified "code" vals) = do
   return $ \t -> similar f (t ! #code) vs
 teamQueryTranslator f (Qualified "active" vals) = activeQualifier f vals
 teamQueryTranslator _ (Qualified "sort" vals) = do
-  vs <- mapM (fromEqual "member") vals
+  vs <- mapM (fromEqual "sort") vals
   sorters <-
     forM (reverse vs) $
       makeSimpleSorter

@@ -55,7 +55,7 @@ requestQueryTranslator f (Qualified "type" vals) = do
 requestQueryTranslator f (Qualified "created" vals) =
   return $ \r -> delimited f (r ! #dateCreated) $ mapMaybe parseDate vals
 requestQueryTranslator _ (Qualified "sort" vals) = do
-  vs <- mapM (fromEqual "member") vals
+  vs <- mapM (fromEqual "sort") vals
   sorters <-
     forM (reverse vs) $
       makeSorter
