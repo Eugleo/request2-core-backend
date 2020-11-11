@@ -11,17 +11,18 @@ import Data.Model.Request
 import Data.Model.User
 import Database.Selda
 
-data PropertyWithoutId
-  = Property
-      { requestId :: ID Request,
-        authorId :: ID User,
-        propertyType :: PropertyType,
-        propertyName :: Text,
-        propertyData :: Text,
-        dateAdded :: DateTime,
-        active :: Bool
-      }
-  deriving (Show, Eq, Generic, FromJSON, SqlRow)
+
+data PropertyWithoutId = Property
+    { requestId :: ID Request,
+      authorId :: ID User,
+      propertyType :: PropertyType,
+      propertyName :: Text,
+      propertyData :: Text,
+      dateAdded :: DateTime,
+      active :: Bool
+    }
+    deriving (Show, Eq, Generic, FromJSON, SqlRow)
+
 
 instance ToJSON PropertyWithoutId where
-  toEncoding = genericToEncoding defaultOptions
+    toEncoding = genericToEncoding defaultOptions

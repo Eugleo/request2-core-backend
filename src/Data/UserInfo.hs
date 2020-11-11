@@ -11,13 +11,14 @@ import Data.Text
 import Database.Selda (ID, SqlRow)
 import GHC.Generics
 
-data UserInfo
-  = UserInfo
-      { userId :: ID User,
-        apiKey :: Text,
-        roles :: [Role]
-      }
-  deriving (Show, Eq, Generic, FromJSON, SqlRow)
+
+data UserInfo = UserInfo
+    { userId :: ID User,
+      apiKey :: Text,
+      roles :: [Role]
+    }
+    deriving (Show, Eq, Generic, FromJSON, SqlRow)
+
 
 instance ToJSON UserInfo where
-  toEncoding = genericToEncoding defaultOptions
+    toEncoding = genericToEncoding defaultOptions

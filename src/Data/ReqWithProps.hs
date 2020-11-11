@@ -8,12 +8,13 @@ import Data.Model.Request
 import Data.PropertyWithoutId
 import Database.Selda
 
-data ReqWithProps
-  = RWP
-      { req :: Request,
-        props :: [PropertyWithoutId]
-      }
-  deriving (Show, Eq, Generic, FromJSON)
+
+data ReqWithProps = RWP
+    { req :: Request,
+      props :: [PropertyWithoutId]
+    }
+    deriving (Show, Eq, Generic, FromJSON)
+
 
 instance ToJSON ReqWithProps where
-  toEncoding = genericToEncoding defaultOptions
+    toEncoding = genericToEncoding defaultOptions

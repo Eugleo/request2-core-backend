@@ -15,33 +15,36 @@ import Database.Selda hiding (update)
 import qualified Database.Selda as Selda
 import Utils.Id.AddId
 
+
 create :: forall a b w. (AddId a b w, Relational b) => Table b -> a -> EnvAction b
 create tbl val = do
-  let valWithDef = addId def val :: b
-  rowId <- insertWithPK tbl [valWithDef]
-  let valWithId = addId rowId val :: b
-  return valWithId
+    let valWithDef = addId def val :: b
+    rowId <- insertWithPK tbl [valWithDef]
+    let valWithId = addId rowId val :: b
+    return valWithId
+
 
 get ::
-  (Relational b, HasField "_id" b, FieldType "_id" b ~ ID b) =>
-  Table b ->
-  ID b ->
-  EnvAction (Maybe b)
+    (Relational b, HasField "_id" b, FieldType "_id" b ~ ID b) =>
+    Table b ->
+    ID b ->
+    EnvAction (Maybe b)
 get tbl valId = do
-  res <- query $ select tbl `suchThat` (\val -> val ! #_id .== literal valId)
-  return (listToMaybe res)
+    res <- query $ select tbl `suchThat` (\val -> val ! #_id .== literal valId)
+    return (listToMaybe res)
+
 
 update ::
-  ( Relational b,
-    HasField "_id" b,
-    FieldType "_id" b ~ ID b
-  ) =>
-  Table b ->
-  ID b ->
-  b ->
-  EnvAction ()
+    ( Relational b,
+      HasField "_id" b,
+      FieldType "_id" b ~ ID b
+    ) =>
+    Table b ->
+    ID b ->
+    b ->
+    EnvAction ()
 update tbl valId val =
-  Selda.update_
-    tbl
-    (\v -> v ! #_id .== literal valId)
-    (const (row val))
+    Selda.update_
+        tbl
+        (\v -> v ! #_id .== literal valId)
+        (const (row val))

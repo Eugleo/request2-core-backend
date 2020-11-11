@@ -13,14 +13,16 @@ import Data.UserInfo (UserInfo (UserInfo))
 import Database.Selda
 import qualified Database.Table as Table
 
+
 findApiKeyUser :: Text -> EnvAction (Maybe UserInfo)
 findApiKeyUser key = do
-  res <- query $ do
-    user <- select Table.users
-    apiKey <- select Table.apiKeys
-    restrict (apiKey ! #key .== literal key .&& apiKey ! #userId .== user ! #_id)
-    return (user ! #_id :*: apiKey ! #key :*: user ! #roles)
-  return $ mkUserInfo <$> listToMaybe res
+    res <- query $ do
+        user <- select Table.users
+        apiKey <- select Table.apiKeys
+        restrict (apiKey ! #key .== literal key .&& apiKey ! #userId .== user ! #_id)
+        return (user ! #_id :*: apiKey ! #key :*: user ! #roles)
+    return $ mkUserInfo <$> listToMaybe res
+
 
 mkUserInfo :: (ID User :*: Text :*: [Role]) -> UserInfo
 mkUserInfo (uid :*: ak :*: rs) = UserInfo uid ak rs
