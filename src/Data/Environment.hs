@@ -21,8 +21,8 @@ import Data.Text.Lazy (fromStrict, toStrict)
 import qualified Data.Text.Lazy as Lazy
 import Data.UserInfo
 import Database.Selda.Backend.Internal
-import Database.Selda.PostgreSQL (PG)
 import Database.Selda.Frontend (exec)
+import Database.Selda.PostgreSQL (PG)
 import Network.HTTP.Types
 import Server.Config
 import Web.Scotty ()
@@ -100,11 +100,14 @@ header = EA . lift . fmap (toStrict <$>) . S.header . fromStrict
 redirect :: Text -> EnvAction ()
 redirect = EA . lift . S.redirect . fromStrict
 
+
 raise :: Text -> EnvAction a
 raise = EA . lift . S.raise . fromStrict
 
+
 raise_ :: Text -> EnvAction ()
 raise_ = void . raise
+
 
 rescue :: EnvAction a -> (Text -> EnvAction a) -> EnvAction a
 rescue act err = do
@@ -119,14 +122,18 @@ rescue act err = do
  - Ripped off from selda, with the explicit MonadMask requirement removed.
  -
  - WARNING: do not call the scotty's unmaskable `finish` from inside
- - transaction; your data won't be committed that way! -}
+ - transaction; your data won't be committed that way!
+-}
 transaction :: EnvAction a -> EnvAction a
 transaction m = transact $ do
-  void $ exec "BEGIN TRANSACTION" []
-  x <- m `rescue` \err -> do void $ exec "ROLLBACK" []
-                             raise err
-  void $ exec "COMMIT" []
-  return x
+    void $ exec "BEGIN TRANSACTION" []
+    x <-
+        m `rescue` \err -> do
+            void $ exec "ROLLBACK" []
+            raise err
+    void $ exec "COMMIT" []
+    return x
+
 
 askUserInfo :: EnvAction UserInfo
 askUserInfo = do
