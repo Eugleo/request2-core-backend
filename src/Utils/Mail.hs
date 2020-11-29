@@ -38,4 +38,4 @@ sendmail' c m =
 
 
 textMail' :: Config -> Address -> T.Text -> T.Text -> Mail
-textMail' c to subj text = simpleMail' (defaultFromAddr c) to subj (L.fromStrict text)
+textMail' c to subj text = simpleMail' to (defaultFromAddr c) subj (L.fromStrict text)
