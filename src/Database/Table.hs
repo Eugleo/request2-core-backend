@@ -14,8 +14,8 @@ import qualified Data.Text as T
 import Database.Selda
 
 
-setup :: MonadSelda m => m ()
-setup = do
+createAll :: MonadSelda m => m ()
+createAll = do
     tryCreateTable teams
     tryCreateTable users
     tryCreateTable requests

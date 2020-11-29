@@ -2,40 +2,46 @@ module Main where
 
 import Control.Monad
 import Database.Selda.PostgreSQL
-import Database.Table
+import qualified Database.Table as DB
 import Options.Applicative
 import Server.Config
 import Server.Server
+import Server.Log
 import Version
 
 
-data Opts = Opts {optAction :: Action, optConfig :: String} deriving (Show)
+data Opts = Opts
+    { optAction :: Action,
+      optConfig :: String
+    }
+    deriving (Show)
 
 
-data Action = RunServer | SetupDatabase deriving (Show)
+data Action
+    = RunServer
+    | SetupDatabase
+    deriving (Show)
 
 
 oOpts :: Parser Opts
-oOpts = Opts <$> oAction <*> strOption (metavar "CONFIG" <> short 'c' <> long "config" <> value defaultConfigPath)
+oOpts =
+    Opts <$> oAction
+        <*> strOption
+            (metavar "CONFIG" <> short 'c' <> long "config" <> value defaultConfigPath)
 
 
 oAction :: Parser Action
 oAction =
     subparser $
         mconcat
-            [ command
-                "run-server"
-                $ info (pure RunServer) $
-                    progDesc "Start the server",
-              command
-                "setup-db"
-                $ info (pure SetupDatabase) $
-                    progDesc "Populate the database tables"
+            [ command "run-server" $ info (pure RunServer) $ progDesc "Start the server",
+              command "create-db" $
+                info (pure SetupDatabase) $ progDesc "Populate the database tables"
             ]
 
 
 main :: IO ()
-main =
+main = withLog $
     let opts :: ParserInfo Opts
         opts =
             info
@@ -49,5 +55,9 @@ main =
             o <- execParser opts
             cfg <- readConfig $ optConfig o
             case optAction o of
-                RunServer -> void $ server cfg
-                SetupDatabase -> withPostgreSQL (connInfo cfg) setup
+                RunServer -> do
+                  logOperation' "Starting the server"
+                  void $ server cfg
+                SetupDatabase -> do
+                  logOperation' "Database setup"
+                  withPostgreSQL (connInfo cfg) DB.createAll

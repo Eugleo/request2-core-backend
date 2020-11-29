@@ -97,6 +97,7 @@ executable request2
     Database.Table
     Server.Capability
     Server.Config
+    Server.Log
     Server.Server
     Utils.Crypto
     Utils.Id.AddId
@@ -124,7 +125,7 @@ executable request2
     exceptions,
     generic-data,
     generic-data-surgery,
-    hslogger,
+    hsyslog,
     http-types,
     ini,
     lens,
