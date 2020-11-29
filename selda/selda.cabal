@@ -30,6 +30,7 @@ library
     Database.Selda.Backend
     Database.Selda.Backend.Internal
     Database.Selda.Debug
+    Database.Selda.Frontend
     Database.Selda.MakeSelectors
     Database.Selda.Migrations
     Database.Selda.Nullable
@@ -40,7 +41,6 @@ library
     Database.Selda.Column
     Database.Selda.Compile
     Database.Selda.Exp
-    Database.Selda.Frontend
     Database.Selda.FieldSelectors
     Database.Selda.Generic
     Database.Selda.Inner
