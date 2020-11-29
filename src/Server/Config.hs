@@ -20,7 +20,11 @@ data Config = Config
       _dbHost :: Text,
       _listen :: ListenConfig,
       _allowCORS :: Bool,
-      _regTokenSecret :: String
+      _regTokenSecret :: String,
+      _mailEnvelopeFrom :: Text,
+      _mailFrom :: Text,
+      _mailFromName :: Text,
+      _mailReplyTo :: Text
     }
     deriving (Show)
 
@@ -38,7 +42,11 @@ defaultConfig =
           _dbHost = "localhost",
           _listen = ListenOnPort 9080,
           _allowCORS = False,
-          _regTokenSecret = "31337" --TODO eventually generate a random token for a single run
+          _regTokenSecret = "31337", --TODO eventually generate a random token for a single run
+          _mailEnvelopeFrom = "request@request.cz",
+          _mailFrom = "noreply@request.cz",
+          _mailFromName = "Request",
+          _mailReplyTo = "request@request.cz"
         }
 
 
@@ -74,4 +82,8 @@ readConfig path = do
             . upd "db_host" dbHost id
             . upd "allow_cors" allowCORS (read . unpack)
             . upd "reg_token_secret" regTokenSecret unpack
+            . upd "mail_envelope_from" mailEnvelopeFrom id
+            . upd "mail_from" mailFrom id
+            . upd "mail_from_name" mailFromName id
+            . upd "mail_reply_to" mailReplyTo id
             $ defaultConfig

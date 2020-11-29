@@ -102,6 +102,7 @@ executable request2
     Utils.Crypto
     Utils.Id.AddId
     Utils.Id.IdInstances
+    Utils.Mail
     Utils.WithX
     Version
 
@@ -131,6 +132,7 @@ executable request2
     lens,
     lens-aeson,
     megaparsec,
+    mime-mail,
     mtl,
     network,
     optparse-applicative ^>=0.16,
@@ -139,6 +141,7 @@ executable request2
     scotty,
     selda,
     selda-postgresql,
+    smtp-mail,
     SHA,
     text,
     time,
