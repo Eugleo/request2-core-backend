@@ -30,7 +30,7 @@ defaultFromAddr c =
 sendmail' :: Config -> Mail -> IO ()
 sendmail' c m =
     S.renderSendMailCustom
-        "/usr/bin/mail"
+        "/usr/sbin/sendmail"
         ["-t", "-f", T.unpack (_mailEnvelopeFrom c)]
         m
             { M.mailFrom = defaultFromAddr c,
