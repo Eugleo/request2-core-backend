@@ -5,10 +5,13 @@ module Api.User where
 
 import Control.Monad (when)
 import Data.Environment
+import Data.Foldable (fold)
+import Data.List (intersperse)
 import Data.Model.ApiKey (ApiKey (ApiKey), key)
 import Data.Model.DateTime (now)
 import Data.Model.Role (Role (..))
 import Data.Model.User (User (..))
+import qualified Data.Model.User as Us
 import qualified Data.Text.IO as T
 import Data.UserDetails (UserDetails (UserDetails))
 import Data.UserInfo (UserInfo (UserInfo))
@@ -17,8 +20,10 @@ import qualified Data.UserWithoutId as User
 import Database.Common
 import Database.Selda hiding (text)
 import qualified Database.Table as Table
-import Network.HTTP.Types.Status (badRequest400, created201, forbidden403, internalServerError500)
+import Network.HTTP.Types.Status (badRequest400, created201, forbidden403, internalServerError500, ok200)
 import Utils.Crypto (checkHash, newApiKey, newHash, regToken)
+import Utils.Mail.Common
+import Utils.Mail.PwdResetMail
 
 
 -- TODO is 403 the right status code here?
@@ -141,6 +146,27 @@ createNew = do
             status internalServerError500 >> finish
     json newuser
     status created201
+
+
+-- TODO Change localhost to the correct one
+sendPwdResetEmail :: EnvAction ()
+sendPwdResetEmail = do
+    email <- param "email"
+    cfg <- askConfig
+    let token' = regToken email cfg
+    case token' of
+        Nothing -> status badRequest400 >> finish
+        Just token -> do
+            maybeUsers <- query $ select Table.users `suchThat` \u -> u ! #email .== literal email
+            let address = Address (Just "Some random name") email
+            let link =
+                    fold $ intersperse "/" ["http://localhost:9080", "#", "password-reset", email, token]
+            let mail = case maybeUsers of
+                    [user] -> pwdResetMail cfg address (Us.name user) link
+                    _ -> userDoesNotExistMail cfg address
+            envIO $ T.putStrLn $ "Before sending: " <> email <> ", token: " <> token
+            _ <- envIO $ sendmail' cfg <$> mail
+            status ok200
 
 
 -- TODO: check that the team actually exists

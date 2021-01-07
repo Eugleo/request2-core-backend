@@ -1,4 +1,4 @@
-module Utils.Mail (
+module Utils.Mail.Common (
     sendmail',
     --sendmail,
     textMail',
@@ -9,6 +9,7 @@ module Utils.Mail (
     plainPart,
     filePart,
     filePartBS,
+    htmlMail',
 ) where
 
 import qualified Data.Text as T
@@ -29,7 +30,7 @@ defaultFromAddr c =
 sendmail' :: Config -> Mail -> IO ()
 sendmail' c m =
     S.renderSendMailCustom
-        "/usr/sbin/sendmail"
+        "/usr/bin/mail"
         ["-t", "-f", T.unpack (_mailEnvelopeFrom c)]
         m
             { M.mailFrom = defaultFromAddr c,
@@ -39,3 +40,15 @@ sendmail' c m =
 
 textMail' :: Config -> Address -> T.Text -> T.Text -> Mail
 textMail' c to subj text = simpleMail' to (defaultFromAddr c) subj (L.fromStrict text)
+
+
+htmlMail' :: Config -> Address -> T.Text -> T.Text -> T.Text -> [InlineImage] -> IO Mail
+htmlMail' c to subj plainBody htmlBody images =
+    simpleMailWithImages
+        [to]
+        (defaultFromAddr c)
+        subj
+        (L.fromStrict plainBody)
+        (L.fromStrict htmlBody)
+        images
+        []

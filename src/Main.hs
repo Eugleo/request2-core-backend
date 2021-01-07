@@ -10,7 +10,7 @@ import Options.Applicative
 import Server.Config
 import Server.Log
 import Server.Server
-import Utils.Mail
+import Utils.Mail.Common
 import Version
 
 

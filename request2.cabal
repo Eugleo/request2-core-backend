@@ -102,7 +102,8 @@ executable request2
     Utils.Crypto
     Utils.Id.AddId
     Utils.Id.IdInstances
-    Utils.Mail
+    Utils.Mail.Common
+    Utils.Mail.PwdResetMail
     Utils.WithX
     Version
 
