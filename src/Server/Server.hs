@@ -101,12 +101,12 @@ server config = runScotty config $ do
      - Users
      -}
     get "/users/:_id" $ withRoles [Admin, Operator] $ Api.get Table.users
-    post "/register-init" $ withDB User.mailRegToken
+    post "/register-init" $ withDB User.sendRegToken
     post "/register" $ withDB User.register
     post "/login" $ withDB User.login
     post "/logout" $ withAuth User.logout
     post "/password" $ withAuth User.changePassword
-    post "/send-password-reset-email/:email" $ withDB User.sendPwdResetEmail
+    post "/password-reset-init" $ withDB User.sendPwdResetEmail
     {-
      - User information
      -}

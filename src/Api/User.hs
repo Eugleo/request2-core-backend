@@ -3,6 +3,7 @@
 
 module Api.User where
 
+import Api.Common (failure, success)
 import Control.Monad (when)
 import Data.Environment
 import Data.Foldable (fold)
@@ -24,6 +25,7 @@ import Network.HTTP.Types.Status (badRequest400, created201, forbidden403, inter
 import Utils.Crypto (checkHash, newApiKey, newHash, regToken)
 import Utils.Mail.Common
 import Utils.Mail.PwdResetMail
+import Utils.Mail.RegistrationMail
 
 
 -- TODO is 403 the right status code here?
@@ -111,21 +113,28 @@ getDetails = do
         _ -> status internalServerError500 >> finish
 
 
-mailRegToken :: EnvAction ()
-mailRegToken = do
-    eml <- jsonParamText "email"
-    tok' <- regToken eml <$> askConfig
-    case tok' of
-        Just tok -> do
-            envIO
-                ( T.putStrLn $
-                    "Sending e-mail to with activation link hash: #/register/"
-                        <> eml
-                        <> "/"
-                        <> tok
-                )
-            status created201
-        _ -> status badRequest400 >> finish
+-- TODO Change localhost to the correct one
+sendRegToken :: EnvAction ()
+sendRegToken = do
+    email <- jsonParamText "email"
+    others <- query $ select Table.users `suchThat` \u -> u ! #email .== literal email
+
+    case others of
+        [] -> do
+            cfg <- askConfig
+            tok' <- regToken email <$> askConfig
+            case tok' of
+                Just token -> do
+                    let address = Address (Just "Some random name") email
+                    let link =
+                            fold $ intersperse "/" ["http://localhost:9080", "#", "register", email, token]
+                    envIO $ T.putStrLn $ "Sending registration link: " <> link
+                    envIO $ do
+                        mail <- registrationInitMail cfg address link
+                        sendmail' cfg mail
+                    status ok200
+                _ -> failure "The entered email is invalid" badRequest400
+        _ -> failure "User with this email already exists" badRequest400
 
 
 createNew :: EnvAction ()
@@ -151,24 +160,24 @@ createNew = do
 -- TODO Change localhost to the correct one
 sendPwdResetEmail :: EnvAction ()
 sendPwdResetEmail = do
-    email <- param "email"
+    email <- jsonParamText "email"
     cfg <- askConfig
     let token' = regToken email cfg
     case token' of
         Nothing -> status badRequest400 >> finish
-        Just token ->
-            do
-                maybeUsers <- query $ select Table.users `suchThat` \u -> u ! #email .== literal email
-                let address = Address (Just "Some random name") email
-                let link =
-                        fold $ intersperse "/" ["http://localhost:9080", "#", "password-reset", email, token]
-                envIO $ do
-                    mail <- case maybeUsers of
-                        [user] -> pwdResetMail cfg address (Us.name user) link
-                        _ -> userDoesNotExistMail cfg address
-                    sendmail' cfg mail
-                status
-                    ok200
+        Just token -> do
+            maybeUsers <- query $ select Table.users `suchThat` \u -> u ! #email .== literal email
+            let address = Address (Just "Some random name") email
+            let link =
+                    fold $
+                        intersperse "/" ["http://localhost:9080", "#", "password-reset", email, token]
+            envIO $ T.putStrLn $ "Sending password reset link: " <> link
+            envIO $ do
+                mail <- case maybeUsers of
+                    [user] -> pwdResetMail cfg address (Us.name user) link
+                    _ -> userDoesNotExistMail cfg address
+                sendmail' cfg mail
+            status ok200
 
 
 -- TODO: check that the team actually exists

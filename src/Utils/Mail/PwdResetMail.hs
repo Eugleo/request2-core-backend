@@ -11,7 +11,7 @@ pwdResetMailHtml name link = "<!DOCTYPE html PUBLIC \"-//W3C//DTD XHTML 1.0 Tran
 
 
 pwdResetMailStr :: T.Text -> T.Text -> T.Text
-pwdResetMailStr name link = "Hey " <> name <> ",\r\n\r\nSomebody just requested a password reset link to be sent to this very email address. If it was you, please click the following link to complete the password reset process: " <> link <> "\r\n\r\nIf it wasn\'t you, don\'t panick, somebody probably just mistyped their email address. Simply ignore this email and that\'s it.\r\n\r\nRegards,\r\nThe Request 2 team\r\n\r\nDon\'t reply to this email, it was generated automatically.\r\nIf you have any questions, please contact our support directly.\r\n\r\n"
+pwdResetMailStr name link = "Hey " <> name <> ",\n\nSomebody just requested a password reset link to be sent to this very email address. If it was you, please click the following link to complete the password reset process: " <> link <> "\n\nIf it wasn\'t you, don\'t panick, somebody probably just mistyped their email address. Simply ignore this email and that\'s it.\n\nRegards,\nThe Request 2 team\n\nDon\'t reply to this email, it was generated automatically.\nIf you have any questions, please contact our support directly.\n\n"
 
 
 pwdResetMail :: Config -> Address -> T.Text -> T.Text -> IO Mail
@@ -30,7 +30,7 @@ userDoesNotExistHtml = "<!DOCTYPE html PUBLIC \"-//W3C//DTD XHTML 1.0 Transition
 
 
 userDoesNotExistStr :: T.Text
-userDoesNotExistStr = "Hey,\r\n\r\nSomebody just requested a password reset link to be sent to this very email address, however there is no account asociated with it.\r\n\r\nIf you didn\'t make this request, you can safely ignore this email, otherwise please make sure that you\'re entering an email address which is connected to your Request 2 account.\r\n\r\nRegards,\r\nThe Request 2 team\r\n\r\n(Don\'t reply to this email, it was generated automatically. If you have any questions, please contact our support directly.)"
+userDoesNotExistStr = "Hey,\n\nSomebody just requested a password reset link to be sent to this very email address, however there is no account asociated with it.\n\nIf you didn\'t make this request, you can safely ignore this email, otherwise please make sure that you\'re entering an email address which is connected to your Request 2 account.\n\nRegards,\nThe Request 2 team\n\n(Don\'t reply to this email, it was generated automatically. If you have any questions, please contact our support directly.)"
 
 
 userDoesNotExistMail :: Config -> Address -> IO Mail
