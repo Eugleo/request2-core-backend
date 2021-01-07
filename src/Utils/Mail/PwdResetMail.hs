@@ -1,9 +1,6 @@
 module Utils.Mail.PwdResetMail where
 
 import qualified Data.Text as T
-import qualified Data.Text.Lazy as L
-import Network.Mail.Mime as M (Address, ImageContent (..), InlineImage (..), Mail, simpleMail')
-import qualified Network.Mail.SMTP as S
 import Server.Config
 import Utils.Mail.Common
 
