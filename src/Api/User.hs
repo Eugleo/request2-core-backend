@@ -156,17 +156,19 @@ sendPwdResetEmail = do
     let token' = regToken email cfg
     case token' of
         Nothing -> status badRequest400 >> finish
-        Just token -> do
-            maybeUsers <- query $ select Table.users `suchThat` \u -> u ! #email .== literal email
-            let address = Address (Just "Some random name") email
-            let link =
-                    fold $ intersperse "/" ["http://localhost:9080", "#", "password-reset", email, token]
-            envIO $ do
-                mail <- case maybeUsers of
-                    [user] -> pure $ textMail' cfg address (Us.name user) link
-                    _ -> pure $ textMail' cfg address "NO USER" link
-                sendmail' cfg mail
-            status ok200
+        Just token ->
+            do
+                maybeUsers <- query $ select Table.users `suchThat` \u -> u ! #email .== literal email
+                let address = Address (Just "Some random name") email
+                let link =
+                        fold $ intersperse "/" ["http://localhost:9080", "#", "password-reset", email, token]
+                envIO $ do
+                    mail <- case maybeUsers of
+                        [user] -> pwdResetMail cfg address (Us.name user) link
+                        _ -> userDoesNotExistMail cfg address
+                    sendmail' cfg mail
+                status
+                    ok200
 
 
 -- TODO: check that the team actually exists
