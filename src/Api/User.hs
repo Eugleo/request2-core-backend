@@ -161,11 +161,11 @@ sendPwdResetEmail = do
             let address = Address (Just "Some random name") email
             let link =
                     fold $ intersperse "/" ["http://localhost:9080", "#", "password-reset", email, token]
-            let mail = case maybeUsers of
-                    [user] -> pwdResetMail cfg address (Us.name user) link
-                    _ -> userDoesNotExistMail cfg address
-            envIO $ T.putStrLn $ "Before sending: " <> email <> ", token: " <> token
-            _ <- envIO $ sendmail' cfg <$> mail
+            envIO $ do
+                mail <- case maybeUsers of
+                    [user] -> pure $ textMail' cfg address (Us.name user) link
+                    _ -> pure $ textMail' cfg address "NO USER" link
+                sendmail' cfg mail
             status ok200
 
 

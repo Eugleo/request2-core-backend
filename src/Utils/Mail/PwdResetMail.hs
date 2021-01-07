@@ -27,10 +27,10 @@ pwdResetMail cfg to name link =
         [InlineImage "HeaderImage" (ImageFilePath "frontend/src/assets/request2.svg") "requestLogo"]
 
 
-userDoesNotExistStr = ""
+userDoesNotExistStr = "This email does not exist"
 
 
-userDoesNotExistHtml = ""
+userDoesNotExistHtml = "This email does not exist"
 
 
 userDoesNotExistMail :: Config -> Address -> IO Mail
