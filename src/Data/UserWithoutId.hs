@@ -7,7 +7,6 @@ module Data.UserWithoutId where
 import Data.Aeson
 import Data.Model.DateTime
 import Data.Model.Role
-import Data.Model.Team
 import Database.Selda
 
 
@@ -17,7 +16,6 @@ data UserWithoutId = User
       password :: Text,
       name :: Text,
       roles :: [Role],
-      teamId :: ID Team,
       dateCreated :: DateTime,
       active :: Bool
     }

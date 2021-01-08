@@ -22,7 +22,7 @@ runQuery ::
     (ToJSON a, HasField "_id" a, FieldType "_id" a ~ ID a) =>
     Table a ->
     EntityTranslator (Inner PG) a ->
-    EnvAction ()
+    EnvAction [a]
 runQuery tbl entityTranslator = do
     lim <- param "limit"
     offset <- param "offset"
@@ -46,6 +46,7 @@ runQuery tbl entityTranslator = do
                 queryBuilder item
                 return (count (item ! #_id))
             success (object ["values" .= toJSON items, "total" .= head res])
+            return items
 
 
 makeQueryTranslator :: EntityTranslator t a -> Translator t QuerySpecification a

@@ -23,7 +23,7 @@ success :: ToJSON a => a -> EnvAction ()
 success v = json (object ["data" .= toJSON v])
 
 
-failure :: Text -> Status -> EnvAction ()
+failure :: Text -> Status -> EnvAction a
 failure msg st = do
     json $ object ["error" .= msg]
     status st

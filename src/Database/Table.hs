@@ -4,10 +4,12 @@ module Database.Table where
 
 import Data.Char (isUpper, toLower)
 import Data.Maybe (fromMaybe)
+import Data.Member (Member)
 import Data.Model.Ann (Ann)
 import Data.Model.ApiKey (ApiKey)
 import Data.Model.Property (Property)
 import Data.Model.Request (Request)
+import Data.Model.SecurityToken (SecurityToken)
 import Data.Model.Team (Team)
 import Data.Model.User (User)
 import qualified Data.Text as T
@@ -22,6 +24,7 @@ createAll = do
     tryCreateTable properties
     tryCreateTable anns
     tryCreateTable apiKeys
+    tryCreateTable securityTokens
 
 
 teams :: Table Team
@@ -39,9 +42,7 @@ users =
     tableFieldMod
         "users"
         [ #_id :- autoPrimary,
-          #teamId :- foreignKey teams #_id,
-          Single #email :- index,
-          (#teamId :+ #name) :- index
+          Single #email :- index
         ]
         $ toName "user"
 
@@ -92,6 +93,28 @@ apiKeys =
           (#userId :+ #key) :- index
         ]
         $ toName "api_key"
+
+
+securityTokens :: Table SecurityToken
+securityTokens =
+    tableFieldMod
+        "security_tokens"
+        [ #token :- primary,
+          (#email :+ #token) :- index
+        ]
+        $ toName "security_token"
+
+
+member :: Table Member
+member =
+    tableFieldMod
+        "member"
+        [ (#userId :+ #teamId) :- primary,
+          #userId :- foreignKey users #_id,
+          #teamId :- foreignKey teams #_id,
+          (#userId :+ #teamId) :- index
+        ]
+        $ toName "member"
 
 
 toName :: Text -> Text -> Text

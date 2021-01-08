@@ -104,6 +104,7 @@ executable request2
     Utils.Id.IdInstances
     Utils.Mail.Common
     Utils.Mail.PwdResetMail
+    Utils.Mail.RegistrationMail
     Utils.WithX
     Version
 

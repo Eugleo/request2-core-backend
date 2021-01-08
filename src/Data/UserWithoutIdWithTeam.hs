@@ -2,27 +2,27 @@
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE FlexibleInstances #-}
 
-module Data.Model.User where
+module Data.UserWithoutIdWithTeam where
 
 import Data.Aeson
 import Data.Model.DateTime
 import Data.Model.Role
+import Data.Model.Team
 import Database.Selda
-import Utils.Id.IdInstances ()
 
 
--- TODO Add password hash
-data User = User
-    { _id :: ID User,
-      email :: Text,
+-- TODO Remove password hash
+data UserWithoutId = User
+    { email :: Text,
       password :: Text,
       name :: Text,
       roles :: [Role],
+      teamIds :: [ID Team],
       dateCreated :: DateTime,
       active :: Bool
     }
-    deriving (Show, Eq, Generic, FromJSON, SqlRow)
+    deriving (Show, Eq, Generic, FromJSON)
 
 
-instance ToJSON User where
+instance ToJSON UserWithoutId where
     toEncoding = genericToEncoding defaultOptions

@@ -4,22 +4,28 @@
 module Api.User where
 
 import Api.Common (failure, success)
-import Control.Monad (when)
+import Api.Query.Runner (runQuery)
+import Api.Query.User
+import Control.Monad (forM, forM_, when)
 import Data.Environment
 import Data.Foldable (fold)
 import Data.List (intersperse)
+import Data.Member (Member (Member))
 import Data.Model.ApiKey (ApiKey (ApiKey), key)
 import Data.Model.DateTime (now)
 import Data.Model.Role (Role (..))
+import Data.Model.SecurityToken (SecurityToken (SecurityToken))
 import Data.Model.User (User (..))
 import qualified Data.Model.User as Us
+import qualified Data.Model.UserWithTeam as OUWT (User (..))
 import qualified Data.Text.IO as T
 import Data.UserDetails (UserDetails (UserDetails))
 import Data.UserInfo (UserInfo (UserInfo))
 import qualified Data.UserInfo as U
 import qualified Data.UserWithoutId as User
-import Database.Common
-import Database.Selda hiding (text)
+import qualified Data.UserWithoutIdWithTeam as OuterUser
+import Database.Common (create, get, update)
+import Database.Selda hiding (text, update)
 import qualified Database.Table as Table
 import Network.HTTP.Types.Status (badRequest400, created201, forbidden403, internalServerError500, ok200)
 import Utils.Crypto (checkHash, newApiKey, newHash, regToken)
@@ -105,12 +111,12 @@ getDetails = do
     ui <- askUserInfo
     res <- query $ select Table.users `suchThat` (\user -> user ! #_id .== literal (U.userId ui))
     case res of
-        [User{_id, teamId, name, roles, dateCreated}] -> do
-            maybeTeam <- get Table.teams teamId
-            case maybeTeam of
-                Just team -> json $ UserDetails _id name roles team dateCreated
-                Nothing -> status internalServerError500 >> finish
-        _ -> status internalServerError500 >> finish
+        [User{_id, name, roles, dateCreated}] -> do
+            teams <- query $ do
+                mbr <- select Table.member `suchThat` \m -> m ! #userId .== literal _id
+                innerJoin (\t -> t ! #_id .== mbr ! #teamId) $ select Table.teams
+            success $ UserDetails _id name roles teams dateCreated
+        _ -> failure "Incorrect user id supplied" badRequest400
 
 
 -- TODO Change localhost to the correct one
@@ -118,13 +124,14 @@ sendRegToken :: EnvAction ()
 sendRegToken = do
     email <- jsonParamText "email"
     others <- query $ select Table.users `suchThat` \u -> u ! #email .== literal email
-
     case others of
         [] -> do
             cfg <- askConfig
             tok' <- regToken email <$> askConfig
             case tok' of
                 Just token -> do
+                    currentDt <- envIO now
+                    insert_ Table.securityTokens [SecurityToken token email currentDt]
                     let address = Address (Just "Some random name") email
                     let link =
                             fold $ intersperse "/" ["http://localhost:9080", "#", "register", email, token]
@@ -139,22 +146,88 @@ sendRegToken = do
 
 createNew :: EnvAction ()
 createNew = do
-    user <- jsonData
-    let passwordHash = newHash $ User.password user
+    user <- jsonData :: EnvAction OuterUser.UserWithoutId
+    let passwordHash = newHash $ OuterUser.password user
     u <-
-        User.User (User.email user)
+        User.User (OuterUser.email user)
             <$> envIO passwordHash
-            <*> pure (User.name user)
-            <*> pure (User.roles user)
-            <*> pure (User.teamId user)
-            <*> pure (User.dateCreated user)
-            <*> pure (User.active user)
+            <*> pure (OuterUser.name user)
+            <*> pure (OuterUser.roles user)
+            <*> pure (OuterUser.dateCreated user)
+            <*> pure (OuterUser.active user)
     newuser <-
-        create Table.users u `rescue` \_ -> do
-            text "Failed to create the new user entry"
-            status internalServerError500 >> finish
-    json newuser
+        create Table.users u `rescue` \_ ->
+            failure "Failed to create the new user entry" internalServerError500
+    forM_ (OuterUser.teamIds user) $ \teamId ->
+        insert_ Table.member [Member (Us._id newuser) teamId]
+    success newuser
     status created201
+
+
+getUser :: EnvAction ()
+getUser = do
+    userId <- param "_id" :: EnvAction (ID Us.User)
+    user <- get Table.users userId
+    teams <- query $ do
+        mbr <- select Table.member `suchThat` \m -> m ! #userId .== literal userId
+        return $ mbr ! #teamId
+    case user of
+        Nothing -> failure "Invalid user id" badRequest400
+        Just u ->
+            success $
+                OUWT.User
+                    userId
+                    (Us.email u)
+                    (Us.password u)
+                    (Us.name u)
+                    (Us.roles u)
+                    teams
+                    (Us.dateCreated u)
+                    (Us.active u)
+
+
+getUsers :: EnvAction ()
+getUsers = do
+    users <- runQuery Table.users userQueryTranslator
+    usersWithteams <- forM users $ \u -> do
+        let userId = Us._id u
+        teams <- query $ do
+            mbr <- select Table.member `suchThat` \m -> m ! #userId .== literal userId
+            return $ mbr ! #teamId
+        return $
+            OUWT.User
+                userId
+                (Us.email u)
+                (Us.password u)
+                (Us.name u)
+                (Us.roles u)
+                teams
+                (Us.dateCreated u)
+                (Us.active u)
+    success usersWithteams
+
+
+updateUser :: EnvAction ()
+updateUser = do
+    userId <- param "_id" :: EnvAction (ID Us.User)
+    user <- jsonData :: EnvAction OUWT.User
+    let passwordHash = newHash $ OUWT.password user
+    u <-
+        Us.User userId
+            <$> pure (OUWT.email user)
+            <*> envIO passwordHash
+            <*> pure (OUWT.name user)
+            <*> pure (OUWT.roles user)
+            <*> pure (OUWT.dateCreated user)
+            <*> pure (OUWT.active user)
+    update Table.users userId u
+    forM_ (OUWT.teamIds user) $ \t -> do
+        m <-
+            query $
+                select
+                    Table.member
+                    `suchThat` \m -> m ! #teamId .== literal t .&& m ! #userId .== literal userId
+        when (null m) $ insert_ Table.member [Member userId t]
 
 
 -- TODO Change localhost to the correct one
@@ -180,25 +253,38 @@ sendPwdResetEmail = do
             status ok200
 
 
--- TODO: check that the team actually exists
 register :: EnvAction ()
 register = do
     email <- jsonParamText "email"
     token <- jsonParamText "token"
-    tokenCheck <- regToken email <$> askConfig
-    when (Just token /= tokenCheck) $ status forbidden403 >> finish
-    passwordHash <- newHash <$> jsonParamText "password"
-    u <-
-        User.User email
-            <$> envIO passwordHash
-            <*> jsonParamText "name"
-            <*> pure [Client]
-            <*> fmap toId (jsonParamInt "team")
-            <*> envIO now
-            <*> pure True
-    newuser <-
-        create Table.users u `rescue` \_ -> do
-            text "Failed to create the new user entry"
-            status internalServerError500 >> finish
-    json newuser
-    status created201
+    currentDt <- envIO now
+    tokenCheck' <-
+        query $
+            select Table.securityTokens `suchThat` \t ->
+                t ! #token .== literal token
+                    .&& t ! #email .== literal email
+                    .&& t ! #validUntil .> literal currentDt
+
+    case tokenCheck' of
+        [_] -> do
+            passwordHash <- newHash <$> jsonParamText "password"
+            u <-
+                User.User email
+                    <$> envIO passwordHash
+                    <*> jsonParamText "name"
+                    <*> pure [Client]
+                    <*> envIO now
+                    <*> pure True
+            newuser <-
+                create Table.users u `rescue` \_ -> do
+                    text "Failed to create the new user entry"
+                    status internalServerError500 >> finish
+            success newuser
+            status created201
+        _ -> do
+            _ <- deleteFrom Table.securityTokens $ \t ->
+                t ! #validUntil .< literal currentDt
+                    .|| (t ! #token .== literal token .&& t ! #email .== literal email)
+            failure
+                "The security token is invalid, please repeat the registration process"
+                forbidden403

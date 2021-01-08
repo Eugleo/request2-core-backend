@@ -21,8 +21,8 @@ import Control.Monad (forM)
 import Data.Maybe (mapMaybe)
 import Data.Model.User (User)
 import Data.Text (pack)
-import Database.Selda (restrict, select, toString, (!), (.==))
-import Database.Table (teams)
+import Database.Selda (innerJoin, restrict, select, suchThat, toString, (!), (.==))
+import Database.Table (member, teams)
 
 
 -- TODO Implement Roles better, if possible
@@ -39,7 +39,9 @@ userQueryTranslator f (Qualified "team" vals) = do
     return $ \u -> do
         team <- select teams
         similar id (team ! #name) vs
-        restrict . f $ u ! #teamId .== team ! #_id
+        mbr <- select member
+        restrict $ mbr ! #teamId .== team ! #_id
+        restrict . f $ u ! #_id .== mbr ! #userId
 userQueryTranslator f (Qualified "name" vals) = do
     vs <- mapM (fromEqual "name") vals
     return $ \u -> similar f (u ! #name) vs

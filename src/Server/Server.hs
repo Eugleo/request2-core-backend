@@ -9,7 +9,6 @@ import Api.Query.Announcement (annQueryTranslator)
 import Api.Query.Request (requestQueryTranslator)
 import Api.Query.Runner
 import Api.Query.Team
-import Api.Query.User
 import qualified Api.Request as Request
 import qualified Api.User as User
 import Control.Exception (bracket)
@@ -89,9 +88,9 @@ server config = runScotty config $ do
      - Admin interface
      -}
     post "/users" $ withRoles [Admin] User.createNew
-    get "/users" $ withDB $ runQuery Table.users userQueryTranslator
+    get "/users" $ withRoles [Admin] User.getUsers
     -- TODO Make it impossible to update password through this API
-    put "/users/:_id" $ withRoles [Admin] $ Api.update Table.users
+    put "/users/:_id" $ withRoles [Admin] User.updateUser
     delete "/users/:_id" $ withRoles [Admin] $ Api.deactivate Table.users
     {-
      - Capabilities
@@ -115,7 +114,7 @@ server config = runScotty config $ do
     {-
      - Announcements
      -}
-    get "/announcements" $ withAuth $ runQuery Table.anns annQueryTranslator
+    get "/announcements" $ withAuth $ void $ runQuery Table.anns annQueryTranslator
     get "/announcements/:_id" $ withAuth $ Api.get Table.anns
     post "/announcements" $ withRoles [Admin] $ Api.create @AnnWithoutId Table.anns
     put "/announcements/:_id" $ withRoles [Admin] $ Api.update Table.anns
@@ -124,7 +123,7 @@ server config = runScotty config $ do
      - Requests
      -}
     -- TODO Only author and operator can view & edit requests
-    get "/requests" $ withDB $ runQuery Table.requests requestQueryTranslator
+    get "/requests" $ void $ withDB $ runQuery Table.requests requestQueryTranslator
     get "/requests/:_id" $ withAuth $ Api.get Table.requests
     get "/requests/:_id/props/comments" $ withAuth Request.getComments
     get "/requests/:_id/props/results" $ withAuth Request.getResults
@@ -146,7 +145,7 @@ server config = runScotty config $ do
      - Teams
      -}
     -- TODO Add auth
-    get "/teams" $ withDB $ runQuery Table.teams teamQueryTranslator
+    get "/teams" $ withDB $ void $ runQuery Table.teams teamQueryTranslator
     get "/teams/:_id" $ withRoles [Admin, Operator] $ Api.get Table.teams
     post "/teams" $ withRoles [Admin] $ Api.create @TeamWithoutId Table.teams
     put "/teams/:_id" $ withRoles [Admin] $ Api.update Table.teams

@@ -8,8 +8,9 @@ import Data.Aeson
 import Data.Model.Role
 import Data.Model.User
 import Data.Text
-import Database.Selda (ID, SqlRow)
+import Database.Selda (ID)
 import GHC.Generics
+import Utils.Id.IdInstances ()
 
 
 data UserInfo = UserInfo
@@ -17,7 +18,7 @@ data UserInfo = UserInfo
       apiKey :: Text,
       roles :: [Role]
     }
-    deriving (Show, Eq, Generic, FromJSON, SqlRow)
+    deriving (Show, Eq, Generic, FromJSON)
 
 
 instance ToJSON UserInfo where

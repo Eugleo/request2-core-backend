@@ -14,7 +14,7 @@ data UserDetails = UserDetails
     { _id :: ID User,
       name :: Text,
       roles :: [Role],
-      team :: Team,
+      teams :: [Team],
       dateCreated :: DateTime
     }
     deriving (Show, Eq, Generic)

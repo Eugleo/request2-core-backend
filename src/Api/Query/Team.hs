@@ -17,12 +17,13 @@ import Api.Query.Common (
 import Control.Monad (forM)
 import Data.Model.Team (Team)
 import Database.Selda (
+    innerJoin,
     restrict,
     select,
     (!),
     (.==),
  )
-import Database.Table (users)
+import Database.Table (member, users)
 
 
 teamQueryTranslator :: EntityTranslator t Team
@@ -32,7 +33,9 @@ teamQueryTranslator f (Qualified "member" vals) = do
     return $ \t -> do
         user <- select users
         similar id (user ! #name) vs
-        restrict . f $ t ! #_id .== user ! #teamId
+        mbr <- select member
+        restrict $ mbr ! #userId .== user ! #_id
+        restrict . f $ t ! #_id .== mbr ! #teamId
 teamQueryTranslator f (Qualified "name" vals) = do
     vs <- mapM (fromEqual "name") vals
     return $ \t -> similar f (t ! #name) vs
