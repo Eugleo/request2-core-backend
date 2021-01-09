@@ -99,7 +99,7 @@ server config = runScotty config $ do
     {-
      - Users
      -}
-    get "/users/:_id" $ withRoles [Admin, Operator] $ Api.get Table.users
+    get "/users/:_id" $ withRoles [Admin, Operator] User.getUser
     post "/register-init" $ withDB User.sendRegToken
     post "/register" $ withDB User.register
     post "/login" $ withDB User.login

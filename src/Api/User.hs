@@ -7,6 +7,7 @@ import Api.Common (failure, success)
 import Api.Query.Runner (runQuery)
 import Api.Query.User
 import Control.Monad (forM, forM_, when)
+import Data.Aeson (object, toJSON, (.=))
 import Data.Environment
 import Data.Foldable (fold)
 import Data.List (intersperse)
@@ -34,7 +35,6 @@ import Utils.Mail.PwdResetMail
 import Utils.Mail.RegistrationMail
 
 
--- TODO is 403 the right status code here?
 login :: EnvAction ()
 login = do
     email <- jsonParamText "email"
@@ -45,9 +45,9 @@ login = do
             if checkHash pw password
                 then do
                     apiKey <- addApiKey _id
-                    json $ UserInfo _id (key apiKey) roles
-                else status forbidden403 >> finish
-        _ -> status forbidden403 >> finish
+                    success $ UserInfo _id (key apiKey) roles
+                else failure "Incorrect email or password" forbidden403
+        _ -> failure "Incorrect email or password" forbidden403
 
 
 addApiKey :: ID User -> EnvAction ApiKey
@@ -204,7 +204,7 @@ getUsers = do
                 teams
                 (Us.dateCreated u)
                 (Us.active u)
-    success usersWithteams
+    success (object ["values" .= toJSON usersWithteams, "total" .= length usersWithteams])
 
 
 updateUser :: EnvAction ()

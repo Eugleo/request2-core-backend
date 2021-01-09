@@ -25,6 +25,7 @@ createAll = do
     tryCreateTable anns
     tryCreateTable apiKeys
     tryCreateTable securityTokens
+    tryCreateTable member
 
 
 teams :: Table Team
