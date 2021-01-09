@@ -13,13 +13,15 @@ import Data.Foldable (fold)
 import Data.List (intersperse)
 import Data.Member (Member (Member))
 import Data.Model.ApiKey (ApiKey (ApiKey), key)
-import Data.Model.DateTime (now)
+import Data.Model.DateTime (DateTime (..), now)
 import Data.Model.Role (Role (..))
 import Data.Model.SecurityToken (SecurityToken (SecurityToken))
 import Data.Model.User (User (..))
 import qualified Data.Model.User as Us
 import qualified Data.Model.UserWithTeam as OUWT (User (..))
 import qualified Data.Text.IO as T
+import Data.Time (UTCTime (UTCTime), nominalDiffTimeToSeconds, secondsToNominalDiffTime)
+import Data.Time.Clock.POSIX
 import Data.UserDetails (UserDetails (UserDetails))
 import Data.UserInfo (UserInfo (UserInfo))
 import qualified Data.UserInfo as U
@@ -119,6 +121,19 @@ getDetails = do
         _ -> failure "Incorrect user id supplied" badRequest400
 
 
+add :: DateTime -> Int -> DateTime
+add (DateTime dt) t =
+    DateTime
+        . posixSecondsToUTCTime
+        . secondsToNominalDiffTime
+        . fromIntegral
+        . (t +)
+        . round
+        . nominalDiffTimeToSeconds
+        . utcTimeToPOSIXSeconds
+        $ dt
+
+
 -- TODO Change localhost to the correct one
 sendRegToken :: EnvAction ()
 sendRegToken = do
@@ -131,10 +146,11 @@ sendRegToken = do
             case tok' of
                 Just token -> do
                     currentDt <- envIO now
-                    insert_ Table.securityTokens [SecurityToken token email currentDt]
+                    -- Add approx. 12h to the current datetime
+                    insert_ Table.securityTokens [SecurityToken token email (add currentDt 43200)]
                     let address = Address (Just "Some random name") email
                     let link =
-                            fold $ intersperse "/" ["http://localhost:9080", "#", "register", email, token]
+                            fold $ intersperse "/" ["http://localhost:3000", "#", "register", email, token]
                     envIO $ T.putStrLn $ "Sending registration link: " <> link
                     envIO $ do
                         mail <- registrationInitMail cfg address link
@@ -238,7 +254,7 @@ sendPwdResetEmail = do
             let address = Address (Just "Some random name") email
             let link =
                     fold $
-                        intersperse "/" ["http://localhost:9080", "#", "password-reset", email, token]
+                        intersperse "/" ["http://localhost:3000", "#", "password-reset", email, token]
             envIO $ T.putStrLn $ "Sending password reset link: " <> link
             envIO $ do
                 mail <- case maybeUsers of
