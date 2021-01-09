@@ -227,18 +227,24 @@ updateUser :: EnvAction ()
 updateUser = do
     userId <- param "_id" :: EnvAction (ID Us.User)
     user <- jsonData :: EnvAction OUWT.User
-    let passwordHash = newHash $ OUWT.password user
-    u <-
-        Us.User userId
-            <$> pure (OUWT.email user)
-            <*> envIO passwordHash
-            <*> pure (OUWT.name user)
-            <*> pure (OUWT.roles user)
-            <*> pure (OUWT.dateCreated user)
-            <*> pure (OUWT.active user)
-    update Table.users userId u
-    deleteFrom_ Table.member $ \m -> m ! #userId .== literal userId
-    insert_ Table.member $ fmap (Member userId) (OUWT.teamIds user)
+    pwd <- query $ do
+        u <- select Table.users
+        restrict $ u ! #_id .== literal userId
+        return $ u ! #password
+    case pwd of
+        [password] -> do
+            u <-
+                Us.User userId
+                    <$> pure (OUWT.email user)
+                    <*> pure password
+                    <*> pure (OUWT.name user)
+                    <*> pure (OUWT.roles user)
+                    <*> pure (OUWT.dateCreated user)
+                    <*> pure (OUWT.active user)
+            update Table.users userId u
+            deleteFrom_ Table.member $ \m -> m ! #userId .== literal userId
+            insert_ Table.member $ fmap (Member userId) (OUWT.teamIds user)
+        _ -> failure "Two users with the same ID" internalServerError500
 
 
 -- TODO Change localhost to the correct one
