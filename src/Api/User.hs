@@ -221,13 +221,8 @@ updateUser = do
             <*> pure (OUWT.dateCreated user)
             <*> pure (OUWT.active user)
     update Table.users userId u
-    forM_ (OUWT.teamIds user) $ \t -> do
-        m <-
-            query $
-                select
-                    Table.member
-                    `suchThat` \m -> m ! #teamId .== literal t .&& m ! #userId .== literal userId
-        when (null m) $ insert_ Table.member [Member userId t]
+    deleteFrom_ Table.member $ \m -> m ! #userId .== literal userId
+    insert_ Table.member $ fmap (Member userId) (OUWT.teamIds user)
 
 
 -- TODO Change localhost to the correct one
