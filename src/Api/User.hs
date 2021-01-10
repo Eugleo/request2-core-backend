@@ -1,3 +1,5 @@
+{-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE GADTs #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedLabels #-}
 
@@ -6,7 +8,7 @@ module Api.User where
 import Api.Common (failure, success)
 import Api.Query.Runner (runQuery)
 import Api.Query.User
-import Control.Monad (forM, forM_, when)
+import Control.Monad (forM, void, when)
 import Data.Aeson (object, toJSON, (.=))
 import Data.Environment
 import Data.Foldable (fold)
@@ -16,8 +18,10 @@ import Data.Model.ApiKey (ApiKey (ApiKey), key)
 import Data.Model.DateTime (DateTime (..), now)
 import Data.Model.Role (Role (..))
 import Data.Model.SecurityToken (SecurityToken (SecurityToken))
+import Data.Model.Team (Team)
 import Data.Model.User (User (..))
 import qualified Data.Model.User as Us
+import Data.Model.UserWithTeam (outerToInner)
 import qualified Data.Model.UserWithTeam as OUWT (User (..))
 import qualified Data.Text.IO as T
 import Data.Time (UTCTime (UTCTime), nominalDiffTimeToSeconds, secondsToNominalDiffTime)
@@ -30,7 +34,7 @@ import qualified Data.UserWithoutIdWithTeam as OuterUser
 import Database.Common (create, get, update)
 import Database.Selda hiding (text, update)
 import qualified Database.Table as Table
-import Network.HTTP.Types.Status (badRequest400, created201, forbidden403, internalServerError500, ok200)
+import Network.HTTP.Types.Status (badRequest400, created201, forbidden403, internalServerError500)
 import Utils.Crypto (checkHash, newApiKey, newHash, regToken)
 import Utils.Mail.Common
 import Utils.Mail.PwdResetMail
@@ -67,10 +71,9 @@ logout = do
     deleteFrom_ Table.apiKeys (\v -> v ! #key .== literal (U.apiKey ui))
 
 
-logoutEverywhere :: EnvAction ()
-logoutEverywhere = do
-    ui <- askUserInfo
-    deleteFrom_ Table.apiKeys (\v -> v ! #userId .== literal (U.userId ui))
+logoutEverywhere :: ID Us.User -> EnvAction ()
+logoutEverywhere userId =
+    deleteFrom_ Table.apiKeys (\v -> v ! #userId .== literal userId)
 
 
 changePassword :: EnvAction ()
@@ -82,6 +85,57 @@ changePassword = do
     if match
         then setPassword (U.userId ui) newpass
         else status forbidden403 >> finish
+
+
+removeInvalidTokens :: EnvAction ()
+removeInvalidTokens = do
+    token <- jsonParamText "token"
+    email <- jsonParamText "email"
+    dt <- envIO now
+    void $
+        deleteFrom Table.securityTokens $ \t ->
+            t ! #validUntil .< literal dt
+                .|| (t ! #token .== literal token .&& t ! #email .== literal email)
+
+
+checkToken :: EnvAction ()
+checkToken = do
+    token <- jsonParamText "token"
+    email <- jsonParamText "email"
+    currentDt <- envIO now
+    tokenCheck <-
+        query $
+            select Table.securityTokens `suchThat` \t ->
+                t ! #token .== literal token
+                    .&& t ! #email .== literal email
+                    .&& t ! #validUntil .> literal currentDt
+    removeInvalidTokens
+    when (length tokenCheck /= 1) $
+        failure
+            "The security token is invalid, please repeat the registration process"
+            forbidden403
+
+
+resetPassword :: EnvAction ()
+resetPassword = do
+    checkToken
+    email <- jsonParamText "email"
+    newPassword <- getPasswordHash
+    let updater u = u `with` [#password := literal newPassword]
+    update_ Table.users (\u -> u ! #email .== literal email) updater `rescue` \_ -> do
+        text "Failed to create the new user entry"
+        status internalServerError500 >> finish
+    users <- query $ do
+        user <- select Table.users `suchThat` \u -> u ! #email .== literal email
+        return $ user ! #_id
+    logoutEverywhere $ head users
+
+
+checkEmailUnique :: EnvAction ()
+checkEmailUnique = do
+    email <- jsonParamText "email"
+    others <- query $ select Table.users `suchThat` \u -> u ! #email .== literal email
+    when (null others) $ failure "User with this email already exists" badRequest400
 
 
 checkPassword :: ID User -> Text -> EnvAction Bool
@@ -134,48 +188,41 @@ add (DateTime dt) t =
         $ dt
 
 
+getPasswordHash :: EnvAction Text
+getPasswordHash = do
+    passwordHash <- newHash <$> jsonParamText "password"
+    envIO passwordHash
+
+
 -- TODO Change localhost to the correct one
 sendRegToken :: EnvAction ()
 sendRegToken = do
+    checkEmailUnique
     email <- jsonParamText "email"
-    others <- query $ select Table.users `suchThat` \u -> u ! #email .== literal email
-    case others of
-        [] -> do
-            cfg <- askConfig
-            tok' <- regToken email <$> askConfig
-            case tok' of
-                Just token -> do
-                    currentDt <- envIO now
-                    -- Add approx. 12h to the current datetime
-                    insert_ Table.securityTokens [SecurityToken token email (add currentDt 43200)]
-                    let address = Address (Just "Some random name") email
-                    let link =
-                            fold $ intersperse "/" ["http://localhost:3000", "#", "register", email, token]
-                    envIO $ T.putStrLn $ "Sending registration link: " <> link
-                    envIO $ do
-                        mail <- registrationInitMail cfg address link
-                        sendmail' cfg mail
-                    status ok200
-                _ -> failure "The entered email is invalid" badRequest400
-        _ -> failure "User with this email already exists" badRequest400
+    cfg <- askConfig
+    token <- makeToken hours12
+    let address = Address (Just "Some random name") email
+    let link = makeLink ["http://localhost:3000", "#", "register", email, token]
+    envIO $ T.putStrLn $ "Sending registration link: " <> link
+    envIO $ registrationInitMail cfg address link >>= sendmail' cfg
 
 
 createNew :: EnvAction ()
 createNew = do
+    checkEmailUnique
     user <- jsonData :: EnvAction OuterUser.UserWithoutId
-    let passwordHash = newHash $ OuterUser.password user
+    password <- getPasswordHash
     u <-
         User.User (OuterUser.email user)
-            <$> envIO passwordHash
+            <$> pure password
             <*> pure (OuterUser.name user)
             <*> pure (OuterUser.roles user)
-            <*> pure (OuterUser.dateCreated user)
-            <*> pure (OuterUser.active user)
+            <*> envIO now
+            <*> pure True
     newuser <-
         create Table.users u `rescue` \_ ->
             failure "Failed to create the new user entry" internalServerError500
-    forM_ (OuterUser.teamIds user) $ \teamId ->
-        insert_ Table.member [Member (Us._id newuser) teamId]
+    insert_ Table.member $ Member (Us._id newuser) <$> OuterUser.teamIds user
     success newuser
     status created201
 
@@ -184,124 +231,93 @@ getUser :: EnvAction ()
 getUser = do
     userId <- param "_id" :: EnvAction (ID Us.User)
     user <- get Table.users userId
-    teams <- query $ do
-        mbr <- select Table.member `suchThat` \m -> m ! #userId .== literal userId
-        return $ mbr ! #teamId
+    teams <- getUserTeams userId
     case user of
         Nothing -> failure "Invalid user id" badRequest400
-        Just u ->
-            success $
-                OUWT.User
-                    userId
-                    (Us.email u)
-                    (Us.password u)
-                    (Us.name u)
-                    (Us.roles u)
-                    teams
-                    (Us.dateCreated u)
-                    (Us.active u)
+        Just u -> success $ innerToOuter u teams
+
+
+innerToOuter :: Us.User -> [ID Team] -> OUWT.User
+innerToOuter Us.User{_id, email, password, name, roles, dateCreated, active} teams =
+    OUWT.User _id email password name roles teams dateCreated active
+
+
+getUserTeams :: ID Us.User -> EnvAction [ID Team]
+getUserTeams userId = query $ do
+    mbr <- select Table.member `suchThat` \m -> m ! #userId .== literal userId
+    return $ mbr ! #teamId
 
 
 getUsers :: EnvAction ()
 getUsers = do
     users <- runQuery Table.users userQueryTranslator
-    usersWithteams <- forM users $ \u -> do
-        let userId = Us._id u
-        teams <- query $ do
-            mbr <- select Table.member `suchThat` \m -> m ! #userId .== literal userId
-            return $ mbr ! #teamId
-        return $
-            OUWT.User
-                userId
-                (Us.email u)
-                (Us.password u)
-                (Us.name u)
-                (Us.roles u)
-                teams
-                (Us.dateCreated u)
-                (Us.active u)
+    usersWithteams <- forM users $ \u -> innerToOuter u <$> getUserTeams (Us._id u)
     success (object ["values" .= toJSON usersWithteams, "total" .= length usersWithteams])
 
 
 updateUser :: EnvAction ()
 updateUser = do
-    userId <- param "_id" :: EnvAction (ID Us.User)
+    userId <- param "_id"
     user <- jsonData :: EnvAction OUWT.User
-    pwd <- query $ do
-        u <- select Table.users
-        restrict $ u ! #_id .== literal userId
-        return $ u ! #password
-    case pwd of
-        [password] -> do
-            u <-
-                Us.User userId
-                    <$> pure (OUWT.email user)
-                    <*> pure password
-                    <*> pure (OUWT.name user)
-                    <*> pure (OUWT.roles user)
-                    <*> pure (OUWT.dateCreated user)
-                    <*> pure (OUWT.active user)
-            update Table.users userId u
-            deleteFrom_ Table.member $ \m -> m ! #userId .== literal userId
-            insert_ Table.member $ fmap (Member userId) (OUWT.teamIds user)
-        _ -> failure "Two users with the same ID" internalServerError500
+    update_ Table.users (\u -> u ! #_id .== literal userId) $ \u ->
+        row (outerToInner user) `with` [#password := u ! #password]
+    -- Refresh the (Team, User) parinings
+    deleteFrom_ Table.member $ \m -> m ! #userId .== literal userId
+    insert_ Table.member $ fmap (Member userId) (OUWT.teamIds user)
+
+
+hours12 :: Int
+hours12 = 12 * 3600
+
+
+makeToken :: Int -> EnvAction Text
+makeToken expire = do
+    dt <- envIO now
+    email <- jsonParamText "email"
+    token' <- regToken email <$> askConfig
+    case token' of
+        Nothing -> failure "The entered email is invalid" badRequest400
+        Just token -> do
+            insert_ Table.securityTokens [SecurityToken token email (add dt expire)]
+            return token
+
+
+makeLink :: [Text] -> Text
+makeLink = fold . intersperse "/"
 
 
 -- TODO Change localhost to the correct one
 sendPwdResetEmail :: EnvAction ()
 sendPwdResetEmail = do
+    token <- makeToken hours12
     email <- jsonParamText "email"
     cfg <- askConfig
-    let token' = regToken email cfg
-    case token' of
-        Nothing -> status badRequest400 >> finish
-        Just token -> do
-            maybeUsers <- query $ select Table.users `suchThat` \u -> u ! #email .== literal email
-            let address = Address (Just "Some random name") email
-            let link =
-                    fold $
-                        intersperse "/" ["http://localhost:3000", "#", "password-reset", email, token]
-            envIO $ T.putStrLn $ "Sending password reset link: " <> link
-            envIO $ do
-                mail <- case maybeUsers of
-                    [user] -> pwdResetMail cfg address (Us.name user) link
-                    _ -> userDoesNotExistMail cfg address
-                sendmail' cfg mail
-            status ok200
+    maybeUsers <- query $ select Table.users `suchThat` \u -> u ! #email .== literal email
+    let address = Address (Just "Some random name") email
+    let link = makeLink ["http://localhost:3000", "#", "password-reset", email, token]
+    envIO $ T.putStrLn $ "Sending password reset link: " <> link
+    envIO $ do
+        mail <- case maybeUsers of
+            [user] -> pwdResetMail cfg address (Us.name user) link
+            _ -> userDoesNotExistMail cfg address
+        sendmail' cfg mail
 
 
 register :: EnvAction ()
 register = do
+    checkToken
     email <- jsonParamText "email"
-    token <- jsonParamText "token"
-    currentDt <- envIO now
-    tokenCheck' <-
-        query $
-            select Table.securityTokens `suchThat` \t ->
-                t ! #token .== literal token
-                    .&& t ! #email .== literal email
-                    .&& t ! #validUntil .> literal currentDt
-
-    case tokenCheck' of
-        [_] -> do
-            passwordHash <- newHash <$> jsonParamText "password"
-            u <-
-                User.User email
-                    <$> envIO passwordHash
-                    <*> jsonParamText "name"
-                    <*> pure [Client]
-                    <*> envIO now
-                    <*> pure True
-            newuser <-
-                create Table.users u `rescue` \_ -> do
-                    text "Failed to create the new user entry"
-                    status internalServerError500 >> finish
-            success newuser
-            status created201
-        _ -> do
-            _ <- deleteFrom Table.securityTokens $ \t ->
-                t ! #validUntil .< literal currentDt
-                    .|| (t ! #token .== literal token .&& t ! #email .== literal email)
-            failure
-                "The security token is invalid, please repeat the registration process"
-                forbidden403
+    password <- getPasswordHash
+    u <-
+        User.User email
+            <$> pure password
+            <*> jsonParamText "name"
+            <*> pure [Client]
+            <*> envIO now
+            <*> pure True
+    newuser <-
+        create Table.users u `rescue` \_ -> do
+            text "Failed to create the new user entry"
+            status internalServerError500 >> finish
+    success newuser
+    status created201

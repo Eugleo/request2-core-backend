@@ -105,6 +105,7 @@ server config = runScotty config $ do
     post "/login" $ withDB User.login
     post "/logout" $ withAuth User.logout
     post "/password" $ withAuth User.changePassword
+    post "/password-reset" $ withDB User.resetPassword
     post "/password-reset-init" $ withDB User.sendPwdResetEmail
     {-
      - User information
