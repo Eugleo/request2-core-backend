@@ -104,14 +104,14 @@ server config = runScotty config $ do
     post "/register" $ withDB User.register
     post "/login" $ withDB User.login
     post "/logout" $ withAuth User.logout
-    post "/password" $ withAuth User.changePassword
+    post "/change-password" $ withAuth User.changePassword
     post "/password-reset" $ withDB User.resetPassword
     post "/password-reset-init" $ withDB User.sendPwdResetEmail
     {-
      - User information
      -}
     get "/me" $ withAuth User.getDetails
-    -- TODO put "/userinfo" $ withAuth undefined
+    put "/me" $ withAuth User.editMe
     {-
      - Announcements
      -}

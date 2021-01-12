@@ -76,6 +76,18 @@ logoutEverywhere userId =
     deleteFrom_ Table.apiKeys (\v -> v ! #userId .== literal userId)
 
 
+editMe :: EnvAction ()
+editMe = do
+    ui <- askUserInfo
+    name <- jsonParamText "name"
+    update_
+        Table.users
+        (\u -> u ! #_id .== literal (U.userId ui))
+        (\u -> u `with` [#name := literal name])
+        `rescue` \_ ->
+            failure "Can't update the user at the moment" internalServerError500
+
+
 changePassword :: EnvAction ()
 changePassword = do
     ui <- askUserInfo
@@ -84,7 +96,7 @@ changePassword = do
     match <- checkPassword (U.userId ui) oldpass
     if match
         then setPassword (U.userId ui) newpass
-        else status forbidden403 >> finish
+        else failure "The old password is incorrect" forbidden403
 
 
 removeInvalidTokens :: EnvAction ()
