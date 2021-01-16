@@ -59,10 +59,6 @@ executable request2
   -- Modules included in this executable, other than Main.
   other-modules:
     Api.Request
-    Data.BareProperty
-    Data.PropertyWithoutId
-    Data.ReqWithProps
-    Data.ReqWithPropsWithoutId
     Data.RequestWithoutId
     Api.Common
     Api.Query
@@ -76,22 +72,27 @@ executable request2
     Api.Files
     Api.User
     Data.AnnWithoutId
+    Data.CommentWithoutId
     Data.Environment
     Data.FileDesc
+    Data.Member
     Data.Model.Ann
     Data.Model.ApiKey
+    Data.Model.Comment
     Data.Model.DateTime
     Data.Model.Property
-    Data.Model.PropertyType
     Data.Model.Request
     Data.Model.Role
+    Data.Model.SecurityToken
     Data.Model.Status
     Data.Model.Team
     Data.Model.User
+    Data.Model.UserWithTeam
     Data.TeamWithoutId
     Data.UserDetails
     Data.UserInfo
     Data.UserWithoutId
+    Data.UserWithoutIdWithTeam
     Database.BasicAuth
     Database.Common
     Database.Table
@@ -151,6 +152,7 @@ executable request2
     unix-time,
     unordered-containers,
     utf8-string,
+    vector,
     wai,
     wai-extra
 

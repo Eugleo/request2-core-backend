@@ -17,6 +17,7 @@ import Api.Query.Common (
     parseStatus,
     parseType,
     similar,
+    singleSimilar,
     undefinedQualifier,
  )
 import Control.Monad (forM)
@@ -30,7 +31,8 @@ import Database.Table (teams, users)
 
 
 requestQueryTranslator :: EntityTranslator t Request
-requestQueryTranslator f (Literal txt) = literalName f txt
+requestQueryTranslator f (Literal txt) =
+    return $ \r -> restrict . f $ singleSimilar (r ! #title) txt
 requestQueryTranslator f (Qualified "id" vals) =
     return $ \r -> delimited f (r ! #_id) $ mapMaybe parseId vals
 requestQueryTranslator f (Qualified "code" vals) =
@@ -60,7 +62,7 @@ requestQueryTranslator _ (Qualified "sort" vals) = do
     sorters <-
         forM (reverse vs) $
             makeSorter
-                [ ("title", orderBy (ToSelector #name)),
+                [ ("title", orderBy (ToSelector #title)),
                   ("created", orderBy (ToSelector #dateCreated)),
                   ("id", orderBy (ToSelector #_id)),
                   ("type", orderBy (ToSelector #requestType)),

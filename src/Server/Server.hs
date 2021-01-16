@@ -15,9 +15,9 @@ import Control.Exception (bracket)
 import Control.Monad
 import Data.AnnWithoutId (AnnWithoutId)
 import Data.Bool (bool)
+import Data.CommentWithoutId (CommentWithoutId)
 import Data.Default.Class (def)
 import Data.Model.Role (Role (..))
-import Data.PropertyWithoutId (PropertyWithoutId)
 import Data.TeamWithoutId (TeamWithoutId)
 import qualified Data.Text as T
 import Database.Selda (SeldaT)
@@ -127,14 +127,11 @@ server config = runScotty config $ do
     get "/requests" $ void $ withDB $ runQuery Table.requests requestQueryTranslator
     get "/requests/:_id" $ withAuth $ Api.get Table.requests
     get "/requests/:_id/props/comments" $ withAuth Request.getComments
-    get "/requests/:_id/props/results" $ withAuth Request.getResults
-    get "/requests/:_id/props/details" $ withAuth Request.getDetails
     post "/requests" $ withRoles [Client] Request.createWithProps
     put "/requests/:_id" $ withRoles [Client, Operator, Admin] Request.updateWithProps
 
     post "/requests/:_id/comments" $
-        withRoles [Client, Operator] $
-            Api.create @PropertyWithoutId Table.properties
+        withRoles [Client, Operator] $ Api.create @CommentWithoutId Table.comments
     {-
      - Files
      -}

@@ -24,7 +24,6 @@ import qualified Data.FileDesc as F
 import Data.List (intercalate)
 import Data.Maybe (catMaybes)
 import Data.Model.Property (Property)
-import Data.Model.PropertyType (PropertyType (..))
 import qualified Data.Text as T
 import qualified Database.Selda as S
 import Database.Table (properties)
@@ -53,7 +52,7 @@ delete = do
     res <-
         S.query $ do
             prop <- S.select properties `S.suchThat` propIsFileWithHash (F.hash fileDesc)
-            return $ prop S.! #propertyData
+            return $ prop S.! #value
     case res of
         [] -> envIO $ removeFile path
         _ -> status forbidden403
@@ -93,13 +92,9 @@ fileUrl h n = do
     return . T.pack $ filePath' pfx h n
 
 
+-- TODO this needs an index!!!
 propIsFileWithHash :: S.Text -> S.Row t Property -> S.Col t Bool
-propIsFileWithHash h property =
-    -- TODO this needs an index!!!
-    ((property S.! #propertyData) `S.like` S.literal (T.append h ":%"))
-        S..&& ( (property S.! #propertyType S..== S.literal File)
-                    S..|| (property S.! #propertyType S..== S.literal ResultFile)
-              )
+propIsFileWithHash h property = (property S.! #value) `S.like` S.literal (T.append h ":%")
 
 
 getUniqueHash :: EnvAction T.Text
@@ -154,7 +149,7 @@ getFile = do
     res <-
         S.query $ do
             prop <- S.select properties `S.suchThat` propIsFileWithHash hash
-            return $ prop S.! #propertyData
+            return $ prop S.! #value
     case res of
         [d] ->
             case filePropertyToDesc d of

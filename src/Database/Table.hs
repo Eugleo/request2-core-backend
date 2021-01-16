@@ -7,6 +7,7 @@ import Data.Maybe (fromMaybe)
 import Data.Member (Member)
 import Data.Model.Ann (Ann)
 import Data.Model.ApiKey (ApiKey)
+import Data.Model.Comment (Comment)
 import Data.Model.Property (Property)
 import Data.Model.Request (Request)
 import Data.Model.SecurityToken (SecurityToken)
@@ -22,6 +23,7 @@ createAll = do
     tryCreateTable users
     tryCreateTable requests
     tryCreateTable properties
+    tryCreateTable comments
     tryCreateTable anns
     tryCreateTable apiKeys
     tryCreateTable securityTokens
@@ -65,12 +67,24 @@ properties :: Table Property
 properties =
     tableFieldMod
         "properties"
+        [ (#requestId :+ #name) :- primary,
+          #authorId :- foreignKey users #_id,
+          #requestId :- foreignKey requests #_id,
+          (#requestId :+ #name :+ #dateAdded) :- index
+        ]
+        $ toName "property"
+
+
+comments :: Table Comment
+comments =
+    tableFieldMod
+        "comments"
         [ #_id :- autoPrimary,
           #authorId :- foreignKey users #_id,
           #requestId :- foreignKey requests #_id,
-          (#_id :+ #requestId :+ #propertyName :+ #dateAdded) :- index
+          (#_id :+ #requestId :+ #dateAdded) :- index
         ]
-        $ toName "property"
+        $ toName "comment"
 
 
 anns :: Table Ann

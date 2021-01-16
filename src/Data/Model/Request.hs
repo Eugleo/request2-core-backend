@@ -4,6 +4,7 @@
 module Data.Model.Request where
 
 import Data.Aeson
+import Data.Aeson.Types (Parser)
 import Data.Model.DateTime
 import Data.Model.Status
 import Data.Model.Team
@@ -13,11 +14,11 @@ import Database.Selda
 
 data Request = Request
     { _id :: ID Request,
-      name :: Text,
+      title :: Text,
       authorId :: ID User,
       teamId :: ID Team,
       status :: Status,
-      requestType :: Text, -- named `type` in db
+      requestType :: Text,
       dateCreated :: DateTime
     }
     deriving (Show, Eq, Generic, FromJSON, SqlRow)
@@ -25,3 +26,17 @@ data Request = Request
 
 instance ToJSON Request where
     toEncoding = genericToEncoding defaultOptions
+
+
+parseRequest :: Value -> Parser (Text, ID Team, Text)
+parseRequest = withObject "request" $ \o -> do
+    title <- o .: "title"
+    teamId <- o .: "teamId"
+    requestType <- o .: "requestType"
+    return (title, teamId, requestType)
+
+
+parseRequestId :: Value -> Parser (ID Request)
+parseRequestId = withObject "requestWithProperties" $ \o -> do
+    req <- o .: "request"
+    req .: "_id"

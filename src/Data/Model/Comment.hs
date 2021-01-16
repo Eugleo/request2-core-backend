@@ -2,27 +2,25 @@
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE FlexibleInstances #-}
 
-module Data.PropertyWithoutId where
+module Data.Model.Comment where
 
 import Data.Aeson
 import Data.Model.DateTime
-import Data.Model.PropertyType
 import Data.Model.Request
 import Data.Model.User
 import Database.Selda
 
 
-data PropertyWithoutId = Property
-    { requestId :: ID Request,
+-- TODO Add private properties (can only be viewed by author)
+data Comment = Comment
+    { _id :: ID Comment,
+      requestId :: ID Request,
       authorId :: ID User,
-      propertyType :: PropertyType,
-      propertyName :: Text,
-      propertyData :: Text,
-      dateAdded :: DateTime,
-      active :: Bool
+      content :: Text,
+      dateAdded :: DateTime
     }
     deriving (Show, Eq, Generic, FromJSON, SqlRow)
 
 
-instance ToJSON PropertyWithoutId where
+instance ToJSON Comment where
     toEncoding = genericToEncoding defaultOptions

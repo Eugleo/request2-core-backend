@@ -7,17 +7,16 @@ module Api.Request where
 import Api.Common (notFound, success)
 import Control.Monad (forM, forM_, join)
 import Data.Aeson (KeyValue ((.=)), object)
-import Data.BareProperty (BareProperty)
-import qualified Data.BareProperty as Bare
-import Data.Environment (EnvAction, jsonData, param, status)
+import Data.Aeson.Lens (key, _Object)
+import Data.Aeson.Types (Object, Value)
+import Data.Environment (EnvAction, askUserInfo, envIO, jsonData, jsonParam, param, runParser, status)
 import Data.List ((\\))
+import Data.Model.DateTime (now)
 import qualified Data.Model.Property as P
-import qualified Data.Model.PropertyType as PropertyType
-import qualified Data.Model.Request as R (Request (_id))
-import Data.PropertyWithoutId (PropertyWithoutId)
-import qualified Data.PropertyWithoutId as PWI
-import qualified Data.ReqWithProps as RWP
-import qualified Data.ReqWithPropsWithoutId as RWPWI
+import qualified Data.Model.Request as R (Request (..), parseRequest, parseRequestId)
+import Data.Model.Status (Status (Pending))
+import Data.Model.Team (Team)
+import qualified Data.UserInfo as UI
 import qualified Database.Common as Db
 import Database.Selda
 import Database.Selda.PostgreSQL (PG)
@@ -39,84 +38,70 @@ getWithProps = do
         _ -> notFound
 
 
-getDetails :: EnvAction ()
-getDetails = getSubsetOfProps $ \prop ->
-    prop ! #propertyType .== literal PropertyType.Detail
-        .|| prop ! #propertyType .== literal PropertyType.File
-
-
 getComments :: EnvAction ()
-getComments = getSubsetOfProps $ \prop ->
-    prop ! #propertyType .== literal PropertyType.Comment
-
-
-getResults :: EnvAction ()
-getResults = getSubsetOfProps $ \prop ->
-    prop ! #propertyType .== literal PropertyType.Result
-        .|| prop ! #propertyType .== literal PropertyType.ResultFile
-
-
-getSubsetOfProps :: (Row (Inner PG) P.Property -> Col (Inner PG) Bool) -> EnvAction ()
-getSubsetOfProps keep = do
+getComments = do
     reqId <- param "_id"
-    props <-
-        query $ select Table.properties `suchThat` (\prop -> fromReq reqId prop .&& keep prop)
-    success props
-  where
-    fromReq :: ID R.Request -> Row t P.Property -> Col t Bool
-    fromReq reqId prop = prop ! #requestId .== literal reqId
+    comments <- query $ select Table.comments `suchThat` \c -> c ! #requestId .== literal reqId
+    success comments
 
 
 -- TODO Add transactions
 updateWithProps :: EnvAction ()
 updateWithProps = do
-    RWP.RWP{RWP.req, RWP.props} <- jsonData
-    let reqId = R._id req
+    ((title, teamId, _), properties) <- getRequestAndProps
+    reqId <- runParser R.parseRequestId =<< jsonParam "request" (key "request")
 
     repeatedProps <-
-        fmap join . forM props $ \prop ->
-            query $ do
-                p <- select Table.properties
-                restrict $
-                    p ! #requestId .== literal reqId
-                        .&& p ! #propertyName .== literal (PWI.propertyName prop)
-                        .&& p ! #propertyType .== literal (PWI.propertyType prop)
-                return p
+        fmap join . forM properties $ \(name, value) ->
+            query $
+                select Table.properties `suchThat` \p ->
+                    p ! #requestId .== literal reqId .&& p ! #name .== literal name
 
-    let ignoredProps = filter (memberBy propEq props) repeatedProps
+    let ignoredProps = filter (memberBy propEq properties) repeatedProps
     let updatedProps = repeatedProps \\ ignoredProps
 
     -- Deactivate old properties
     forM_ updatedProps $ \prop ->
         update_
             Table.properties
-            (\p -> p ! #_id .== literal (P._id prop))
+            ( \p ->
+                p ! #requestId .== literal (P.requestId prop)
+                    .&& p ! #name .== literal (P.name prop)
+            )
             (\p -> p `with` [#active := false])
 
     -- Insert new properties
+    dt <- envIO now
+    userId <- UI.userId <$> askUserInfo
     insert_ Table.properties $
-        addId def
-            <$> filter (not . memberBy (flip propEq) ignoredProps) props
+        (\(name, value) -> P.Property reqId userId name value dt True True)
+            <$> filter (not . memberBy (flip propEq) ignoredProps) properties
 
     -- Update the request
-    Db.update Table.requests reqId req
+    update_ Table.requests (\r -> r ! #_id .== literal reqId) $
+        \r -> r `with` [#title := literal title, #teamId := literal teamId]
   where
+    propEq p (name, value) = P.name p == name && (P.value p == value)
     memberBy eq xs x = any (eq x) xs
-    propEqName p q =
-        (P.propertyName p == PWI.propertyName q) && (P.propertyType p == PWI.propertyType q)
-    propEq p q =
-        propEqName p q && (P.propertyData p == PWI.propertyData q)
+
+
+getRequestAndProps :: EnvAction ((Text, ID Team, Text), [(Text, Text)])
+getRequestAndProps = do
+    reqValue <- jsonParam "request" (key "request")
+    propsValue <- jsonParam "properties" (key "properties")
+    request <- runParser R.parseRequest reqValue
+    properties <- runParser P.parseProperties propsValue
+    return (request, properties)
 
 
 createWithProps :: EnvAction ()
 createWithProps = do
-    RWPWI.RWP{RWPWI.req, RWPWI.props} <- jsonData
-    newRequest <- Db.create Table.requests req
-    insert_ Table.properties (addId def . addReqId (R._id newRequest) <$> props)
-    success newRequest
+    ((title, teamId, requestType), properties) <- getRequestAndProps
+    dt <- envIO now
+    userId <- UI.userId <$> askUserInfo
+    let newReq = R.Request def title userId teamId Pending requestType dt
+    reqId <- insertWithPK Table.requests [newReq]
+    insert_ Table.properties $
+        fmap (\(name, value) -> P.Property reqId userId name value dt False True) properties
+    success $ newReq{R._id = reqId}
     status created201
-
-
-addReqId :: ID R.Request -> BareProperty -> PropertyWithoutId
-addReqId reqId Bare.Property{..} =
-    PWI.Property reqId authorId propertyType propertyName propertyData dateAdded active
