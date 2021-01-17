@@ -45,6 +45,13 @@ getComments = do
     success comments
 
 
+getProperties :: EnvAction ()
+getProperties = do
+    reqId <- param "_id"
+    props <- query $ select Table.properties `suchThat` \c -> c ! #requestId .== literal reqId
+    success props
+
+
 -- TODO Add transactions
 updateWithProps :: EnvAction ()
 updateWithProps = do

@@ -126,7 +126,8 @@ server config = runScotty config $ do
     -- TODO Only author and operator can view & edit requests
     get "/requests" $ void $ withDB $ runQuery Table.requests requestQueryTranslator
     get "/requests/:_id" $ withAuth $ Api.get Table.requests
-    get "/requests/:_id/props/comments" $ withAuth Request.getComments
+    get "/requests/:_id/props" $ withAuth Request.getProperties
+    get "/requests/:_id/comments" $ withAuth Request.getComments
     post "/requests" $ withRoles [Client] Request.createWithProps
     put "/requests/:_id" $ withRoles [Client, Operator, Admin] Request.updateWithProps
 
