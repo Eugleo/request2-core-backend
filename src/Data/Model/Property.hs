@@ -38,6 +38,5 @@ parseProperty = withObject "propertyStub" $ \o -> do
 
 
 parseProperties :: Value -> Parser [(Text, Text)]
-parseProperties = withObject "requestAndProperty" $ \o -> do
-    props <- o .: "props"
-    mapM parseProperty $ V.toList props
+parseProperties = withArray "properties" $ \arr ->
+    mapM parseProperty $ V.toList arr
