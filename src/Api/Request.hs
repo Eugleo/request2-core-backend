@@ -9,8 +9,9 @@ import Control.Monad (forM, forM_, join)
 import Data.Aeson (KeyValue ((.=)), object)
 import Data.Aeson.Lens (key, _Object)
 import Data.Aeson.Types (Object, Value)
-import Data.Environment (EnvAction, askUserInfo, envIO, jsonData, jsonParam, param, runParser, status)
+import Data.Environment (EnvAction, askUserInfo, envIO, jsonData, jsonParam, jsonParamText, param, runParser, status)
 import Data.List ((\\))
+import qualified Data.Model.Comment as C
 import Data.Model.DateTime (now)
 import qualified Data.Model.Property as P
 import qualified Data.Model.Request as R (Request (..), parseRequest, parseRequestId)
@@ -99,6 +100,17 @@ getRequestAndProps = do
     request <- runParser R.parseRequest reqValue
     properties <- runParser P.parseProperties propsValue
     return (request, properties)
+
+
+addComment :: EnvAction ()
+addComment = do
+    reqId <- param "_id"
+    userId <- UI.userId <$> askUserInfo
+    dt <- envIO now
+    content <- jsonParamText "content"
+    commentId <- insert Table.comments [C.Comment def reqId userId content dt]
+    success $ C.Comment (toId commentId) reqId userId content dt
+    status created201
 
 
 createWithProps :: EnvAction ()

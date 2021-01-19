@@ -131,8 +131,7 @@ server config = runScotty config $ do
     post "/requests" $ withRoles [Client] Request.createWithProps
     put "/requests/:_id" $ withRoles [Client, Operator, Admin] Request.updateWithProps
 
-    post "/requests/:_id/comments" $
-        withRoles [Client, Operator] $ Api.create @CommentWithoutId Table.comments
+    post "/requests/:_id/comments" $ withRoles [Client, Operator] Request.addComment
     {-
      - Files
      -}
