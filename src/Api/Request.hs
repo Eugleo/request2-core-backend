@@ -8,13 +8,13 @@ import Api.Common (notFound, success)
 import Control.Monad (forM, forM_, join)
 import Data.Aeson (KeyValue ((.=)), object)
 import Data.Aeson.Lens (key, _Object)
-import Data.Aeson.Types (Object, Value)
+import Data.Aeson.Types (Object, Parser, Value)
 import Data.Environment (EnvAction, askUserInfo, envIO, jsonData, jsonParam, jsonParamText, param, runParser, status)
-import Data.List ((\\))
+import Data.List (partition, (\\))
 import qualified Data.Model.Comment as C
 import Data.Model.DateTime (now)
 import qualified Data.Model.Property as P
-import qualified Data.Model.Request as R (Request (..), parseRequest, parseRequestId)
+import qualified Data.Model.Request as R (Request (..), parseRequestCreation, parseRequestEdit)
 import Data.Model.Status (Status (Pending))
 import Data.Model.Team (Team)
 import qualified Data.UserInfo as UI
@@ -56,20 +56,19 @@ getProperties = do
 -- TODO Add transactions
 updateWithProps :: EnvAction ()
 updateWithProps = do
-    ((title, teamId, _), properties) <- getRequestAndProps
-    reqId <- runParser R.parseRequestId =<< jsonParam "request" (key "request")
+    ((title, teamId), properties) <- getRequestAndProps R.parseRequestEdit
+    reqId <- param "_id"
 
-    repeatedProps <-
-        fmap join . forM properties $ \(name, value) ->
-            query $
-                select Table.properties `suchThat` \p ->
-                    p ! #requestId .== literal reqId .&& p ! #name .== literal name
+    allProps <-
+        query $
+            select Table.properties `suchThat` \p ->
+                p ! #active .== literal True .&& p ! #requestId .== literal reqId
 
-    let ignoredProps = filter (memberBy propEq properties) repeatedProps
-    let updatedProps = repeatedProps \\ ignoredProps
+    let (repeatedProps, removedProps) = partition (memberBy (\p (name, _) -> P.name p == name) properties) allProps
+    let (unchangedProps, updatedProps) = partition (memberBy propEq properties) repeatedProps
 
-    -- Deactivate old properties
-    forM_ updatedProps $ \prop ->
+    -- Deactivate remomed or old properties
+    forM_ (updatedProps ++ removedProps) $ \prop ->
         update_
             Table.properties
             ( \p ->
@@ -79,11 +78,11 @@ updateWithProps = do
             (\p -> p `with` [#active := false])
 
     -- Insert new properties
+    let changedProps = filter (not . memberBy (flip propEq) unchangedProps) properties
     dt <- envIO now
     userId <- UI.userId <$> askUserInfo
     insert_ Table.properties $
-        (\(name, value) -> P.Property reqId userId name value dt True True)
-            <$> filter (not . memberBy (flip propEq) ignoredProps) properties
+        (\(name, value) -> P.Property reqId userId name value dt True True) <$> changedProps
 
     -- Update the request
     update_ Table.requests (\r -> r ! #_id .== literal reqId) $
@@ -93,11 +92,11 @@ updateWithProps = do
     memberBy eq xs x = any (eq x) xs
 
 
-getRequestAndProps :: EnvAction ((Text, ID Team, Text), [(Text, Text)])
-getRequestAndProps = do
+getRequestAndProps :: (Value -> Parser a) -> EnvAction (a, [(Text, Text)])
+getRequestAndProps p = do
     reqValue <- jsonParam "request" (key "request")
     propsValue <- jsonParam "properties" (key "properties")
-    request <- runParser R.parseRequest reqValue
+    request <- runParser p reqValue
     properties <- runParser P.parseProperties propsValue
     return (request, properties)
 
@@ -115,7 +114,7 @@ addComment = do
 
 createWithProps :: EnvAction ()
 createWithProps = do
-    ((title, teamId, requestType), properties) <- getRequestAndProps
+    ((title, teamId, requestType), properties) <- getRequestAndProps R.parseRequestCreation
     dt <- envIO now
     userId <- UI.userId <$> askUserInfo
     let newReq = R.Request def title userId teamId Pending requestType dt

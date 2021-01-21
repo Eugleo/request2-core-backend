@@ -28,12 +28,19 @@ instance ToJSON Request where
     toEncoding = genericToEncoding defaultOptions
 
 
-parseRequest :: Value -> Parser (Text, ID Team, Text)
-parseRequest = withObject "request" $ \o -> do
+parseRequestCreation :: Value -> Parser (Text, ID Team, Text)
+parseRequestCreation = withObject "request" $ \o -> do
     title <- o .: "title"
     teamId <- o .: "teamId"
     requestType <- o .: "requestType"
     return (title, teamId, requestType)
+
+
+parseRequestEdit :: Value -> Parser (Text, ID Team)
+parseRequestEdit = withObject "request" $ \o -> do
+    title <- o .: "title"
+    teamId <- o .: "teamId"
+    return (title, teamId)
 
 
 parseRequestId :: Value -> Parser (ID Request)
