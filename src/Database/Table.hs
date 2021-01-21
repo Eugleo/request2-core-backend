@@ -67,7 +67,7 @@ properties :: Table Property
 properties =
     tableFieldMod
         "properties"
-        [ (#requestId :+ #name) :- primary,
+        [ #_id :- autoPrimary,
           #authorId :- foreignKey users #_id,
           #requestId :- foreignKey requests #_id,
           (#requestId :+ #name :+ #dateAdded) :- index

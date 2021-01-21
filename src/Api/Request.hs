@@ -82,7 +82,7 @@ updateWithProps = do
     dt <- envIO now
     userId <- UI.userId <$> askUserInfo
     insert_ Table.properties $
-        (\(name, value) -> P.Property reqId userId name value dt True True) <$> changedProps
+        (\(name, value) -> P.Property def reqId userId name value dt True True) <$> changedProps
 
     -- Update the request
     update_ Table.requests (\r -> r ! #_id .== literal reqId) $
@@ -120,6 +120,6 @@ createWithProps = do
     let newReq = R.Request def title userId teamId Pending requestType dt
     reqId <- insertWithPK Table.requests [newReq]
     insert_ Table.properties $
-        fmap (\(name, value) -> P.Property reqId userId name value dt False True) properties
+        fmap (\(name, value) -> P.Property def reqId userId name value dt False True) properties
     success $ newReq{R._id = reqId}
     status created201

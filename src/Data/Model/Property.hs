@@ -15,7 +15,8 @@ import Database.Selda
 
 -- TODO Add private properties (can only be viewed by author)
 data Property = Property
-    { requestId :: ID Request,
+    { _id :: ID Property,
+      requestId :: ID Request,
       authorId :: ID User,
       name :: Text,
       value :: Text,
