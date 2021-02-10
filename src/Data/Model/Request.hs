@@ -43,6 +43,10 @@ parseRequestEdit = withObject "request" $ \o -> do
     return (title, teamId)
 
 
+parseStatus :: Value -> Parser Status
+parseStatus = withObject "request" $ \o -> o .: "status"
+
+
 parseRequestId :: Value -> Parser (ID Request)
 parseRequestId = withObject "requestWithProperties" $ \o -> do
     req <- o .: "request"

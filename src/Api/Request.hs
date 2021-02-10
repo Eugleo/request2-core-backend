@@ -14,9 +14,11 @@ import Data.List (partition, (\\))
 import qualified Data.Model.Comment as C
 import Data.Model.DateTime (now)
 import qualified Data.Model.Property as P
+import Data.Model.Request (parseStatus)
 import qualified Data.Model.Request as R (Request (..), parseRequestCreation, parseRequestEdit)
 import Data.Model.Status (Status (Pending))
 import Data.Model.Team (Team)
+import Data.Text (unpack)
 import qualified Data.UserInfo as UI
 import qualified Database.Common as Db
 import Database.Selda
@@ -110,6 +112,14 @@ addComment = do
     commentId <- insert Table.comments [C.Comment def reqId userId content dt]
     success $ C.Comment (toId commentId) reqId userId content dt
     status created201
+
+
+updateStatus :: EnvAction ()
+updateStatus = do
+    reqId <- param "_id"
+    status <- read . unpack <$> jsonParamText "status"
+    update_ Table.requests (\r -> r ! #_id .== literal reqId) $
+        \r -> r `with` [#status := literal status]
 
 
 createWithProps :: EnvAction ()
