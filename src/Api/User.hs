@@ -8,7 +8,7 @@ module Api.User where
 import Api.Common (failure, success)
 import Api.Query.Runner (runQuery)
 import Api.Query.User
-import Control.Monad (forM, void, when)
+import Control.Monad (forM, unless, void, when)
 import Data.Aeson (object, toJSON, (.=))
 import Data.Environment
 import Data.Foldable (fold)
@@ -147,7 +147,7 @@ checkEmailUnique :: EnvAction ()
 checkEmailUnique = do
     email <- jsonParamText "email"
     others <- query $ select Table.users `suchThat` \u -> u ! #email .== literal email
-    when (null others) $ failure "User with this email already exists" badRequest400
+    unless (null others) $ failure "User with this email already exists" badRequest400
 
 
 checkPassword :: ID User -> Text -> EnvAction Bool
