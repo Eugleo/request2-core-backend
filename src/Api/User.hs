@@ -35,6 +35,7 @@ import Database.Common (create, get, update)
 import Database.Selda hiding (text, update)
 import qualified Database.Table as Table
 import Network.HTTP.Types.Status (badRequest400, created201, forbidden403, internalServerError500)
+import qualified Server.Config as Cfg
 import Utils.Crypto (checkHash, newApiKey, newHash, regToken)
 import Utils.Mail.Common
 import Utils.Mail.PwdResetMail
@@ -206,7 +207,6 @@ getPasswordHash = do
     envIO passwordHash
 
 
--- TODO Change localhost to the correct one
 sendRegToken :: EnvAction ()
 sendRegToken = do
     checkEmailUnique
@@ -214,7 +214,7 @@ sendRegToken = do
     cfg <- askConfig
     token <- makeToken hours12
     let address = Address (Just "Some random name") email
-    let link = makeLink ["http://localhost:3000", "#", "register", email, token]
+    let link = makeLink [Cfg._frontendUrlBase cfg, "#", "register", email, token]
     envIO $ T.putStrLn $ "Sending registration link: " <> link
     envIO $ registrationInitMail cfg address link >>= sendmail' cfg
 
@@ -298,7 +298,6 @@ makeLink :: [Text] -> Text
 makeLink = fold . intersperse "/"
 
 
--- TODO Change localhost to the correct one
 sendPwdResetEmail :: EnvAction ()
 sendPwdResetEmail = do
     token <- makeToken hours12
@@ -306,7 +305,7 @@ sendPwdResetEmail = do
     cfg <- askConfig
     maybeUsers <- query $ select Table.users `suchThat` \u -> u ! #email .== literal email
     let address = Address (Just "Some random name") email
-    let link = makeLink ["http://localhost:3000", "#", "password-reset", email, token]
+    let link = makeLink [Cfg._frontendUrlBase cfg, "#", "password-reset", email, token]
     envIO $ T.putStrLn $ "Sending password reset link: " <> link
     envIO $ do
         mail <- case maybeUsers of

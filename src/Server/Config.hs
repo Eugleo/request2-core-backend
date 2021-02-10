@@ -24,7 +24,8 @@ data Config = Config
       _mailEnvelopeFrom :: Text,
       _mailFrom :: Text,
       _mailFromName :: Text,
-      _mailReplyTo :: Text
+      _mailReplyTo :: Text,
+      _frontendUrlBase :: Text
     }
     deriving (Show)
 
@@ -46,7 +47,8 @@ defaultConfig =
           _mailEnvelopeFrom = "request@request.cz",
           _mailFrom = "noreply@request.cz",
           _mailFromName = "Request",
-          _mailReplyTo = "request@request.cz"
+          _mailReplyTo = "request@request.cz",
+          _frontendUrlBase = "http://localhost:3000"
         }
 
 
@@ -86,4 +88,5 @@ readConfig path = do
             . upd "mail_from" mailFrom id
             . upd "mail_from_name" mailFromName id
             . upd "mail_reply_to" mailReplyTo id
+            . upd "frontend_url_base" frontendUrlBase id
             $ defaultConfig
