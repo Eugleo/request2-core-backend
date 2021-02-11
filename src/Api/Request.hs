@@ -94,6 +94,41 @@ updateWithProps = do
     memberBy eq xs x = any (eq x) xs
 
 
+-- TODO Refactor
+updateResults :: EnvAction ()
+updateResults = do
+    properties <- getProps
+    reqId <- param "_id"
+
+    allProps <-
+        query $
+            select Table.properties `suchThat` \p ->
+                p ! #active .== literal True .&& p ! #requestId .== literal reqId
+
+    let (repeatedProps, removedProps) = partition (memberBy (\p (name, _) -> P.name p == name) properties) allProps
+    let (unchangedProps, updatedProps) = partition (memberBy propEq properties) repeatedProps
+
+    -- Deactivate remomed or old properties
+    forM_ (updatedProps ++ removedProps) $ \prop ->
+        update_
+            Table.properties
+            ( \p ->
+                p ! #requestId .== literal (P.requestId prop)
+                    .&& p ! #name .== literal (P.name prop)
+            )
+            (\p -> p `with` [#active := false])
+
+    -- Insert new properties
+    let changedProps = filter (not . memberBy (flip propEq) unchangedProps) properties
+    dt <- envIO now
+    userId <- UI.userId <$> askUserInfo
+    insert_ Table.properties $
+        (\(name, value) -> P.Property def reqId userId name value dt True True) <$> changedProps
+  where
+    propEq p (name, value) = P.name p == name && (P.value p == value)
+    memberBy eq xs x = any (eq x) xs
+
+
 getRequestAndProps :: (Value -> Parser a) -> EnvAction (a, [(Text, Text)])
 getRequestAndProps p = do
     reqValue <- jsonParam "request" (key "request")
@@ -101,6 +136,10 @@ getRequestAndProps p = do
     request <- runParser p reqValue
     properties <- runParser P.parseProperties propsValue
     return (request, properties)
+
+
+getProps :: EnvAction [(Text, Text)]
+getProps = jsonParam "properties" (key "properties") >>= runParser P.parseProperties
 
 
 addComment :: EnvAction ()

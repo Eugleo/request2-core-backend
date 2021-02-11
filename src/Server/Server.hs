@@ -132,7 +132,7 @@ server config = runScotty config $ do
     put "/requests/:_id" $ withRoles [Client, Operator, Admin] Request.updateWithProps
     put "/requests/:_id/status" $ withRoles [Operator, Admin] Request.updateStatus
     put "/requests/:_id" $ withRoles [Client, Operator, Admin] Request.updateWithProps
-
+    put "/requests/:_id/results" $ withRoles [Operator, Admin] Request.updateResults
     post "/requests/:_id/comments" $ withRoles [Client, Operator] Request.addComment
     {-
      - Files
