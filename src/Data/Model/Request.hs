@@ -29,18 +29,13 @@ instance ToJSON Request where
 
 
 parseRequestCreation :: Value -> Parser (Text, ID Team, Text)
-parseRequestCreation = withObject "request" $ \o -> do
-    title <- o .: "title"
-    teamId <- o .: "teamId"
-    requestType <- o .: "requestType"
-    return (title, teamId, requestType)
+parseRequestCreation = withObject "request" $ \o ->
+    (,,) <$> o.: "title" <*> o.: "teamId" <*> o.: "requestType"
 
 
 parseRequestEdit :: Value -> Parser (Text, ID Team)
-parseRequestEdit = withObject "request" $ \o -> do
-    title <- o .: "title"
-    teamId <- o .: "teamId"
-    return (title, teamId)
+parseRequestEdit = withObject "request" $ \o ->
+    (,) <$> o .: "title" <*> o .: "teamId"
 
 
 parseStatus :: Value -> Parser Status
@@ -48,6 +43,5 @@ parseStatus = withObject "request" $ \o -> o .: "status"
 
 
 parseRequestId :: Value -> Parser (ID Request)
-parseRequestId = withObject "requestWithProperties" $ \o -> do
-    req <- o .: "request"
-    req .: "_id"
+parseRequestId = withObject "requestWithProperties" $ \o ->
+    o .: "request" >>= (.: "_id")

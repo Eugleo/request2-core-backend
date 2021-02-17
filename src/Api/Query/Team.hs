@@ -17,7 +17,6 @@ import Api.Query.Common (
 import Control.Monad (forM)
 import Data.Model.Team (Team)
 import Database.Selda (
-    innerJoin,
     restrict,
     select,
     (!),

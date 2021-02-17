@@ -21,7 +21,7 @@ import Control.Monad (forM)
 import Data.Maybe (mapMaybe)
 import Data.Model.User (User)
 import Data.Text (pack)
-import Database.Selda (innerJoin, restrict, select, suchThat, toString, (!), (.==))
+import Database.Selda (restrict, select, toString, (!), (.==))
 import Database.Table (member, teams)
 
 

@@ -3,7 +3,6 @@
 
 module Data.Member where
 
-import Data.Model.DateTime (DateTime)
 import Data.Model.Team (Team)
 import Data.Model.User (User)
 import Database.Selda (Generic, ID, SqlRow)

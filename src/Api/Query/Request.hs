@@ -10,7 +10,6 @@ import Api.Query.Common (
     delimited,
     exact,
     fromEqual,
-    literalName,
     makeSorter,
     orderBy,
     parseDate,

@@ -24,14 +24,14 @@ import qualified Data.Model.User as Us
 import Data.Model.UserWithTeam (outerToInner)
 import qualified Data.Model.UserWithTeam as OUWT (User (..))
 import qualified Data.Text.IO as T
-import Data.Time (UTCTime (UTCTime), nominalDiffTimeToSeconds, secondsToNominalDiffTime)
+import Data.Time (nominalDiffTimeToSeconds, secondsToNominalDiffTime)
 import Data.Time.Clock.POSIX
 import Data.UserDetails (UserDetails (UserDetails))
 import Data.UserInfo (UserInfo (UserInfo))
 import qualified Data.UserInfo as U
 import qualified Data.UserWithoutId as User
 import qualified Data.UserWithoutIdWithTeam as OuterUser
-import Database.Common (create, get, update)
+import Database.Common (create, get)
 import Database.Selda hiding (text, update)
 import qualified Database.Table as Table
 import Network.HTTP.Types.Status (badRequest400, created201, forbidden403, internalServerError500)

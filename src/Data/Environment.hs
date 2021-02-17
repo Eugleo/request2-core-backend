@@ -24,7 +24,6 @@ import Data.UserInfo
 import Database.Selda.Backend.Internal
 import Database.Selda.Frontend (exec)
 import Database.Selda.PostgreSQL (PG)
-import Debug.Trace
 import Network.HTTP.Types
 import Server.Config
 import Web.Scotty ()

@@ -5,27 +5,23 @@
 module Api.Request where
 
 import Api.Common (notFound, success)
-import Control.Monad (forM, forM_, join)
+import Control.Monad (forM_)
 import Data.Aeson (KeyValue ((.=)), object)
-import Data.Aeson.Lens (key, _Object)
-import Data.Aeson.Types (Object, Parser, Value)
-import Data.Environment (EnvAction, askUserInfo, envIO, jsonData, jsonParam, jsonParamText, param, runParser, status)
-import Data.List (partition, (\\))
+import Data.Aeson.Lens (key)
+import Data.Aeson.Types (Parser, Value)
+import Data.Environment (EnvAction, askUserInfo, envIO, jsonParam, jsonParamText, param, runParser, status)
+import Data.List (partition)
 import qualified Data.Model.Comment as C
 import Data.Model.DateTime (now)
 import qualified Data.Model.Property as P
 import Data.Model.Request (parseStatus)
 import qualified Data.Model.Request as R (Request (..), parseRequestCreation, parseRequestEdit)
 import Data.Model.Status (Status (Pending))
-import Data.Model.Team (Team)
 import Data.Text (unpack)
 import qualified Data.UserInfo as UI
-import qualified Database.Common as Db
 import Database.Selda
-import Database.Selda.PostgreSQL (PG)
 import qualified Database.Table as Table
 import Network.HTTP.Types.Status (created201)
-import Utils.Id.AddId (addId)
 
 
 getWithProps :: EnvAction ()

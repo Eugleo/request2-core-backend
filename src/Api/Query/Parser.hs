@@ -1,6 +1,7 @@
 module Api.Query.Parser (parseQuerySpec) where
 
 import Api.Query
+import Control.Monad (void)
 import Data.Text (Text, pack)
 import Data.Void (Void)
 import Text.Megaparsec
@@ -46,7 +47,7 @@ literal = Literal <$> text
 qualifiedEntity :: Parser Entity
 qualifiedEntity = do
     name <- pack <$> some letterChar
-    char ':'
+    void $ char ':'
     qualified name
 
 

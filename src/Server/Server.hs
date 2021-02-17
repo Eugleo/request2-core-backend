@@ -15,7 +15,6 @@ import Control.Exception (bracket)
 import Control.Monad
 import Data.AnnWithoutId (AnnWithoutId)
 import Data.Bool (bool)
-import Data.CommentWithoutId (CommentWithoutId)
 import Data.Default.Class (def)
 import Data.Model.Role (Role (..))
 import Data.TeamWithoutId (TeamWithoutId)
