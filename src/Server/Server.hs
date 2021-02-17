@@ -20,7 +20,7 @@ import Data.Model.Role (Role (..))
 import Data.TeamWithoutId (TeamWithoutId)
 import qualified Data.Text as T
 import Database.Selda (SeldaT)
-import Database.Selda.PostgreSQL (PG, PGConnectInfo (..), on, withPostgreSQL)
+import Database.Selda.PostgreSQL (PG, PGConnectInfo (..), withPostgreSQL)
 import qualified Database.Table as Table
 import qualified Network.Socket as NS
 import Network.Wai
@@ -40,9 +40,9 @@ import qualified Web.Scotty.Trans as S (
  )
 
 
--- TODO Replace with info from config
 connInfo :: Config -> PGConnectInfo
-connInfo = on <$> _dbUser <*> _dbHost
+connInfo = PGConnectInfo <$>
+  _dbHost <*> pure 5432 <*> _dbName <*> _dbSchema <*> _dbUser <*> _dbPassword
 
 
 addCORSHeader :: Middleware

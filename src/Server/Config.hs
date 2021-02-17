@@ -16,8 +16,12 @@ data ListenConfig
 data Config = Config
     { _dataDir :: String,
       _dataUrlPrefix :: String,
-      _dbUser :: Text, --TODO eventually modify selda to pass in a connection string, as with internal pgOpen'
       _dbHost :: Text,
+      _dbPort :: Int,
+      _dbName :: Text,
+      _dbSchema :: Maybe Text,
+      _dbUser :: Maybe Text,
+      _dbPassword :: Maybe Text,
       _listen :: ListenConfig,
       _allowCORS :: Bool,
       _regTokenSecret :: String,
@@ -39,11 +43,15 @@ defaultConfig =
     Config
         { _dataDir = "data",
           _dataUrlPrefix = "/data",
-          _dbUser = "request",
           _dbHost = "localhost",
+          _dbPort = 5432,
+          _dbName = "request",
+          _dbSchema = Nothing,
+          _dbUser = Nothing,
+          _dbPassword = Nothing,
           _listen = ListenOnPort 9080,
           _allowCORS = False,
-          _regTokenSecret = "31337", --TODO eventually generate a random token for a single run
+          _regTokenSecret = "31337",
           _mailEnvelopeFrom = "request@request.cz",
           _mailFrom = "noreply@request.cz",
           _mailFromName = "Request",
@@ -80,8 +88,12 @@ readConfig path = do
             . upd "data_url_prefix" dataUrlPrefix unpack
             . upd "listen_port" listen (ListenOnPort . read . unpack)
             . upd "listen_socket" listen (ListenOnSocket . unpack)
-            . upd "db_user" dbUser id
             . upd "db_host" dbHost id
+            . upd "db_port" dbPort (read.unpack)
+            . upd "db_name" dbName id
+            . upd "db_schema"  dbSchema Just
+            . upd "db_user"  dbUser Just
+            . upd "db_password" dbPassword Just
             . upd "allow_cors" allowCORS (read . unpack)
             . upd "reg_token_secret" regTokenSecret unpack
             . upd "mail_envelope_from" mailEnvelopeFrom id
