@@ -17,7 +17,7 @@ import Data.Member (Member (Member))
 import Data.Model.ApiKey (ApiKey (ApiKey), key)
 import Data.Model.DateTime (DateTime (..), now)
 import Data.Model.Role (Role (..))
-import Data.Model.SecurityToken (SecurityToken (SecurityToken))
+import Data.Model.SecurityToken (SecurityToken (SecurityToken, validUntil))
 import Data.Model.Team (Team)
 import Data.Model.User (User (..))
 import qualified Data.Model.User as Us
@@ -212,7 +212,7 @@ sendRegToken = do
     checkEmailUnique
     email <- jsonParamText "email"
     cfg <- askConfig
-    token <- makeToken hours12
+    token <- makeToken "registration" hours12
     let address = Address (Just "Some random name") email
     let link = makeLink [Cfg._frontendUrlBase cfg, "#", "register", email, token]
     envIO $ T.putStrLn $ "Sending registration link: " <> link
@@ -282,15 +282,21 @@ hours12 :: Int
 hours12 = 12 * 3600
 
 
-makeToken :: Int -> EnvAction Text
-makeToken expire = do
+makeToken :: Text -> Int -> EnvAction Text
+makeToken reason expire = do
     dt <- envIO now
     email <- jsonParamText "email"
-    token' <- regToken email <$> askConfig
+    token' <- regToken (reason <> email) <$> askConfig
     case token' of
         Nothing -> failure "The entered email is invalid" badRequest400
         Just token -> do
-            insert_ Table.securityTokens [SecurityToken token email (add dt expire)]
+            let expiryDate = add dt expire
+            _ <-
+                Data.Environment.upsert
+                    Table.securityTokens
+                    (\t -> t ! #email .== literal email .&& t ! #token .== literal token)
+                    (\t -> t `with` [#validUntil := literal expiryDate])
+                    [SecurityToken token email expiryDate]
             return token
 
 
@@ -300,7 +306,7 @@ makeLink = fold . intersperse "/"
 
 sendPwdResetEmail :: EnvAction ()
 sendPwdResetEmail = do
-    token <- makeToken hours12
+    token <- makeToken "pwd_reset" hours12
     email <- jsonParamText "email"
     cfg <- askConfig
     maybeUsers <- query $ select Table.users `suchThat` \u -> u ! #email .== literal email

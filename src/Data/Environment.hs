@@ -1,3 +1,4 @@
+{-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE ScopedTypeVariables #-}
@@ -21,6 +22,7 @@ import Data.Text (Text)
 import Data.Text.Lazy (fromStrict, toStrict)
 import qualified Data.Text.Lazy as Lazy
 import Data.UserInfo
+import Database.Selda (Col, ID, Relational, Row, Table, insertWithPK, update)
 import Database.Selda.Backend.Internal
 import Database.Selda.Frontend (exec)
 import Database.Selda.PostgreSQL (PG)
@@ -134,6 +136,20 @@ transaction m = transact $ do
             raise err
     void $ exec "COMMIT" []
     return x
+
+
+upsert ::
+    (Relational a) =>
+    Table a ->
+    (Row (Backend EnvAction) a -> Col (Backend EnvAction) Bool) ->
+    (Row (Backend EnvAction) a -> Row (Backend EnvAction) a) ->
+    [a] ->
+    EnvAction (Maybe (ID a))
+upsert tbl check upd rows = transaction $ do
+    updated <- update tbl check upd
+    if updated == 0
+        then Just <$> insertWithPK tbl rows
+        else pure Nothing
 
 
 askUserInfo :: EnvAction UserInfo
