@@ -22,4 +22,4 @@ registrationInitMail cfg to link =
         "New Request 2 account registration"
         (registrationInitMailStr link)
         (registrationInitMailHtml link)
-        [InlineImage "HeaderImage" (ImageFilePath "frontend/src/assets/request2.png") "requestLogo.png"]
+        []

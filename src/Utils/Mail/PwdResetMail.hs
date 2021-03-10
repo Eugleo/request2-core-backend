@@ -22,7 +22,7 @@ pwdResetMail cfg to name link =
         "Password reset for your Request 2 account"
         (pwdResetMailStr name link)
         (pwdResetMailHtml name link)
-        [InlineImage "HeaderImage" (ImageFilePath "frontend/src/assets/request2.png") "requestLogo.png"]
+        []
 
 
 userDoesNotExistHtml :: T.Text
@@ -41,4 +41,4 @@ userDoesNotExistMail cfg to =
         "Password reset for your Request 2 account"
         userDoesNotExistStr
         userDoesNotExistHtml
-        [InlineImage "HeaderImage" (ImageFilePath "frontend/src/assets/request2.png") "requestLogo.png"]
+        []
