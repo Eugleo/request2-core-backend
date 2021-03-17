@@ -131,6 +131,7 @@ executable request2
     generic-data-surgery,
     hsyslog,
     http-types,
+    http-conduit,
     ini,
     lens,
     lens-aeson,

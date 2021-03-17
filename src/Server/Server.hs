@@ -27,6 +27,7 @@ import Network.Wai
 import Server.Capability
 import Server.Config
 import System.Directory (doesFileExist, removeFile)
+import Utils.Feedback
 import Utils.WithX
 import Web.Scotty.Trans (delete, get, post, put, scottySocketT, scottyT)
 import qualified Web.Scotty.Trans as S (
@@ -41,8 +42,9 @@ import qualified Web.Scotty.Trans as S (
 
 
 connInfo :: Config -> PGConnectInfo
-connInfo = PGConnectInfo <$>
-  _dbHost <*> pure 5432 <*> _dbName <*> _dbSchema <*> _dbUser <*> _dbPassword
+connInfo =
+    PGConnectInfo
+        <$> _dbHost <*> pure 5432 <*> _dbName <*> _dbSchema <*> _dbUser <*> _dbPassword
 
 
 addCORSHeader :: Middleware
@@ -95,6 +97,7 @@ server config = runScotty config $ do
      - Capabilities
      -}
     get "/capability" $ S.json (capabilityList :: [T.Text])
+    post "/feedback" $ withAuth sendFeedback
     {-
      - Users
      -}
