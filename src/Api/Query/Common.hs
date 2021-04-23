@@ -132,8 +132,11 @@ parseId = traverse (fmap toId . readMaybe . unpack)
 parseType :: Text -> Maybe Text
 parseType t
     | toLower t `elem` ["p", "proteomics"] = Just "proteomics"
-    | toLower t `elem` ["s", "molecule", "small molecule"] = Just "small-molecule"
-    | toLower t `elem` ["l", "lipidomics"] = Just "lipidomics-and-metabolomics"
+    | toLower t `elem` ["s", "molecules", "small molecules"] = Just "small-molecules"
+    | toLower t `elem` ["l", "lipidomics"] = Just "lipidomics"
+    | toLower t `elem` ["m", "imaging", "ms imaging", "mass spectrometry imaging"] =
+        Just "ms-imaging"
+    | toLower t `elem` ["g", "analytics", "general analytics"] = Just "general-analytics"
     | otherwise = Nothing
 
 
