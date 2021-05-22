@@ -153,6 +153,7 @@ executable request2
     transformers,
     unix-time,
     unordered-containers,
+    uri-encode,
     utf8-string,
     vector,
     wai,

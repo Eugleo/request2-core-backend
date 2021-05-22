@@ -40,7 +40,7 @@ import Utils.Crypto (checkHash, newApiKey, newHash, regToken)
 import Utils.Mail.Common
 import Utils.Mail.PwdResetMail
 import Utils.Mail.RegistrationMail
-
+import Network.URI.Encode (encodeText)
 
 login :: EnvAction ()
 login = do
@@ -214,7 +214,7 @@ sendRegToken = do
     cfg <- askConfig
     token <- makeToken "registration" hours12
     let address = Address (Just "Some random name") email
-    let link = makeLink [Cfg._frontendUrlBase cfg, "#", "register", email, token]
+    let link = makeLink [Cfg._frontendUrlBase cfg, "#", "register", encodeText email, token]
     envIO $ T.putStrLn $ "Sending registration link: " <> link
     envIO $ registrationInitMail cfg address link >>= sendmail' cfg
 
@@ -301,7 +301,7 @@ makeToken reason expire = do
 
 
 makeLink :: [Text] -> Text
-makeLink = fold . intersperse "/"
+makeLink =  fold . intersperse "/"
 
 
 sendPwdResetEmail :: EnvAction ()
@@ -311,8 +311,8 @@ sendPwdResetEmail = do
     cfg <- askConfig
     maybeUsers <- query $ select Table.users `suchThat` \u -> u ! #email .== literal email
     let address = Address (Just "Some random name") email
-    let link = makeLink [Cfg._frontendUrlBase cfg, "#", "password-reset", email, token]
-    envIO $ T.putStrLn $ "Sending password reset link: " <> link
+    let link = makeLink [Cfg._frontendUrlBase cfg, "#", "password-reset", encodeText email, token]
+    envIO $ T.putStrLn $ "Sending password reset link: " <> traceShow link link
     envIO $ do
         mail <- case maybeUsers of
             [user] -> pwdResetMail cfg address (Us.name user) link
