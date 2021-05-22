@@ -90,7 +90,6 @@ server config = runScotty config $ do
      -}
     post "/users" $ withRoles [Admin] User.createNew
     get "/users" $ withRoles [Admin] User.getUsers
-    -- TODO Make it impossible to update password through this API
     put "/users/:_id" $ withRoles [Admin] User.updateUser
     delete "/users/:_id" $ withRoles [Admin] $ Api.deactivate Table.users
     {-
@@ -126,17 +125,17 @@ server config = runScotty config $ do
     {-
      - Requests
      -}
-    -- TODO Only author and operator can view & edit requests
-    get "/requests" $ void $ withDB $ runQuery Table.requests requestQueryTranslator
-    get "/requests/:_id" $ withAuth $ Api.get Table.requests
-    get "/requests/:_id/props" $ withAuth Request.getProperties
-    get "/requests/:_id/comments" $ withAuth Request.getComments
-    post "/requests" $ withRoles [Client] Request.createWithProps
-    put "/requests/:_id" $ withRoles [Client, Operator, Admin] Request.updateWithProps
-    put "/requests/:_id/status" $ withRoles [Operator, Admin] Request.updateStatus
-    put "/requests/:_id" $ withRoles [Client, Operator, Admin] Request.updateWithProps
-    put "/requests/:_id/results" $ withRoles [Operator, Admin] Request.updateResults
-    post "/requests/:_id/comments" $ withRoles [Client, Operator] Request.addComment
+    get "/me/requests" $ withAuth Request.getMyRequests -- DONE
+    get "/requests" $ void $ withRoles [Operator, Admin] $
+        runQuery Table.requests requestQueryTranslator -- DONE
+    get "/requests/:_id" $ withAuth Request.getRequest -- DONE
+    get "/requests/:_id/props" $ withAuth Request.getProperties -- DONE
+    get "/requests/:_id/comments" $ withAuth Request.getComments -- DONE
+    post "/requests" $ withRoles [Client] Request.createWithProps -- DONE
+    put "/requests/:_id/status" $ withRoles [Operator, Admin] Request.updateStatus -- DONE
+    put "/requests/:_id" $ withRoles [Client, Operator, Admin] Request.updateWithProps -- DONE
+    put "/requests/:_id/results" $ withRoles [Operator, Admin] Request.updateResults -- DONE
+    post "/requests/:_id/comments" $ withRoles [Client, Operator] Request.addComment -- DONE
     {-
      - Files
      -}
@@ -147,7 +146,7 @@ server config = runScotty config $ do
     {-
      - Teams
      -}
-    get "/teams" $ withAuth [Admin, Operator] $ void $ runQuery Table.teams teamQueryTranslator
+    get "/teams" $ withRoles [Admin, Operator] $ void $ runQuery Table.teams teamQueryTranslator
     get "/teams/:_id" $ withRoles [Admin, Operator] $ Api.get Table.teams
     post "/teams" $ withRoles [Admin] $ Api.create @TeamWithoutId Table.teams
     put "/teams/:_id" $ withRoles [Admin] $ Api.update Table.teams
