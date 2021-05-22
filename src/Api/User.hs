@@ -169,10 +169,14 @@ setPassword userId password = do
         (\u -> u `with` [#password := literal pwHash])
 
 
-getInfo :: EnvAction ()
-getInfo = do
-    ui <- askUserInfo
-    json ui
+getName :: EnvAction ()
+getName = do
+    userId <- param "_id"
+    res <- query $ select Table.users `suchThat` (\user -> user ! #_id .== literal userId)
+    case res of
+        [User{name}] -> json $ object ["data" .= object ["name" .= name]]
+        _ -> failure "Incorrect user id supplied" badRequest400
+
 
 
 getDetails :: EnvAction ()
@@ -312,7 +316,7 @@ sendPwdResetEmail = do
     maybeUsers <- query $ select Table.users `suchThat` \u -> u ! #email .== literal email
     let address = Address (Just "Some random name") email
     let link = makeLink [Cfg._frontendUrlBase cfg, "#", "password-reset", encodeText email, token]
-    envIO $ T.putStrLn $ "Sending password reset link: " <> traceShow link link
+    envIO $ T.putStrLn $ "Sending password reset link: " <> link
     envIO $ do
         mail <- case maybeUsers of
             [user] -> pwdResetMail cfg address (Us.name user) link

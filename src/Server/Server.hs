@@ -113,6 +113,7 @@ server config = runScotty config $ do
      - User information
      -}
     get "/me" $ withAuth User.getDetails
+    get "/users/:_id/name" $ withAuth User.getName
     put "/me" $ withAuth User.editMe
     {-
      - Announcements
