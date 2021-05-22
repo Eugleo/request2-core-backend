@@ -1,6 +1,4 @@
-{-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedLabels #-}
-{-# LANGUAGE RecordWildCards #-}
 
 module Api.Request where
 
@@ -17,7 +15,7 @@ import qualified Data.Model.Property as P
 import Data.Model.Request (parseStatus)
 import qualified Data.Model.Request as R (Request (..), parseRequestCreation, parseRequestEdit)
 import Data.Model.Status (Status (Pending))
-import Data.Text (unpack)
+import Data.Text (unpack, pack)
 import qualified Data.UserInfo as UI
 import Database.Selda
 import qualified Database.Table as Table
@@ -56,46 +54,14 @@ updateWithProps :: EnvAction ()
 updateWithProps = do
     ((title, teamId), properties) <- getRequestAndProps R.parseRequestEdit
     reqId <- param "_id"
-
-    allProps <-
-        query $
-            select Table.properties `suchThat` \p ->
-                p ! #active .== literal True .&& p ! #requestId .== literal reqId
-
-    let (repeatedProps, removedProps) = partition (memberBy (\p (name, _) -> P.name p == name) properties) allProps
-    let (unchangedProps, updatedProps) = partition (memberBy propEq properties) repeatedProps
-
-    -- Deactivate remomed or old properties
-    forM_ (updatedProps ++ removedProps) $ \prop ->
-        update_
-            Table.properties
-            ( \p ->
-                p ! #requestId .== literal (P.requestId prop)
-                    .&& p ! #name .== literal (P.name prop)
-            )
-            (\p -> p `with` [#active := false])
-
-    -- Insert new properties
-    let changedProps = filter (not . memberBy (flip propEq) unchangedProps) properties
-    dt <- envIO now
-    userId <- UI.userId <$> askUserInfo
-    insert_ Table.properties $
-        (\(name, value) -> P.Property def reqId userId name value dt True True) <$> changedProps
+    updateProperties reqId properties
 
     -- Update the request
     update_ Table.requests (\r -> r ! #_id .== literal reqId) $
         \r -> r `with` [#title := literal title, #teamId := literal teamId]
-  where
-    propEq p (name, value) = P.name p == name && (P.value p == value)
-    memberBy eq xs x = any (eq x) xs
 
-
--- TODO Refactor
-updateResults :: EnvAction ()
-updateResults = do
-    properties <- getProps
-    reqId <- param "_id"
-
+updateProperties :: ID R.Request -> [(Text, Text)] -> EnvAction ()
+updateProperties reqId properties = do
     allProps <-
         query $
             select Table.properties `suchThat` \p ->
@@ -123,6 +89,13 @@ updateResults = do
   where
     propEq p (name, value) = P.name p == name && (P.value p == value)
     memberBy eq xs x = any (eq x) xs
+
+
+updateResults :: EnvAction ()
+updateResults = do
+    properties <- getProps
+    reqId <- param "_id"
+    updateProperties reqId properties
 
 
 getRequestAndProps :: (Value -> Parser a) -> EnvAction (a, [(Text, Text)])
@@ -153,6 +126,7 @@ updateStatus :: EnvAction ()
 updateStatus = do
     reqId <- param "_id"
     status <- read . unpack <$> jsonParamText "status"
+    updateProperties reqId [("Status", pack . show $ status)]
     update_ Table.requests (\r -> r ! #_id .== literal reqId) $
         \r -> r `with` [#status := literal status]
 
