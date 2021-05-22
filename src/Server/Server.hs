@@ -147,8 +147,7 @@ server config = runScotty config $ do
     {-
      - Teams
      -}
-    -- TODO Add auth
-    get "/teams" $ withDB $ void $ runQuery Table.teams teamQueryTranslator
+    get "/teams" $ withAuth [Admin, Operator] $ void $ runQuery Table.teams teamQueryTranslator
     get "/teams/:_id" $ withRoles [Admin, Operator] $ Api.get Table.teams
     post "/teams" $ withRoles [Admin] $ Api.create @TeamWithoutId Table.teams
     put "/teams/:_id" $ withRoles [Admin] $ Api.update Table.teams
