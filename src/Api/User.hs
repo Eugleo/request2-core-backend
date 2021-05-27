@@ -17,7 +17,7 @@ import Data.Member (Member (Member))
 import Data.Model.ApiKey (ApiKey (ApiKey), key)
 import Data.Model.DateTime (DateTime (..), now)
 import Data.Model.Role (Role (..))
-import Data.Model.SecurityToken (SecurityToken (SecurityToken, validUntil))
+import Data.Model.SecurityToken (SecurityToken (SecurityToken))
 import Data.Model.Team (Team)
 import Data.Model.User (User (..))
 import qualified Data.Model.User as Us
@@ -35,12 +35,13 @@ import Database.Common (create, get)
 import Database.Selda hiding (text, update)
 import qualified Database.Table as Table
 import Network.HTTP.Types.Status (badRequest400, created201, forbidden403, internalServerError500)
+import Network.URI.Encode (encodeText)
 import qualified Server.Config as Cfg
 import Utils.Crypto (checkHash, newApiKey, newHash, regToken)
 import Utils.Mail.Common
 import Utils.Mail.PwdResetMail
 import Utils.Mail.RegistrationMail
-import Network.URI.Encode (encodeText)
+
 
 login :: EnvAction ()
 login = do
@@ -178,7 +179,6 @@ getName = do
         _ -> failure "Incorrect user id supplied" badRequest400
 
 
-
 getDetails :: EnvAction ()
 getDetails = do
     ui <- askUserInfo
@@ -235,6 +235,8 @@ createNew = do
             <*> pure (OuterUser.roles user)
             <*> envIO now
             <*> pure True
+            <*> jsonParamText "room"
+            <*> jsonParamText "telephone"
     newuser <-
         create Table.users u `rescue` \_ ->
             failure "Failed to create the new user entry" internalServerError500
@@ -254,8 +256,19 @@ getUser = do
 
 
 innerToOuter :: Us.User -> [ID Team] -> OUWT.User
-innerToOuter Us.User{_id, email, password, name, roles, dateCreated, active} teams =
-    OUWT.User _id email password name roles teams dateCreated active
+innerToOuter Us.User{_id, email, password, name, roles, dateCreated, active, telephone, room} teamIds =
+    OUWT.User
+        { OUWT._id,
+          OUWT.email,
+          OUWT.password,
+          OUWT.name,
+          OUWT.roles,
+          OUWT.teamIds,
+          OUWT.dateCreated,
+          OUWT.active,
+          OUWT.telephone,
+          OUWT.room
+        }
 
 
 getUserTeams :: ID Us.User -> EnvAction [ID Team]
@@ -305,7 +318,7 @@ makeToken reason expire = do
 
 
 makeLink :: [Text] -> Text
-makeLink =  fold . intersperse "/"
+makeLink = fold . intersperse "/"
 
 
 sendPwdResetEmail :: EnvAction ()
@@ -327,15 +340,17 @@ sendPwdResetEmail = do
 register :: EnvAction ()
 register = do
     checkToken
-    email <- jsonParamText "email"
     password <- getPasswordHash
     u <-
-        User.User email
-            <$> pure password
+        User.User
+            <$> jsonParamText "email"
+            <*> pure password
             <*> jsonParamText "name"
             <*> pure [Client]
             <*> envIO now
             <*> pure True
+            <*> jsonParamText "room"
+            <*> jsonParamText "telephone"
     newuser <-
         create Table.users u `rescue` \_ -> do
             text "Failed to create the new user entry"

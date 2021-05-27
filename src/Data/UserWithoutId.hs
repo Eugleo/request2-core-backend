@@ -17,7 +17,9 @@ data UserWithoutId = User
       name :: Text,
       roles :: [Role],
       dateCreated :: DateTime,
-      active :: Bool
+      active :: Bool,
+      telephone :: Text,
+      room :: Text
     }
     deriving (Show, Eq, Generic, FromJSON, SqlRow)
 

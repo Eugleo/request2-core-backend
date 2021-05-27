@@ -126,8 +126,10 @@ server config = runScotty config $ do
      - Requests
      -}
     get "/me/requests" $ withAuth Request.getMyRequests -- DONE
-    get "/requests" $ void $ withRoles [Operator, Admin] $
-        runQuery Table.requests requestQueryTranslator -- DONE
+    get "/requests" $
+        void $
+            withRoles [Operator, Admin] $
+                runQuery Table.requests requestQueryTranslator -- DONE
     get "/requests/:_id" $ withAuth Request.getRequest -- DONE
     get "/requests/:_id/props" $ withAuth Request.getProperties -- DONE
     get "/requests/:_id/comments" $ withAuth Request.getComments -- DONE

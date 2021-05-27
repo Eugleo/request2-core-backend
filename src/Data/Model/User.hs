@@ -1,7 +1,6 @@
 {-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE FlexibleInstances #-}
-{-# LANGUAGE NamedFieldPuns #-}
 
 module Data.Model.User where
 
@@ -20,7 +19,9 @@ data User = User
       name :: Text,
       roles :: [Role],
       dateCreated :: DateTime,
-      active :: Bool
+      active :: Bool,
+      telephone :: Text,
+      room :: Text
     }
     deriving (Show, Eq, Generic, FromJSON, SqlRow)
 

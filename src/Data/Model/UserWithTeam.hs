@@ -22,14 +22,16 @@ data User = User
       roles :: [Role],
       teamIds :: [ID Team],
       dateCreated :: DateTime,
-      active :: Bool
+      active :: Bool,
+      telephone :: Text,
+      room :: Text
     }
     deriving (Show, Eq, Generic, FromJSON)
 
 
 outerToInner :: User -> U.User
-outerToInner User{_id, email, password, name, roles, dateCreated, active} =
-    U.User _id email password name roles dateCreated active
+outerToInner User{_id, email, password, name, roles, dateCreated, active, telephone, room} =
+    U.User _id email password name roles dateCreated active telephone room
 
 
 instance ToJSON User where
