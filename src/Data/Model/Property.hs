@@ -5,11 +5,9 @@
 module Data.Model.Property where
 
 import Data.Aeson
-import Data.Aeson.Types
 import Data.Model.DateTime
 import Data.Model.Request
 import Data.Model.User
-import qualified Data.Vector as V
 import Database.Selda
 
 
@@ -29,15 +27,3 @@ data Property = Property
 
 instance ToJSON Property where
     toEncoding = genericToEncoding defaultOptions
-
-
-parseProperty :: Value -> Parser (Text, Text)
-parseProperty = withObject "propertyStub" $ \o -> do
-    n <- o .: "name"
-    v <- o .: "value"
-    return (n, v)
-
-
-parseProperties :: Value -> Parser [(Text, Text)]
-parseProperties = withArray "properties" $ \arr ->
-    mapM parseProperty $ V.toList arr

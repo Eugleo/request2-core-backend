@@ -16,7 +16,6 @@ import qualified Control.Monad.Trans.Class as TR
 import Control.Monad.Trans.Reader (ReaderT, runReaderT)
 import Data.Aeson (FromJSON, KeyValue ((.=)), ToJSON, Value, object)
 import Data.Aeson.Lens (key, values, _Array, _Integral, _JSON, _String)
-import Data.Aeson.Types (Parser, parseMaybe)
 import Data.Monoid (First)
 import Data.Text (Text)
 import Data.Text.Lazy (fromStrict, toStrict)
@@ -164,20 +163,10 @@ jsonParam :: Text -> Getting (First a) Value a -> EnvAction a
 jsonParam s l = do
     js <- jsonData `rescue` (catch . (<>) "Query JSON parsing error: ") :: EnvAction Value
     case js ^? l of
-        Nothing -> catch ("Missing or malformed parameter: " <> s)
+        Nothing -> catch $ "Missing or malformed parameter: " <> s
         Just d -> return d
   where
-    catch msg = text msg >> status badRequest400 >> finish
-
-
-runParser :: (Value -> Parser a) -> Value -> EnvAction a
-runParser p val =
-    case parseMaybe p val of
-        Nothing -> do
-            json $ object ["error" .= ("Incorrectly structured JSON" :: Text)]
-            status badRequest400
-            finish
-        Just x -> return x
+    catch msg = json (object ["error" .= msg]) >> status badRequest400 >> finish
 
 
 jsonParamText :: Text -> EnvAction Text
@@ -190,7 +179,3 @@ jsonParamInt a = jsonParam a (key a . _Integral)
 
 fromJsonKey :: (FromJSON a, ToJSON a) => Text -> EnvAction a
 fromJsonKey a = jsonParam a (key a . _JSON)
-
-
-jsonParamArray :: (FromJSON a, ToJSON a) => Text -> EnvAction [a]
-jsonParamArray a = jsonParam a (key a . values . _JSON)

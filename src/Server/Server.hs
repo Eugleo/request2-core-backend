@@ -133,10 +133,10 @@ server config = runScotty config $ do
     get "/requests/:_id" $ withAuth Request.getRequest -- DONE
     get "/requests/:_id/props" $ withAuth Request.getProperties -- DONE
     get "/requests/:_id/comments" $ withAuth Request.getComments -- DONE
-    post "/requests" $ withRoles [Client] Request.createWithProps -- DONE
     put "/requests/:_id/status" $ withRoles [Operator, Admin] Request.updateStatus -- DONE
     put "/requests/:_id" $ withRoles [Client, Operator, Admin] Request.updateWithProps -- DONE
     put "/requests/:_id/results" $ withRoles [Operator, Admin] Request.updateResults -- DONE
+    post "/requests" $ withRoles [Client] Request.createWithProps -- DONE
     post "/requests/:_id/comments" $ withRoles [Client, Operator] Request.addComment -- DONE
     {-
      - Files

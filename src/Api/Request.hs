@@ -1,30 +1,32 @@
-{-# LANGUAGE OverloadedLabels #-}
 {-# LANGUAGE NamedFieldPuns #-}
+{-# LANGUAGE OverloadedLabels #-}
+{-# LANGUAGE ScopedTypeVariables #-}
 
 module Api.Request where
 
-import Api.Common (notFound, success, failure, get)
+import Api.Common (failure, get, notFound, success)
 import Api.Query.Request (requestQueryTranslator)
 import Api.Query.Runner
+import Control.Lens (to, (^..), (^?), _Just)
 import Control.Monad (forM_, unless)
-import Data.Aeson (KeyValue ((.=)), object, toJSON)
-import Data.Aeson.Lens (key)
-import Data.Aeson.Types (Parser, Value)
-import Data.Environment (EnvAction, askUserInfo, envIO, jsonParam, jsonParamText, param, runParser, status)
+import Data.Aeson (FromJSONKey (fromJSONKey), KeyValue ((.=)), Value, object, toJSON)
+import Data.Aeson.Lens (AsJSON, AsPrimitive (_String), key, values, _Array, _JSON)
+import Data.Environment (EnvAction, askUserInfo, envIO, fromJsonKey, json, jsonData, jsonParam, jsonParamText, param, rescue, status)
 import Data.List (partition)
 import qualified Data.Model.Comment as C
 import Data.Model.DateTime (now)
 import qualified Data.Model.Property as P
-import Data.Model.Request (parseStatus, Request())
+import Data.Model.Request (Request ())
 import qualified Data.Model.Request as R
+import Data.Model.Role (Role (..))
 import Data.Model.Status (Status (Pending))
-import Data.Text (unpack, pack)
+import Data.Model.Team (Team)
+import Data.Model.User (User (..))
+import Data.Text (pack, unpack)
 import qualified Data.UserInfo as UI
-import Data.Model.Role (Role(..))
-import Data.Model.User (User(..))
 import Database.Selda
 import qualified Database.Table as Table
-import Network.HTTP.Types.Status (created201, badRequest400, internalServerError500, forbidden403)
+import Network.HTTP.Types.Status (badRequest400, created201, forbidden403)
 
 
 getWithProps :: EnvAction ()
@@ -62,12 +64,13 @@ updateWithProps :: EnvAction ()
 updateWithProps = do
     reqId <- param "_id"
     checkIsAuthorized reqId [Operator, Admin]
-    ((title, teamId), properties) <- getRequestAndProps R.parseRequestEdit
+    ((title, teamId), properties) <- getRequestAndProps
     updateProperties reqId properties
 
     -- Update the request
     update_ Table.requests (\r -> r ! #_id .== literal reqId) $
         \r -> r `with` [#title := literal title, #teamId := literal teamId]
+
 
 updateProperties :: ID R.Request -> [(Text, Text)] -> EnvAction ()
 updateProperties reqId properties = do
@@ -103,34 +106,43 @@ updateProperties reqId properties = do
 updateResults :: EnvAction ()
 updateResults = do
     reqId <- param "_id"
-    properties <- getProps
+    properties <- fromJsonKey "properties"
     updateProperties reqId properties
+
 
 getMyRequests :: EnvAction ()
 getMyRequests = do
     userId <- UI.userId <$> askUserInfo
     reqs <- runQuery Table.requests requestQueryTranslator
-    let onlyMine = filter ((== userId) .  R.authorId) reqs
+    let onlyMine = filter ((== userId) . R.authorId) reqs
     success $ object ["values" .= toJSON onlyMine, "total" .= length onlyMine]
+
 
 getRequest :: EnvAction ()
 getRequest = do
-    reqId <- param ":_id"
+    reqId <- param "_id"
     checkIsAuthorized reqId [Operator, Admin]
     get Table.requests
 
 
-getRequestAndProps :: (Value -> Parser a) -> EnvAction (a, [(Text, Text)])
-getRequestAndProps p = do
-    reqValue <- jsonParam "request" (key "request")
-    propsValue <- jsonParam "properties" (key "properties")
-    request <- runParser p reqValue
-    properties <- runParser P.parseProperties propsValue
-    return (request, properties)
+getRequestAndProps :: EnvAction ((Text, ID Team), [(Text, Text)])
+getRequestAndProps = do
+    title <- jsonParam "request.title" (key "request" . key "title" . _JSON)
+    teamId <- jsonParam "request.teamId" (key "request" . key "teamId" . _JSON)
+    properties <- getProps
+    return ((title, teamId), properties)
+  where
+    getProps = do
+        (js :: Value) <-
+            jsonData `rescue` (flip failure badRequest400 . ("Query JSON parsing error: " <>))
+        case js ^.. (key "properties" . values . to toPropTuple . _Just) of
+            [] -> failure "Missing or malformed parameter: properties" badRequest400
+            things -> return things
+    toPropTuple js = do
+        name <- js ^? key "name" . _String
+        value <- js ^? key "value" . _String
+        return (name, value)
 
-
-getProps :: EnvAction [(Text, Text)]
-getProps = jsonParam "properties" (key "properties") >>= runParser P.parseProperties
 
 checkIsAuthorized :: ID Request -> [Role] -> EnvAction ()
 checkIsAuthorized reqId okRoles = do
@@ -171,7 +183,8 @@ updateStatus = do
 
 createWithProps :: EnvAction ()
 createWithProps = do
-    ((title, teamId, requestType), properties) <- getRequestAndProps R.parseRequestCreation
+    ((title, teamId), properties) <- getRequestAndProps
+    requestType <- jsonParam "request.requestType" (key "request" . key "requestType" . _JSON)
     dt <- envIO now
     userId <- UI.userId <$> askUserInfo
     let newReq = R.Request def title userId teamId Pending requestType dt
