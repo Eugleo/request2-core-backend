@@ -87,12 +87,9 @@ executable request2
     Data.Model.Status
     Data.Model.Team
     Data.Model.User
-    Data.Model.UserWithTeam
     Data.TeamWithoutId
     Data.UserDetails
     Data.UserInfo
-    Data.UserWithoutId
-    Data.UserWithoutIdWithTeam
     Database.BasicAuth
     Database.Common
     Database.Table
@@ -145,6 +142,7 @@ executable request2
     scientific,
     scotty,
     selda,
+    selda-json,
     selda-postgresql,
     smtp-mail,
     SHA,

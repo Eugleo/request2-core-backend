@@ -88,9 +88,9 @@ server config = runScotty config $ do
     {-
      - Admin interface
      -}
-    post "/users" $ withRoles [Admin] User.createNew
+    post "/users" $ withRoles [Admin] User.adminCreate
     get "/users" $ withRoles [Admin] User.getUsers
-    put "/users/:_id" $ withRoles [Admin] User.updateUser
+    put "/users/:_id" $ withRoles [Admin] User.adminUpdate
     delete "/users/:_id" $ withRoles [Admin] $ Api.deactivate Table.users
     {-
      - Capabilities

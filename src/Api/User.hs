@@ -9,29 +9,27 @@ import Api.Common (failure, success)
 import Api.Query.Runner (runQuery)
 import Api.Query.User
 import Control.Monad (forM, unless, void, when)
-import Data.Aeson (object, toJSON, (.=))
+import Data.Aeson (Value (..), object, toJSON, (.=))
 import Data.Environment
 import Data.Foldable (fold)
+import qualified Data.HashMap.Lazy as HML
 import Data.List (intersperse)
 import Data.Member (Member (Member))
-import Data.Model.ApiKey (ApiKey (ApiKey), key)
+import Data.Model.ApiKey (ApiKey (ApiKey))
+import qualified Data.Model.ApiKey as AK
 import Data.Model.DateTime (DateTime (..), now)
 import Data.Model.Role (Role (..))
 import Data.Model.SecurityToken (SecurityToken (SecurityToken))
 import Data.Model.Team (Team)
 import Data.Model.User (User (..))
 import qualified Data.Model.User as Us
-import Data.Model.UserWithTeam (outerToInner)
-import qualified Data.Model.UserWithTeam as OUWT (User (..))
 import qualified Data.Text.IO as T
 import Data.Time (nominalDiffTimeToSeconds, secondsToNominalDiffTime)
 import Data.Time.Clock.POSIX
 import Data.UserDetails (UserDetails (UserDetails))
 import Data.UserInfo (UserInfo (UserInfo))
 import qualified Data.UserInfo as U
-import qualified Data.UserWithoutId as User
-import qualified Data.UserWithoutIdWithTeam as OuterUser
-import Database.Common (create, get)
+import Database.Common (get)
 import Database.Selda hiding (text, update)
 import qualified Database.Table as Table
 import Network.HTTP.Types.Status (badRequest400, created201, forbidden403, internalServerError500)
@@ -53,7 +51,7 @@ login = do
             if checkHash pw password
                 then do
                     apiKey <- addApiKey _id
-                    success $ UserInfo _id (key apiKey) roles
+                    success $ UserInfo _id (AK.key apiKey) roles
                 else failure "Incorrect email or password" forbidden403
         _ -> failure "Incorrect email or password" forbidden403
 
@@ -223,26 +221,49 @@ sendRegToken = do
     envIO $ registrationInitMail cfg address link >>= sendmail' cfg
 
 
-createNew :: EnvAction ()
-createNew = do
+register :: EnvAction ()
+register = do
+    checkToken
+    void $ addNewUser [Client]
+
+
+adminCreate :: EnvAction ()
+adminCreate = do
     checkEmailUnique
-    user <- jsonData :: EnvAction OuterUser.UserWithoutId
+    teamIds <- fromJsonKey "teamIds"
+    roles <- fromJsonKey "roles"
+    newuser <- addNewUser roles
+    insert_ Table.member $ Member (Us._id newuser) <$> teamIds
+
+
+addNewUser :: [Role] -> EnvAction User
+addNewUser roles = do
+    (email, name, room, telephone) <- getBasicUserInfo
     password <- getPasswordHash
-    u <-
-        User.User (OuterUser.email user)
-            <$> pure password
-            <*> pure (OuterUser.name user)
-            <*> pure (OuterUser.roles user)
-            <*> envIO now
-            <*> pure True
-            <*> jsonParamText "room"
-            <*> jsonParamText "telephone"
+    dateCreated <- envIO now
+    let u =
+            Us.User
+                { _id = def,
+                  email,
+                  name,
+                  room,
+                  telephone,
+                  password,
+                  roles = roles,
+                  dateCreated,
+                  active = True
+                }
     newuser <-
-        create Table.users u `rescue` \_ ->
-            failure "Failed to create the new user entry" internalServerError500
-    insert_ Table.member $ Member (Us._id newuser) <$> OuterUser.teamIds user
+        addUser u `rescue` \_ -> do
+            text "Failed to create the new user"
+            status internalServerError500 >> finish
     success newuser
     status created201
+    return newuser
+  where
+    addUser u = do
+        rowId <- insertWithPK Table.users [u]
+        return u{_id = rowId}
 
 
 getUser :: EnvAction ()
@@ -252,23 +273,7 @@ getUser = do
     teams <- getUserTeams userId
     case user of
         Nothing -> failure "Invalid user id" badRequest400
-        Just u -> success $ innerToOuter u teams
-
-
-innerToOuter :: Us.User -> [ID Team] -> OUWT.User
-innerToOuter Us.User{_id, email, password, name, roles, dateCreated, active, telephone, room} teamIds =
-    OUWT.User
-        { OUWT._id,
-          OUWT.email,
-          OUWT.password,
-          OUWT.name,
-          OUWT.roles,
-          OUWT.teamIds,
-          OUWT.dateCreated,
-          OUWT.active,
-          OUWT.telephone,
-          OUWT.room
-        }
+        Just u -> success $ userWithTeams u teams
 
 
 getUserTeams :: ID Us.User -> EnvAction [ID Team]
@@ -280,19 +285,44 @@ getUserTeams userId = query $ do
 getUsers :: EnvAction ()
 getUsers = do
     users <- runQuery Table.users userQueryTranslator
-    usersWithteams <- forM users $ \u -> innerToOuter u <$> getUserTeams (Us._id u)
+    usersWithteams <- forM users $ \u -> userWithTeams u <$> getUserTeams (Us._id u)
     success (object ["values" .= toJSON usersWithteams, "total" .= length usersWithteams])
 
 
-updateUser :: EnvAction ()
-updateUser = do
+userWithTeams :: Us.User -> [ID Team] -> Value
+userWithTeams user teams = case toJSON user of
+    Object o -> Object $ HML.insert "teamIds" (toJSON teams) o
+    val -> val
+
+
+getBasicUserInfo :: EnvAction (Text, Text, Text, Text)
+getBasicUserInfo = do
+    email <- fromJsonKey "email"
+    name <- fromJsonKey "name"
+    room <- fromJsonKey "room"
+    telephone <- fromJsonKey "telephone"
+    return (email, name, room, telephone)
+
+
+adminUpdate :: EnvAction ()
+adminUpdate = do
     userId <- param "_id"
-    user <- jsonData :: EnvAction OUWT.User
+    active <- fromJsonKey "active"
+    roles <- fromJsonKey "roles"
+    teamIds <- fromJsonKey "teamIds"
+    (email, name, room, telephone) <- getBasicUserInfo
     update_ Table.users (\u -> u ! #_id .== literal userId) $ \u ->
-        row (outerToInner user) `with` [#password := u ! #password]
+        u
+            `with` [ #email := literal email,
+                     #name := literal name,
+                     #room := literal room,
+                     #telephone := literal telephone,
+                     #active := literal active,
+                     #roles := literal roles
+                   ]
     -- Refresh the (Team, User) parinings
     deleteFrom_ Table.member $ \m -> m ! #userId .== literal userId
-    insert_ Table.member $ fmap (Member userId) (OUWT.teamIds user)
+    insert_ Table.member $ fmap (Member userId) teamIds
 
 
 hours12 :: Int
@@ -335,25 +365,3 @@ sendPwdResetEmail = do
             [user] -> pwdResetMail cfg address (Us.name user) link
             _ -> userDoesNotExistMail cfg address
         sendmail' cfg mail
-
-
-register :: EnvAction ()
-register = do
-    checkToken
-    password <- getPasswordHash
-    u <-
-        User.User
-            <$> jsonParamText "email"
-            <*> pure password
-            <*> jsonParamText "name"
-            <*> pure [Client]
-            <*> envIO now
-            <*> pure True
-            <*> jsonParamText "room"
-            <*> jsonParamText "telephone"
-    newuser <-
-        create Table.users u `rescue` \_ -> do
-            text "Failed to create the new user entry"
-            status internalServerError500 >> finish
-    success newuser
-    status created201

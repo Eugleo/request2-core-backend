@@ -6,6 +6,7 @@ module Data.Model.Team where
 import Data.Aeson
 import Data.Text ()
 import Database.Selda
+import Database.Selda.JSON ()
 import Utils.Id.IdInstances ()
 
 

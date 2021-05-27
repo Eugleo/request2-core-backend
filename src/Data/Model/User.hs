@@ -8,6 +8,7 @@ import Data.Aeson
 import Data.Model.DateTime
 import Data.Model.Role
 import Database.Selda
+import Database.Selda.JSON ()
 import Utils.Id.IdInstances ()
 
 

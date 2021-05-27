@@ -15,7 +15,7 @@ import Control.Monad.State.Class (get)
 import qualified Control.Monad.Trans.Class as TR
 import Control.Monad.Trans.Reader (ReaderT, runReaderT)
 import Data.Aeson (FromJSON, KeyValue ((.=)), ToJSON, Value, object)
-import Data.Aeson.Lens (key, _Integral, _String)
+import Data.Aeson.Lens (key, values, _Array, _Integral, _JSON, _String)
 import Data.Aeson.Types (Parser, parseMaybe)
 import Data.Monoid (First)
 import Data.Text (Text)
@@ -186,3 +186,11 @@ jsonParamText a = jsonParam a (key a . _String)
 
 jsonParamInt :: Integral a => Text -> EnvAction a
 jsonParamInt a = jsonParam a (key a . _Integral)
+
+
+fromJsonKey :: (FromJSON a, ToJSON a) => Text -> EnvAction a
+fromJsonKey a = jsonParam a (key a . _JSON)
+
+
+jsonParamArray :: (FromJSON a, ToJSON a) => Text -> EnvAction [a]
+jsonParamArray a = jsonParam a (key a . values . _JSON)
