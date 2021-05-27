@@ -13,9 +13,12 @@ import Database.Selda
 data UserDetails = UserDetails
     { _id :: ID User,
       name :: Text,
+      email :: Text,
       roles :: [Role],
       teams :: [Team],
-      dateCreated :: DateTime
+      dateCreated :: DateTime,
+      telephone :: Text,
+      room :: Text
     }
     deriving (Show, Eq, Generic)
 

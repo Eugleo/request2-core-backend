@@ -3,6 +3,7 @@
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedLabels #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeFamilies #-}
@@ -12,10 +13,13 @@ module Api.Common where
 import Data.Aeson (FromJSON, ToJSON, object, toJSON, (.=))
 import Data.Environment
 import Data.Maybe (listToMaybe)
+import Data.Model.Role (Role)
+import Data.Model.User
 import qualified Database.Common as Db
 import Database.Selda hiding (update)
 import qualified Database.Selda as Selda (update)
-import Network.HTTP.Types.Status (Status, created201, notFound404, ok200)
+import qualified Database.Table as Table
+import Network.HTTP.Types.Status (Status, badRequest400, created201, notFound404, ok200)
 import Utils.Id.AddId
 
 
@@ -131,3 +135,12 @@ deactivate tbl = do
             (\val -> val `with` [#active := false])
     json $ object ["changed" .= n]
     status ok200
+
+
+checkUserHasRoles :: ID User -> [Role] -> EnvAction Bool
+checkUserHasRoles userId okRoles = do
+    user <- query $ select Table.users `suchThat` (\u -> u ! #_id .== literal userId)
+    case user of
+        [User{roles}] ->
+            return (any (`elem` roles) okRoles)
+        _ -> failure "Incorrect user ID" badRequest400

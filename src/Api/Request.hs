@@ -4,7 +4,7 @@
 
 module Api.Request where
 
-import Api.Common (failure, get, notFound, success)
+import Api.Common (checkUserHasRoles, failure, get, notFound, success)
 import Api.Query.Request (requestQueryTranslator)
 import Api.Query.Runner
 import Control.Lens (to, (^..), (^?), _Just)
@@ -147,17 +147,14 @@ getRequestAndProps = do
 checkIsAuthorized :: ID Request -> [Role] -> EnvAction ()
 checkIsAuthorized reqId okRoles = do
     userId <- UI.userId <$> askUserInfo
-    user <- query $ select Table.users `suchThat` (\u -> u ! #_id .== literal userId)
-    case user of
-        [User{roles}] ->
-            unless (any (`elem` roles) okRoles) $ do
-                reqs <- query $ select Table.requests `suchThat` (\r -> r ! #_id .== literal reqId)
-                case reqs of
-                    [request] ->
-                        unless (R.authorId request == userId) $
-                            failure "You need to be the author, or an operator" forbidden403
-                    _ -> failure "Incorrect request ID" badRequest400
-        _ -> failure "Incorrect user ID" badRequest400
+    hasRoles <- checkUserHasRoles userId okRoles
+    unless hasRoles $ do
+        reqs <- query $ select Table.requests `suchThat` (\r -> r ! #_id .== literal reqId)
+        case reqs of
+            [request] ->
+                unless (R.authorId request == userId) $
+                    failure "You need to be the author, or an operator" forbidden403
+            _ -> failure "Incorrect request ID" badRequest400
 
 
 addComment :: EnvAction ()

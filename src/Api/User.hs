@@ -2,14 +2,15 @@
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedLabels #-}
+{-# LANGUAGE ScopedTypeVariables #-}
 
 module Api.User where
 
-import Api.Common (failure, success)
+import Api.Common (checkUserHasRoles, failure, success)
 import Api.Query.Runner (runQuery)
 import Api.Query.User
 import Control.Monad (forM, unless, void, when)
-import Data.Aeson (Value (..), object, toJSON, (.=))
+import Data.Aeson (FromJSONKey (fromJSONKey), Value (..), object, toJSON, (.=))
 import Data.Environment
 import Data.Foldable (fold)
 import qualified Data.HashMap.Lazy as HML
@@ -27,6 +28,7 @@ import qualified Data.Text.IO as T
 import Data.Time (nominalDiffTimeToSeconds, secondsToNominalDiffTime)
 import Data.Time.Clock.POSIX
 import Data.UserDetails (UserDetails (UserDetails))
+import qualified Data.UserDetails as UD
 import Data.UserInfo (UserInfo (UserInfo))
 import qualified Data.UserInfo as U
 import Database.Common (get)
@@ -79,11 +81,13 @@ logoutEverywhere userId =
 editMe :: EnvAction ()
 editMe = do
     ui <- askUserInfo
-    name <- jsonParamText "name"
+    name <- fromJsonKey "name"
+    room <- fromJsonKey "room"
+    telephone <- fromJsonKey "telephone"
     update_
         Table.users
         (\u -> u ! #_id .== literal (U.userId ui))
-        (\u -> u `with` [#name := literal name])
+        (\u -> u `with` [#name := literal name, #telephone := literal telephone, #room := literal room])
         `rescue` \_ ->
             failure "Can't update the user at the moment" internalServerError500
 
@@ -177,16 +181,46 @@ getName = do
         _ -> failure "Incorrect user id supplied" badRequest400
 
 
-getDetails :: EnvAction ()
-getDetails = do
-    ui <- askUserInfo
-    res <- query $ select Table.users `suchThat` (\user -> user ! #_id .== literal (U.userId ui))
+checkProfilePermissions :: ID User -> ID User -> EnvAction ()
+checkProfilePermissions asker target =
+    unless (asker == target) $ do
+        askerHasPermissions <- checkUserHasRoles asker [Admin, Operator]
+        unless askerHasPermissions $ do
+            targetIsPublic <- checkUserHasRoles target [Admin, Operator]
+            unless targetIsPublic $ failure "Insufficient permissions" forbidden403
+
+
+getProfile :: EnvAction ()
+getProfile = do
+    targetId <- param "_id"
+    askerId <- U.userId <$> askUserInfo
+    checkProfilePermissions askerId targetId
+    success =<< getDetailsForUser targetId
+
+
+getDetailsAboutMe :: EnvAction ()
+getDetailsAboutMe = success =<< getDetailsForUser . U.userId =<< askUserInfo
+
+
+getDetailsForUser :: ID User -> EnvAction UserDetails
+getDetailsForUser userId = do
+    res <- query $ select Table.users `suchThat` (\user -> user ! #_id .== literal userId)
     case res of
-        [User{_id, name, roles, dateCreated}] -> do
+        [User{_id, name, roles, dateCreated, room, telephone, email}] -> do
             teams <- query $ do
                 mbr <- select Table.member `suchThat` \m -> m ! #userId .== literal _id
                 innerJoin (\t -> t ! #_id .== mbr ! #teamId) $ select Table.teams
-            success $ UserDetails _id name roles teams dateCreated
+            return $
+                UserDetails
+                    { UD._id,
+                      UD.email,
+                      UD.name,
+                      UD.roles,
+                      UD.teams,
+                      UD.dateCreated,
+                      UD.room,
+                      UD.telephone
+                    }
         _ -> failure "Incorrect user id supplied" badRequest400
 
 
