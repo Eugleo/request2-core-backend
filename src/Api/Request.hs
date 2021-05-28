@@ -65,25 +65,28 @@ updateWithProps = do
     reqId <- param "_id"
     checkIsAuthorized reqId [Operator, Admin]
     ((title, teamId), properties) <- getRequestAndProps
-    updateProperties reqId properties
+    updateProperties reqId properties True
 
     -- Update the request
     update_ Table.requests (\r -> r ! #_id .== literal reqId) $
         \r -> r `with` [#title := literal title, #teamId := literal teamId]
 
 
-updateProperties :: ID R.Request -> [(Text, Text)] -> EnvAction ()
-updateProperties reqId properties = do
+updateProperties :: ID R.Request -> [(Text, Text)] -> Bool -> EnvAction ()
+updateProperties reqId properties removeOthers = do
     allProps <-
         query $
             select Table.properties `suchThat` \p ->
                 p ! #active .== literal True .&& p ! #requestId .== literal reqId
 
-    let (repeatedProps, removedProps) = partition (memberBy (\p (name, _) -> P.name p == name) properties) allProps
+    let (repeatedProps, removedProps) =
+            partition
+                (memberBy (\p (name, _) -> P.name p == name) properties)
+                allProps
     let (unchangedProps, updatedProps) = partition (memberBy propEq properties) repeatedProps
 
     -- Deactivate remomed or old properties
-    forM_ (updatedProps ++ removedProps) $ \prop ->
+    forM_ (updatedProps ++ if removeOthers then removedProps else []) $ \prop ->
         update_
             Table.properties
             ( \p ->
@@ -107,7 +110,7 @@ updateResults :: EnvAction ()
 updateResults = do
     reqId <- param "_id"
     properties <- fromJsonKey "properties"
-    updateProperties reqId properties
+    updateProperties reqId properties False
 
 
 getMyRequests :: EnvAction ()
@@ -173,7 +176,7 @@ updateStatus :: EnvAction ()
 updateStatus = do
     reqId <- param "_id"
     status <- read . unpack <$> jsonParamText "status"
-    updateProperties reqId [("Status", pack . show $ status)]
+    updateProperties reqId [("Status", pack . show $ status)] False
     update_ Table.requests (\r -> r ! #_id .== literal reqId) $
         \r -> r `with` [#status := literal status]
 
