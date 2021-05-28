@@ -18,7 +18,8 @@ data UserDetails = UserDetails
       teams :: [Team],
       dateCreated :: DateTime,
       telephone :: Text,
-      room :: Text
+      room :: Text,
+      active :: Bool
     }
     deriving (Show, Eq, Generic)
 

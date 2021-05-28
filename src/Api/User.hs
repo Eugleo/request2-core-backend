@@ -206,7 +206,7 @@ getDetailsForUser :: ID User -> EnvAction UserDetails
 getDetailsForUser userId = do
     res <- query $ select Table.users `suchThat` (\user -> user ! #_id .== literal userId)
     case res of
-        [User{_id, name, roles, dateCreated, room, telephone, email}] -> do
+        [User{_id, name, roles, dateCreated, room, telephone, email, active}] -> do
             teams <- query $ do
                 mbr <- select Table.member `suchThat` \m -> m ! #userId .== literal _id
                 innerJoin (\t -> t ! #_id .== mbr ! #teamId) $ select Table.teams
@@ -219,7 +219,8 @@ getDetailsForUser userId = do
                       UD.teams,
                       UD.dateCreated,
                       UD.room,
-                      UD.telephone
+                      UD.telephone,
+                      UD.active
                     }
         _ -> failure "Incorrect user id supplied" badRequest400
 
