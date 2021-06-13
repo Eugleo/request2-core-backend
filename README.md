@@ -1,4 +1,4 @@
-# reQuest2
+# Request2 backend
 
 ## Development info
 
@@ -22,21 +22,6 @@ curl localhost:9080/capability
 ```
 
 (should reply `["request2"]`)
-
-### How to start frontend
-
-```
-cd frontend
-cp sample-env .env  #edit if the location of api server is changed
-yarnpkg run react-scripts start
-```
-
-Building a static site for production:
-
-```
-yarnpkg run react-scripts build
-ls -R build/ #see the result
-```
 
 ### Database setup
 
