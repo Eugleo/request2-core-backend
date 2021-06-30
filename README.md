@@ -1,10 +1,12 @@
 # Request2 backend
 
+This is a part of a larger project of Request2. See https://github.com/Eugleo/request2-service for details.
+
 ## Development info
 
-### How to start backend
+### How to start the backend
 
-```
+```sh
 cat > config.cfg << ENDCONF
 [server]
 listen_port=9080
