@@ -91,10 +91,10 @@ readConfig path = do
             . upd "listen_port" listen (ListenOnPort . read . unpack)
             . upd "listen_socket" listen (ListenOnSocket . unpack)
             . upd "db_host" dbHost id
-            . upd "db_port" dbPort (read.unpack)
+            . upd "db_port" dbPort (read . unpack)
             . upd "db_name" dbName id
-            . upd "db_schema"  dbSchema Just
-            . upd "db_user"  dbUser Just
+            . upd "db_schema" dbSchema Just
+            . upd "db_user" dbUser Just
             . upd "db_password" dbPassword Just
             . upd "allow_cors" allowCORS (read . unpack)
             . upd "reg_token_secret" regTokenSecret unpack

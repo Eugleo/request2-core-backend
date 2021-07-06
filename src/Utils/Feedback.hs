@@ -41,9 +41,11 @@ slackNotificationRequest url body = do
 
 sendFeedback :: EnvAction ()
 sendFeedback = do
-    slackUrl <- _slackHook <$> askConfig >>=
-      maybe (failure "Feedback notifications are not configured" serviceUnavailable503)
-            (pure.unpack)
+    slackUrl <-
+        _slackHook <$> askConfig
+            >>= maybe
+                (failure "Feedback notifications are not configured" serviceUnavailable503)
+                (pure . unpack)
     feedback <- jsonData
     ui <- askUserInfo
     user' <- get Table.users . userId $ ui
