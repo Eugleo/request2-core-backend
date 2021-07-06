@@ -39,7 +39,7 @@ buildSlackRequest url body = do
 
 
 slackUrl :: String
-slackUrl = "https://hooks.slack.com/services/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"
+slackUrl = "https://hooks.slack.com/services/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"
 
 
 sendFeedback :: EnvAction ()
