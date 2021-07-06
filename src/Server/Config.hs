@@ -29,7 +29,8 @@ data Config = Config
       _mailFrom :: Text,
       _mailFromName :: Text,
       _mailReplyTo :: Text,
-      _frontendUrlBase :: Text
+      _frontendUrlBase :: Text,
+      _slackHook :: Maybe Text
     }
     deriving (Show)
 
@@ -56,7 +57,8 @@ defaultConfig =
           _mailFrom = "noreply@request.cz",
           _mailFromName = "Request",
           _mailReplyTo = "request@request.cz",
-          _frontendUrlBase = "http://localhost:3000"
+          _frontendUrlBase = "http://localhost:3000",
+          _slackHook = Nothing
         }
 
 
@@ -101,4 +103,5 @@ readConfig path = do
             . upd "mail_from_name" mailFromName id
             . upd "mail_reply_to" mailReplyTo id
             . upd "frontend_url_base" frontendUrlBase id
+            . upd "feedback_slack_hook" slackHook Just
             $ defaultConfig

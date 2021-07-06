@@ -22,6 +22,7 @@ import Network.HTTP.Simple (
     setRequestBodyJSON,
  )
 import Network.HTTP.Types (forbidden403, serviceUnavailable503)
+import Server.Config (_slackHook)
 
 
 data Feedback = Feedback {path :: Text, datetime :: DateTime, content :: Text}
@@ -31,19 +32,18 @@ data Feedback = Feedback {path :: Text, datetime :: DateTime, content :: Text}
 data SlackBody = SlackBody {username :: Text, text :: Text} deriving (Show, Eq, Generic, ToJSON)
 
 
-buildSlackRequest :: String -> SlackBody -> EnvAction Request
-buildSlackRequest url body = do
+slackNotificationRequest :: String -> SlackBody -> EnvAction Request
+slackNotificationRequest url body = do
     let stdBody = body{username = "Request 2 | Feedback (" <> username body <> ")"}
     req <- envIO (setRequestBodyJSON stdBody <$> parseRequest url)
     return $ req{method = "POST"}
 
 
-slackUrl :: String
-slackUrl = "https://hooks.slack.com/services/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"
-
-
 sendFeedback :: EnvAction ()
 sendFeedback = do
+    slackUrl <- _slackHook <$> askConfig >>=
+      maybe (failure "Feedback notifications are not configured" serviceUnavailable503)
+            (pure.unpack)
     feedback <- jsonData
     ui <- askUserInfo
     user' <- get Table.users . userId $ ui
@@ -51,7 +51,7 @@ sendFeedback = do
         Nothing -> failure "Invalid user" forbidden403
         Just user -> do
             req <-
-                buildSlackRequest slackUrl $
+                slackNotificationRequest slackUrl $
                     SlackBody
                         (name user)
                         (content feedback <> "\n_at path: " <> path feedback <> "_")
