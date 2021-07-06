@@ -4,7 +4,6 @@
 module Data.Model.Request where
 
 import Data.Aeson
-import Data.Aeson.Types (Parser)
 import Data.Model.DateTime
 import Data.Model.Status
 import Data.Model.Team

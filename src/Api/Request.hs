@@ -9,9 +9,9 @@ import Api.Query.Request (requestQueryTranslator)
 import Api.Query.Runner
 import Control.Lens (to, (^..), (^?), _Just)
 import Control.Monad (forM_, unless)
-import Data.Aeson (FromJSONKey (fromJSONKey), KeyValue ((.=)), Value, object, toJSON)
-import Data.Aeson.Lens (AsJSON, AsPrimitive (_String), key, values, _Array, _JSON)
-import Data.Environment (EnvAction, askUserInfo, envIO, fromJsonKey, json, jsonData, jsonParam, jsonParamText, param, rescue, status)
+import Data.Aeson (KeyValue ((.=)), Value, object, toJSON)
+import Data.Aeson.Lens (AsPrimitive (_String), key, values, _JSON)
+import Data.Environment (EnvAction, askUserInfo, envIO, fromJsonKey, jsonData, jsonParam, jsonParamText, param, rescue, status)
 import Data.List (partition)
 import qualified Data.Model.Comment as C
 import Data.Model.DateTime (now)
@@ -21,7 +21,6 @@ import qualified Data.Model.Request as R
 import Data.Model.Role (Role (..))
 import Data.Model.Status (Status (Pending))
 import Data.Model.Team (Team)
-import Data.Model.User (User (..))
 import Data.Text (pack, unpack)
 import qualified Data.UserInfo as UI
 import Database.Selda
@@ -175,10 +174,10 @@ addComment = do
 updateStatus :: EnvAction ()
 updateStatus = do
     reqId <- param "_id"
-    status <- read . unpack <$> jsonParamText "status"
-    updateProperties reqId [("Status", pack . show $ status)] False
+    st <- read . unpack <$> jsonParamText "status"
+    updateProperties reqId [("Status", pack . show $ st)] False
     update_ Table.requests (\r -> r ! #_id .== literal reqId) $
-        \r -> r `with` [#status := literal status]
+        \r -> r `with` [#status := literal st]
 
 
 createWithProps :: EnvAction ()

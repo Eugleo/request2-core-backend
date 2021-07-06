@@ -10,7 +10,7 @@ import Api.Common (checkUserHasRoles, failure, success)
 import Api.Query.Runner (runQuery)
 import Api.Query.User
 import Control.Monad (forM, unless, void, when)
-import Data.Aeson (FromJSONKey (fromJSONKey), Value (..), object, toJSON, (.=))
+import Data.Aeson (Value (..), object, toJSON, (.=))
 import Data.Environment
 import Data.Foldable (fold)
 import qualified Data.HashMap.Lazy as HML

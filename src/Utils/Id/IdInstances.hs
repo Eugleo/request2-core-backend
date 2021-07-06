@@ -2,7 +2,6 @@
 
 module Utils.Id.IdInstances where
 
-import Data.Aeson
 import Database.Selda
 import Web.Scotty (Parsable (..))
 

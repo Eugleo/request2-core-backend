@@ -1,7 +1,6 @@
 module Utils.Mail.PwdResetMail where
 
 import qualified Data.Text as T
-import Network.Mail.Mime (ImageContent (ImageFilePath), InlineImage (..))
 import Server.Config
 import Utils.Mail.Common
 

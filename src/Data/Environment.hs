@@ -15,7 +15,7 @@ import Control.Monad.State.Class (get)
 import qualified Control.Monad.Trans.Class as TR
 import Control.Monad.Trans.Reader (ReaderT, runReaderT)
 import Data.Aeson (FromJSON, KeyValue ((.=)), ToJSON, Value, object)
-import Data.Aeson.Lens (key, values, _Array, _Integral, _JSON, _String)
+import Data.Aeson.Lens (key, _Integral, _JSON, _String)
 import Data.Monoid (First)
 import Data.Text (Text)
 import Data.Text.Lazy (fromStrict, toStrict)
