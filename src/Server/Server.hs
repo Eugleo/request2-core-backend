@@ -44,7 +44,7 @@ import qualified Web.Scotty.Trans as S (
 connInfo :: Config -> PGConnectInfo
 connInfo =
     PGConnectInfo
-        <$> _dbHost <*> pure 5432 <*> _dbName <*> _dbSchema <*> _dbUser <*> _dbPassword
+        <$> _dbHost <*> _dbPort <*> _dbName <*> _dbSchema <*> _dbUser <*> _dbPassword
 
 
 addCORSHeader :: Middleware
