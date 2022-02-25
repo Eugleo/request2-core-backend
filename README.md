@@ -13,9 +13,9 @@ listen_port=9080
 db_host=localhost
 db_user=request
 db_name=request
-allow_cors=**True**
+allow_cors=True
 ENDCONF
-cabal run request2 -- run-server -c config.**cfg**
+cabal run request2 -- run-server -c config.cfg
 ```
 
 > Make sure to have a database `db_name` created under user `db_user`
