@@ -146,6 +146,7 @@ server config = runScotty config $ do
     post "/files" $ withDB Files.upload
     delete "/files/:hash" $ withDB Files.delete
     get "/files/:hash" $ withDB Files.getFile
+    get "/files/:hash/url" $ withDB Files.getFileUrl
     {-
      - Teams
      -}

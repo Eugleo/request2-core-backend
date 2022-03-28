@@ -25,6 +25,7 @@ import Data.Text (pack, unpack)
 import qualified Data.UserInfo as UI
 import Database.Selda
 import qualified Database.Table as Table
+import Debug.Trace (traceShow)
 import Network.HTTP.Types.Status (badRequest400, created201, forbidden403)
 
 
@@ -84,7 +85,7 @@ updateProperties reqId properties removeOthers = do
                 allProps
     let (unchangedProps, updatedProps) = partition (memberBy propEq properties) repeatedProps
 
-    -- Deactivate remomed or old properties
+    -- Deactivate removed or old properties
     forM_ (updatedProps ++ if removeOthers then removedProps else []) $ \prop ->
         update_
             Table.properties
@@ -108,7 +109,7 @@ updateProperties reqId properties removeOthers = do
 updateResults :: EnvAction ()
 updateResults = do
     reqId <- param "_id"
-    properties <- fromJsonKey "properties"
+    properties <- getProps
     updateProperties reqId properties False
 
 
@@ -133,13 +134,15 @@ getRequestAndProps = do
     teamId <- jsonParam "request.teamId" (key "request" . key "teamId" . _JSON)
     properties <- getProps
     return ((title, teamId), properties)
+
+
+getProps = do
+    (js :: Value) <-
+        jsonData `rescue` (flip failure badRequest400 . ("Query JSON parsing error: " <>))
+    case js ^.. (key "properties" . values . to toPropTuple . _Just) of
+        [] -> failure "Missing or malformed parameter: properties" badRequest400
+        things -> return things
   where
-    getProps = do
-        (js :: Value) <-
-            jsonData `rescue` (flip failure badRequest400 . ("Query JSON parsing error: " <>))
-        case js ^.. (key "properties" . values . to toPropTuple . _Just) of
-            [] -> failure "Missing or malformed parameter: properties" badRequest400
-            things -> return things
     toPropTuple js = do
         name <- js ^? key "name" . _String
         value <- js ^? key "value" . _String

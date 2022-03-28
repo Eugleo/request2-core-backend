@@ -3,6 +3,7 @@
 
 module Api.Files where
 
+import Api.Common (success)
 import Data.Aeson (KeyValue ((.=)), object)
 import qualified Data.ByteString as B
 import qualified Data.ByteString.Lazy as BL
@@ -27,6 +28,7 @@ import Data.Model.Property (Property)
 import qualified Data.Text as T
 import qualified Database.Selda as S
 import Database.Table (properties)
+import Debug.Trace (traceShow)
 import Network.HTTP.Types.Status (created201, forbidden403, notFound404, notModified304)
 import Network.Wai.Parse (FileInfo (..))
 import Server.Config (_dataDir, _dataUrlPrefix)
@@ -138,13 +140,13 @@ handleUploads = files >>= traverse handleUpload'
                     name = T.pack $ toString name'
                 path <- filePath hash name
                 dir <- fileDir hash
-                envIO $ createDirectoryIfMissing True dir
-                envIO $ B.writeFile path $ BL.toStrict d
+                envIO $ createDirectoryIfMissing (traceShow (dir, path, hash, mime, name) True) dir
+                envIO $ B.writeFile path $ BL.toStrict (traceShow "Here!" d)
                 return (hash, mime, name)
 
 
-getFile :: EnvAction ()
-getFile = do
+findFileUrl :: EnvAction (Maybe T.Text)
+findFileUrl = do
     hash <- param "hash"
     res <-
         S.query $ do
@@ -153,6 +155,25 @@ getFile = do
     case res of
         [d] ->
             case filePropertyToDesc d of
-                Just (h, _, n) -> fileUrl h n >>= redirect
-                _ -> raise "File property decoding problem"
-        _ -> status notFound404
+                Just (h, _, n) -> Just <$> fileUrl h n
+                _ -> raise "File property decoding problem" >> return Nothing
+        _ -> status notFound404 >> return Nothing
+
+
+whenJust :: Monad m => Maybe a -> (a -> m ()) -> m ()
+whenJust Nothing _ = return ()
+whenJust (Just a) f = f a
+
+
+getFileUrl :: EnvAction ()
+getFileUrl = do
+    maybeUrl <- findFileUrl
+    whenJust maybeUrl $ \url ->
+        success $ object ["url" .= url]
+
+
+getFile :: EnvAction ()
+getFile = do
+    maybeUrl <- findFileUrl
+    whenJust maybeUrl $ \url ->
+        redirect url
