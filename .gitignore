@@ -3,3 +3,4 @@ sqlite-simple/
 /data/
 .*.swp
 config.cfg
+.DS_Store
