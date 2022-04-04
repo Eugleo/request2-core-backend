@@ -110,7 +110,39 @@ updateResults :: EnvAction ()
 updateResults = do
     reqId <- param "_id"
     properties <- getProps
-    updateProperties reqId properties False
+
+    allProps <-
+        query $
+            select Table.properties `suchThat` \p ->
+                p ! #active .== literal True
+                    .&& p ! #requestId .== literal reqId
+                    .&& p ! #name `like` literal "result/%"
+
+    let (repeatedProps, removedProps) =
+            partition
+                (memberBy (\p (name, _) -> P.name p == name) properties)
+                allProps
+    let (unchangedProps, updatedProps) = partition (memberBy propEq properties) repeatedProps
+
+    -- Deactivate removed or old properties
+    forM_ (updatedProps ++ removedProps) $ \prop ->
+        update_
+            Table.properties
+            ( \p ->
+                p ! #requestId .== literal (P.requestId prop)
+                    .&& p ! #name .== literal (P.name prop)
+            )
+            (\p -> p `with` [#active := false])
+
+    -- Insert new properties
+    let changedProps = filter (not . memberBy (flip propEq) unchangedProps) properties
+    dt <- envIO now
+    userId <- UI.userId <$> askUserInfo
+    insert_ Table.properties $
+        (\(name, value) -> P.Property def reqId userId name value dt True True) <$> changedProps
+  where
+    propEq p (name, value) = P.name p == name && (P.value p == value)
+    memberBy eq xs x = any (eq x) xs
 
 
 getMyRequests :: EnvAction ()
