@@ -28,7 +28,6 @@ import Data.Model.Property (Property)
 import qualified Data.Text as T
 import qualified Database.Selda as S
 import Database.Table (properties)
-import Debug.Trace (traceShow)
 import Network.HTTP.Types.Status (created201, forbidden403, notFound404, notModified304)
 import Network.Wai.Parse (FileInfo (..))
 import Server.Config (_dataDir, _dataUrlPrefix)
@@ -140,8 +139,8 @@ handleUploads = files >>= traverse handleUpload'
                     name = T.pack $ toString name'
                 path <- filePath hash name
                 dir <- fileDir hash
-                envIO $ createDirectoryIfMissing (traceShow (dir, path, hash, mime, name) True) dir
-                envIO $ B.writeFile path $ BL.toStrict (traceShow "Here!" d)
+                envIO $ createDirectoryIfMissing True dir
+                envIO $ B.writeFile path $ BL.toStrict d
                 return (hash, mime, name)
 
 
